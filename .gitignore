@@ -52,3 +52,8 @@ next-env.d.ts
 
 .agents/
 specs/
+
+# Local resources / mockups
+modelo1-norte/
+
+
