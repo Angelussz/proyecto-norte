@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { useState, useCallback, useMemo } from "react";
-import type { ProductoCarrito, ResumenPedido } from "@/types/cart";
+import { useState } from "react"
+import type { ProductoCarrito, ResumenPedido } from "@/types/cart"
 
 const PRODUCTOS_EJEMPLO: ProductoCarrito[] = [
   {
@@ -24,45 +24,41 @@ const PRODUCTOS_EJEMPLO: ProductoCarrito[] = [
       "https://lh3.googleusercontent.com/aida-public/AB6AXuArWqimaebFD9-z-m0fSd0_KCGAjWNYsJHOzYUglWMVF3N9fcIunWHL-iyDMnOxUJJqpa3TQZQ3mFjHAkRrN7-C7y-XatidzziLsW3THfKA7flScjuzLJOgLMB4jXSiJmx9urn2k78KhkhcHwsvOuUpcjntFpBoTqWbDH57gij1eY-XU_2eFLe-zN6AKeaQ0wO4NyU8JjzkmCRjKbnbrv-0P_y6hkmK2sA84fK4v1bTNCu78-deE45v",
     cantidad: 1,
   },
-];
+]
 
 export function useCarrito() {
   const [productos, setProductos] =
-    useState<ProductoCarrito[]>(PRODUCTOS_EJEMPLO);
+    useState<ProductoCarrito[]>(PRODUCTOS_EJEMPLO)
 
-  const actualizarCantidad = useCallback(
-    (id: string, nuevaCantidad: number) => {
-      if (nuevaCantidad < 1) return;
-      setProductos((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, cantidad: nuevaCantidad } : item,
-        ),
-      );
-    },
-    [],
-  );
+  const actualizarCantidad = (id: string, nuevaCantidad: number) => {
+    if (nuevaCantidad < 1) return
+    setProductos((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, cantidad: nuevaCantidad } : item
+      )
+    )
+  }
 
-  const eliminarProducto = useCallback((id: string) => {
-    setProductos((prev) => prev.filter((item) => item.id !== id));
-  }, []);
+  const eliminarProducto = (id: string) => {
+    setProductos((prev) => prev.filter((item) => item.id !== id))
+  }
 
-  const resumen = useMemo<ResumenPedido>(() => {
-    const subtotal = productos.reduce(
-      (acc, item) => acc + item.precio * item.cantidad,
-      0,
-    );
-    return {
-      subtotal,
-      envio: "Calculated at checkout",
-      impuestos: "Calculated at checkout",
-      total: subtotal,
-    };
-  }, [productos]);
+  const subtotal = productos.reduce(
+    (acc, item) => acc + item.precio * item.cantidad,
+    0
+  )
 
-  const totalItems = useMemo(
-    () => productos.reduce((acc, item) => acc + item.cantidad, 0),
-    [productos],
-  );
+  const totalItems = productos.reduce(
+    (acc, item) => acc + item.cantidad,
+    0
+  )
+
+  const resumen: ResumenPedido = {
+    subtotal,
+    envio: "Calculated at checkout",
+    impuestos: "Calculated at checkout",
+    total: subtotal,
+  }
 
   return {
     productos,
@@ -70,5 +66,5 @@ export function useCarrito() {
     totalItems,
     actualizarCantidad,
     eliminarProducto,
-  };
+  }
 }
