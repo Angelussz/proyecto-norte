@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { ProductoCarrito, ResumenPedido } from "@/types/cart"
 
 const PRODUCTOS_EJEMPLO: ProductoCarrito[] = [
@@ -26,9 +26,18 @@ const PRODUCTOS_EJEMPLO: ProductoCarrito[] = [
   },
 ]
 
+const CLAVE_CARRITO = "carrito-norte"
+
 export function useCarrito() {
-  const [productos, setProductos] =
-    useState<ProductoCarrito[]>(PRODUCTOS_EJEMPLO)
+  const [productos, setProductos] = useState<ProductoCarrito[]>(() => {
+    if (typeof window === "undefined") return PRODUCTOS_EJEMPLO
+    const guardado = localStorage.getItem(CLAVE_CARRITO)
+    return guardado ? JSON.parse(guardado) : PRODUCTOS_EJEMPLO
+  })
+
+  useEffect(() => {
+    localStorage.setItem(CLAVE_CARRITO, JSON.stringify(productos))
+  }, [productos])
 
   const actualizarCantidad = (id: string, nuevaCantidad: number) => {
     if (nuevaCantidad < 1) return

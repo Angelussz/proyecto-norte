@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { ProductoCarrito } from "@/types/cart";
 
 interface ItemCarritoProps {
