@@ -2404,9 +2404,9 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { formatPrice } from '@/lib/formateadores'
+import { formatPrice } from '@/lib/utils'
 import { useCart } from '@/features/cart/hooks'
-import type { Product } from '@/tipos/producto'
+import type { Product } from '@/types/product'
 
 // 2. Types / Interfaces
 export interface ProductCardProps {
@@ -2423,19 +2423,19 @@ export default function ProductCard({ product }: ProductCardProps) {
   // (ya usamos useCart arriba)
 
   // 6. Propiedades derivadas
-  const precioFormateado = formatPrice(product.precio)
+  const formattedPrice = formatPrice(product.price)
 
   // 7. Funciones
-  const handleVerDetalle = () => {
+  const handleViewDetail = () => {
     router.push(`/products/${product.slug}`)
   }
 
-  const handleAgregarAlCarrito = () => {
+  const handleAddToCart = () => {
     addItem({
       id: product.id,
       productId: product.id,
-      precio: product.precio,
-      cantidad: 1,
+      price: product.price,
+      quantity: 1,
     })
   }
 
@@ -2448,28 +2448,28 @@ export default function ProductCard({ product }: ProductCardProps) {
       <CardContent className="p-0">
         <div className="relative h-48 w-full">
           <Image
-            src={product.imagenUrl}
-            alt={product.nombre}
+            src={product.imageUrl}
+            alt={product.name}
             fill
             className="object-cover"
           />
         </div>
 
         <div className="p-3">
-          <h3 className="text-sm font-medium">{product.nombre}</h3>
-          <p className="text-sm text-gray-600">{precioFormateado}</p>
+          <h3 className="text-sm font-medium">{product.name}</h3>
+          <p className="text-sm text-gray-600">{formattedPrice}</p>
         </div>
       </CardContent>
 
       <CardFooter className="mt-auto p-3">
-        <Button className="w-full" size="sm" onClick={handleAgregarAlCarrito}>
+        <Button className="w-full" size="sm" onClick={handleAddToCart}>
           Agregar al carrito
         </Button>
         <Button
           className="mt-2 w-full"
           size="sm"
           variant="outline"
-          onClick={handleVerDetalle}
+          onClick={handleViewDetail}
         >
           Ver detalle
         </Button>
@@ -2488,7 +2488,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
 // 1. Imports
 import { Suspense } from 'react'
-import { getProducts } from '@/features/productos/queries'
+import { getProducts } from '@/features/products/queries'
 import ProductGrid from '@/components/product-grid'
 import ProductFilters from '@/components/product-filters'
 
@@ -2496,8 +2496,8 @@ import ProductFilters from '@/components/product-filters'
 interface ProductsPageProps {
   searchParams: Promise<{
     q?: string
-    categoria?: string
-    orden?: string
+    category?: string
+    sort?: string
   }>
 }
 
@@ -2507,8 +2507,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   // 5. No hooks en Server Components
 
   // 6. Obtención de datos
-  const { q, categoria, orden } = await searchParams
-  const productos = await getProducts({ q, categoria, orden })
+  const { q, category, sort } = await searchParams
+  const products = await getProducts({ q, category, sort })
 
   // 7. Funciones (si hacen falta)
   // En este caso no necesitamos
@@ -2524,7 +2524,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <ProductFilters />
       </Suspense>
 
-      <ProductGrid productos={productos} />
+      <ProductGrid products={products} />
     </div>
   )
 }
@@ -2539,98 +2539,98 @@ Next.js + TypeScript hace el código más seguro y fácil de mantener.
 **✅ BIEN – Componente con tipos explícitos:**
 
 ```tsx
-// src/features/checkout/components/formulario-pago.tsx
+// src/features/checkout/components/checkout-form.tsx
 'use client'
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-interface DatosPago {
-  numeroTarjeta: string
-  titular: string
-  vencimiento: string
+interface PaymentData {
+  cardNumber: string
+  cardHolder: string
+  expiry: string
   cvv: string
 }
 
-interface FormularioPagoProps {
-  monto: number
-  onPagoCompletado: (datos: DatosPago) => Promise<void>
+interface CheckoutFormProps {
+  amount: number
+  onPaymentCompleted: (data: PaymentData) => Promise<void>
 }
 
-export default function FormularioPago({
-  monto,
-  onPagoCompletado,
-}: FormularioPagoProps) {
-  const [datos, setDatos] = useState<DatosPago>({
-    numeroTarjeta: '',
-    titular: '',
-    vencimiento: '',
+export default function CheckoutForm({
+  amount,
+  onPaymentCompleted,
+}: CheckoutFormProps) {
+  const [data, setData] = useState<PaymentData>({
+    cardNumber: '',
+    cardHolder: '',
+    expiry: '',
     cvv: '',
   })
 
-  const [estaEnviando, setEstaEnviando] = useState(false)
-  const [errorMensaje, setErrorMensaje] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handleChange = (campo: keyof DatosPago, valor: string) => {
-    setDatos((prev) => ({ ...prev, [campo]: valor }))
+  const handleChange = (field: keyof PaymentData, value: string) => {
+    setData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setEstaEnviando(true)
-    setErrorMensaje(null)
+    setIsSubmitting(true)
+    setErrorMessage(null)
 
     try {
-      await onPagoCompletado(datos)
+      await onPaymentCompleted(data)
     } catch (error) {
-      setErrorMensaje(
+      setErrorMessage(
         error instanceof Error ? error.message : 'Error al procesar el pago'
       )
     } finally {
-      setEstaEnviando(false)
+      setIsSubmitting(false)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <p className="text-sm">Monto a pagar: ${monto.toFixed(2)}</p>
+      <p className="text-sm">Monto a pagar: ${amount.toFixed(2)}</p>
 
       <Input
         label="Número de tarjeta"
-        value={datos.numeroTarjeta}
-        onChange={(e) => handleChange('numeroTarjeta', e.target.value)}
+        value={data.cardNumber}
+        onChange={(e) => handleChange('cardNumber', e.target.value)}
         required
       />
       <Input
         label="Titular"
-        value={datos.titular}
-        onChange={(e) => handleChange('titular', e.target.value)}
+        value={data.cardHolder}
+        onChange={(e) => handleChange('cardHolder', e.target.value)}
         required
       />
       <div className="grid grid-cols-2 gap-2">
         <Input
           label="Vencimiento"
-          value={datos.vencimiento}
-          onChange={(e) => handleChange('vencimiento', e.target.value)}
+          value={data.expiry}
+          onChange={(e) => handleChange('expiry', e.target.value)}
           placeholder="MM/AA"
           required
         />
         <Input
           label="CVV"
-          value={datos.cvv}
+          value={data.cvv}
           onChange={(e) => handleChange('cvv', e.target.value)}
           placeholder="123"
           required
         />
       </div>
 
-      {errorMensaje && (
-        <p className="text-sm text-red-600">{errorMensaje}</p>
+      {errorMessage && (
+        <p className="text-sm text-red-600">{errorMessage}</p>
       )}
 
-      <Button type="submit" disabled={estaEnviando} className="w-full">
-        {estaEnviando ? 'Procesando…' : 'Pagar'}
+      <Button type="submit" disabled={isSubmitting} className="w-full">
+        {isSubmitting ? 'Procesando…' : 'Pagar'}
       </Button>
     </form>
   )
@@ -2645,17 +2645,17 @@ export default function FormularioPago({
 
 import { useState } from 'react'
 
-export default function FormularioPago({ monto, onPagoCompletado }: any) {
-  const [datos, setDatos] = useState({
-    numeroTarjeta: '',
-    titular: '',
-    vencimiento: '',
+export default function CheckoutForm({ amount, onPaymentCompleted }: any) {
+  const [data, setData] = useState({
+    cardNumber: '',
+    cardHolder: '',
+    expiry: '',
     cvv: '',
   })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    await onPagoCompletado(datos)
+    await onPaymentCompleted(data)
   }
 
   return <form onSubmit={handleSubmit}>...</form>
@@ -2684,7 +2684,7 @@ export default function FormularioPago({ monto, onPagoCompletado }: any) {
    - `useState`, `useReducer`  
 
 5. Hooks / stores / composables propios  
-   - `useCart`, `useProductos`, etc.  
+   - `useCart`, `useProducts`, etc.  
 
 6. Propiedades derivadas  
    - `useMemo`, variables calculadas  
@@ -2708,7 +2708,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/features/cart/hooks'
-import type { Product } from '@/tipos/producto'
+import type { Product } from '@/types/product'
 
 // 2. Types / Interfaces
 interface Props {
@@ -2718,44 +2718,44 @@ interface Props {
 // 3. Componente
 export default function ProductCard({ product }: Props) {
   // 4. Estado local
-  const [estaCargando, setEstaCargando] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   // 5. Hooks / stores / composables
   const router = useRouter()
   const { addItem } = useCart()
 
   // 6. Propiedades derivadas
-  const precioFormateado = useMemo(
-    () => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(product.precio),
-    [product.precio]
+  const formattedPrice = useMemo(
+    () => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(product.price),
+    [product.price]
   )
 
   // 7. Funciones
-  const handleAgregar = () => {
-    setEstaCargando(true)
-    addItem({ id: product.id, productId: product.id, precio: product.precio, cantidad: 1 })
-      .finally(() => setEstaCargando(false))
+  const handleAdd = () => {
+    setIsLoading(true)
+    addItem({ id: product.id, productId: product.id, price: product.price, quantity: 1 })
+      .finally(() => setIsLoading(false))
   }
 
-  const handleVerDetalle = () => {
+  const handleViewDetail = () => {
     router.push(`/products/${product.slug}`)
   }
 
   // 8. Efectos
   useEffect(() => {
     // Ejemplo: log o analytics
-    console.log('Producto renderizado:', product.nombre)
-  }, [product.nombre])
+    console.log('Producto renderizado:', product.name)
+  }, [product.name])
 
   // 9. Retorno
   return (
     <div>
-      <h3>{product.nombre}</h3>
-      <p>{precioFormateado}</p>
-      <button onClick={handleAgregar} disabled={estaCargando}>
+      <h3>{product.name}</h3>
+      <p>{formattedPrice}</p>
+      <button onClick={handleAdd} disabled={isLoading}>
         Agregar
       </button>
-      <button onClick={handleVerDetalle}>Ver detalle</button>
+      <button onClick={handleViewDetail}>Ver detalle</button>
     </div>
   )
 }
@@ -2774,39 +2774,39 @@ Todos los props deben estar documentados con comentarios JSDoc para que sea clar
 **✅ BIEN:**
 
 ```tsx
-// src/components/tarjeta-imagen.tsx
+// src/components/image-card.tsx
 'use client'
 
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { formatearTamanioArchivo } from '@/lib/formateadores'
-import type { Imagen } from '@/tipos/imagen'
+import { formatFileSize } from '@/lib/utils'
+import type { Image } from '@/types/image'
 
-export interface TarjetaImagenProps {
+export interface ImageCardProps {
   /** Objeto con los datos de la imagen a mostrar */
-  imagen: Imagen
+  image: Image
 
   /** Callback opcional al hacer clic en descargar */
-  onDescargar?: () => void
+  onDownload?: () => void
 
   /** Callback opcional al hacer clic en eliminar */
-  onEliminar?: () => void
+  onDelete?: () => void
 
   /** Si la imagen es seleccionable (default: false) */
-  seleccionable?: boolean
+  selectable?: boolean
 
   /** Tamaño de la tarjeta (default: 'md') */
-  tamanio?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg'
 }
 
-export default function TarjetaImagen({
-  imagen,
-  onDescargar,
-  onEliminar,
-  seleccionable = false,
-  tamanio = 'md',
-}: TarjetaImagenProps) {
+export default function ImageCard({
+  image,
+  onDownload,
+  onDelete,
+  selectable = false,
+  size = 'md',
+}: ImageCardProps) {
   // ...
 }
 ```
@@ -2817,23 +2817,23 @@ export default function TarjetaImagen({
 // src/components/product-card.tsx
 'use client'
 
-import type { Product } from '@/tipos/producto'
+import type { Product } from '@/types/product'
 
 export interface ProductCardProps {
   /** Producto a mostrar en la tarjeta */
   product: Product
 
   /** Mostrar botón de "Agregar al carrito" (default: true) */
-  mostrarBotonCarrito?: boolean
+  showCartButton?: boolean
 
   /** Mostrar precio con descuento si existe (default: true) */
-  mostrarDescuento?: boolean
+  showDiscount?: boolean
 }
 
 export default function ProductCard({
   product,
-  mostrarBotonCarrito = true,
-  mostrarDescuento = true,
+  showCartButton = true,
+  showDiscount = true,
 }: ProductCardProps) {
   // ...
 }
@@ -3027,12 +3027,12 @@ features/products/actions.ts            # Acciones (si hacen falta)
  */
 export async function getProducts({
   q,
-  categoria,
-  orden,
+  category,
+  sort,
 }: {
   q?: string
-  categoria?: string
-  orden?: string
+  category?: string
+  sort?: string
 }): Promise<Product[]> {
   // ...
 }
@@ -3042,12 +3042,12 @@ export async function getProducts({
 
 ```ts
 // Tiempo de caché para productos destacados (en segundos)
-const CACHE_PRODUCTOS_DESTACADOS = 3600
+const FEATURED_PRODUCTS_CACHE = 3600
 ```
 
 ---
 
-Aplica estas prácticas en todo el proyecto (`app/`, `components/`, `features/`, `lib/`, `tipos/`) para mantener el código fácil de leer, modificar y testear a lo largo del tiempo.
+Aplica estas prácticas en todo el proyecto (`app/`, `components/`, `features/`, `lib/`, `types/`) para mantener el código fácil de leer, modificar y testear a lo largo del tiempo.
 
 ---
 ## 📚 Ejemplos Prácticos (Next.js 16)
@@ -3063,64 +3063,64 @@ Aplica estas prácticas en todo el proyecto (`app/`, `components/`, `features/`,
 import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { deleteProduct } from '@/features/products/actions'
-import type { Product } from '@/tipos/producto'
+import type { Product } from '@/types/product'
 
 export default function ProductsPage() {
-  const [productos, setProductos] = useState<Product[]>([])
-  const [estaCargando, setEstaCargando] = useState(true)
-  const [errorMensaje, setErrorMensaje] = useState<string | null>(null)
-  const [terminoBusqueda, setTerminoBusqueda] = useState('')
-  const [orden, setOrden] = useState<'nombre' | 'precio' | 'fecha'>('fecha')
-  const [categoria, setCategoria] = useState<string | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'date'>('date')
+  const [category, setCategory] = useState<string | null>(null)
 
   useEffect(() => {
-    setEstaCargando(true)
-    fetch('/api/productos')
+    setIsLoading(true)
+    fetch('/api/products')
       .then((res) => res.json())
-      .then((datos) => {
-        setProductos(datos)
-        setEstaCargando(false)
+      .then((data) => {
+        setProducts(data)
+        setIsLoading(false)
       })
       .catch((err) => {
-        setErrorMensaje(err.message)
-        setEstaCargando(false)
+        setErrorMessage(err.message)
+        setIsLoading(false)
       })
   }, [])
 
-  const productosFiltrados = useMemo(() => {
-    let resultado = productos.filter((p) =>
-      p.nombre.toLowerCase().includes(terminoBusqueda.toLowerCase())
+  const filteredProducts = useMemo(() => {
+    let result = products.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    if (categoria) {
-      resultado = resultado.filter((p) => p.categoria === categoria)
+    if (category) {
+      result = result.filter((p) => p.category === category)
     }
 
-    if (orden === 'nombre') {
-      resultado.sort((a, b) => a.nombre.localeCompare(b.nombre))
-    } else if (orden === 'precio') {
-      resultado.sort((a, b) => a.precio - b.precio)
+    if (sortBy === 'name') {
+      result.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sortBy === 'price') {
+      result.sort((a, b) => a.price - b.price)
     } else {
-      resultado.sort(
-        (a, b) => new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime()
+      result.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
     }
 
-    return resultado
-  }, [productos, terminoBusqueda, orden, categoria])
+    return result
+  }, [products, searchQuery, sortBy, category])
 
-  async function handleEliminar(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return
     await deleteProduct(id)
-    setProductos((prev) => prev.filter((p) => p.id !== id))
+    setProducts((prev) => prev.filter((p) => p.id !== id))
   }
 
-  function formatearPrecio(precio: number) {
-    return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(precio)
+  function formatPrice(price: number) {
+    return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(price)
   }
 
-  if (estaCargando) return <div>Cargando productos...</div>
-  if (errorMensaje) return <div>Error: {errorMensaje}</div>
+  if (isLoading) return <div>Cargando productos...</div>
+  if (errorMessage) return <div>Error: {errorMessage}</div>
 
   return (
     <div className="p-4">
@@ -3128,23 +3128,23 @@ export default function ProductsPage() {
 
       <div className="mb-4 flex gap-2">
         <input
-          value={terminoBusqueda}
-          onChange={(e) => setTerminoBusqueda(e.target.value)}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Buscar productos..."
           className="rounded border px-2 py-1"
         />
         <select
-          value={orden}
-          onChange={(e) => setOrden(e.target.value as any)}
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as any)}
           className="rounded border px-2 py-1"
         >
-          <option value="fecha">Fecha</option>
-          <option value="nombre">Nombre</option>
-          <option value="precio">Precio</option>
+          <option value="date">Fecha</option>
+          <option value="name">Nombre</option>
+          <option value="price">Precio</option>
         </select>
         <select
-          value={categoria ?? ''}
-          onChange={(e) => setCategoria(e.target.value || null)}
+          value={category ?? ''}
+          onChange={(e) => setCategory(e.target.value || null)}
           className="rounded border px-2 py-1"
         >
           <option value="">Todas las categorías</option>
@@ -3154,13 +3154,13 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {productosFiltrados.map((p) => (
+        {filteredProducts.map((p) => (
           <div key={p.id} className="rounded border p-3">
             <div className="relative h-40 w-full">
-              <Image src={p.imagenUrl} alt={p.nombre} fill className="object-cover" />
+              <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
             </div>
-            <h3 className="mt-2 text-sm font-medium">{p.nombre}</h3>
-            <p className="text-sm text-gray-600">{formatearPrecio(p.precio)}</p>
+            <h3 className="mt-2 text-sm font-medium">{p.name}</h3>
+            <p className="text-sm text-gray-600">{formatPrice(p.price)}</p>
             <div className="mt-2 flex gap-2">
               <button
                 className="rounded bg-blue-600 px-2 py-1 text-xs text-white"
@@ -3170,7 +3170,7 @@ export default function ProductsPage() {
               </button>
               <button
                 className="rounded bg-red-600 px-2 py-1 text-xs text-white"
-                onClick={() => handleEliminar(p.id)}
+                onClick={() => handleDelete(p.id)}
               >
                 Eliminar
               </button>
@@ -3225,15 +3225,15 @@ import ProductGrid from '@/components/product-grid'
 interface ProductsPageProps {
   searchParams: Promise<{
     q?: string
-    categoria?: string
-    orden?: 'nombre' | 'precio' | 'fecha'
+    category?: string
+    sort?: 'name' | 'price' | 'date'
   }>
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { q, categoria, orden } = await searchParams
+  const { q, category, sort } = await searchParams
 
-  const productos = await getProducts({ q, categoria, orden })
+  const products = await getProducts({ q, category, sort })
 
   return (
     <div className="container mx-auto p-4">
@@ -3243,7 +3243,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <ProductFilters />
       </Suspense>
 
-      <ProductGrid productos={productos} />
+      <ProductGrid products={products} />
     </div>
   )
 }
@@ -3266,10 +3266,10 @@ export default function ProductFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const actualizarParametro = useCallback(
-    (clave: string, valor: string) => {
+  const updateParam = useCallback(
+    (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString())
-      params.set(clave, valor)
+      params.set(key, value)
       router.push(`?${params.toString()}`)
     },
     [router, searchParams]
@@ -3279,28 +3279,28 @@ export default function ProductFilters() {
     <div className="mb-4 flex gap-2">
       <Input
         defaultValue={searchParams.get('q') ?? ''}
-        onChange={(e) => actualizarParametro('q', e.target.value)}
+        onChange={(e) => updateParam('q', e.target.value)}
         placeholder="Buscar productos..."
         className="w-48"
       />
 
       <Select
-        defaultValue={searchParams.get('orden') ?? 'fecha'}
-        onValueChange={(v) => actualizarParametro('orden', v)}
+        defaultValue={searchParams.get('sort') ?? 'date'}
+        onValueChange={(v) => updateParam('sort', v)}
       >
         <SelectTrigger className="w-40">
           <SelectValue placeholder="Ordenar por" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="fecha">Fecha</SelectItem>
-          <SelectItem value="nombre">Nombre</SelectItem>
-          <SelectItem value="precio">Precio</SelectItem>
+          <SelectItem value="date">Fecha</SelectItem>
+          <SelectItem value="name">Nombre</SelectItem>
+          <SelectItem value="price">Precio</SelectItem>
         </SelectContent>
       </Select>
 
       <Select
-        defaultValue={searchParams.get('categoria') ?? ''}
-        onValueChange={(v) => actualizarParametro('categoria', v)}
+        defaultValue={searchParams.get('category') ?? ''}
+        onValueChange={(v) => updateParam('category', v)}
       >
         <SelectTrigger className="w-40">
           <SelectValue placeholder="Categoría" />
@@ -3323,20 +3323,20 @@ export default function ProductFilters() {
 ```tsx
 // src/components/product-grid.tsx
 import ProductCard from './product-card'
-import type { Product } from '@/tipos/producto'
+import type { Product } from '@/types/product'
 
 export interface ProductGridProps {
-  productos: Product[]
+  products: Product[]
 }
 
-export default function ProductGrid({ productos }: ProductGridProps) {
-  if (productos.length === 0) {
+export default function ProductGrid({ products }: ProductGridProps) {
+  if (products.length === 0) {
     return <p>No se encontraron productos.</p>
   }
 
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      {productos.map((p) => (
+      {products.map((p) => (
         <ProductCard key={p.id} product={p} />
       ))}
     </div>
@@ -3357,8 +3357,8 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/features/cart/hooks'
-import { formatPrice } from '@/lib/formateadores'
-import type { Product } from '@/tipos/producto'
+import { formatPrice } from '@/lib/utils'
+import type { Product } from '@/types/product'
 
 export interface ProductCardProps {
   product: Product
@@ -3368,18 +3368,18 @@ export default function ProductCard({ product }: ProductCardProps) {
   const router = useRouter()
   const { addItem } = useCart()
 
-  const precioFormateado = formatPrice(product.precio)
+  const formattedPrice = formatPrice(product.price)
 
-  const handleVerDetalle = () => {
+  const handleViewDetail = () => {
     router.push(`/products/${product.slug}`)
   }
 
-  const handleAgregarAlCarrito = () => {
+  const handleAddToCart = () => {
     addItem({
       id: product.id,
       productId: product.id,
-      precio: product.precio,
-      cantidad: 1,
+      price: product.price,
+      quantity: 1,
     })
   }
 
@@ -3388,24 +3388,24 @@ export default function ProductCard({ product }: ProductCardProps) {
       <CardContent className="p-0">
         <div className="relative h-48 w-full">
           <Image
-            src={product.imagenUrl}
-            alt={product.nombre}
+            src={product.imageUrl}
+            alt={product.name}
             fill
             className="object-cover"
           />
         </div>
 
         <div className="p-3">
-          <h3 className="text-sm font-medium">{product.nombre}</h3>
-          <p className="text-sm text-gray-600">{precioFormateado}</p>
+          <h3 className="text-sm font-medium">{product.name}</h3>
+          <p className="text-sm text-gray-600">{formattedPrice}</p>
         </div>
       </CardContent>
 
       <CardFooter className="mt-auto flex gap-2 p-3">
-        <Button className="flex-1" size="sm" onClick={handleVerDetalle}>
+        <Button className="flex-1" size="sm" onClick={handleViewDetail}>
           Ver
         </Button>
-        <Button className="flex-1" size="sm" onClick={handleAgregarAlCarrito}>
+        <Button className="flex-1" size="sm" onClick={handleAddToCart}>
           Agregar
         </Button>
       </CardFooter>
@@ -3433,31 +3433,31 @@ import { useState } from 'react'
 import { deleteProduct } from './actions'
 
 export function useProductActions() {
-  const [estaProcesando, setEstaProcesando] = useState(false)
-  const [errorMensaje, setErrorMensaje] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handleEliminar = async (productId: string, onSuccess?: () => void) => {
+  const handleDelete = async (productId: string, onSuccess?: () => void) => {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return
 
-    setEstaProcesando(true)
-    setErrorMensaje(null)
+    setIsProcessing(true)
+    setErrorMessage(null)
 
     try {
       await deleteProduct(productId)
       onSuccess?.()
     } catch (err) {
-      setErrorMensaje(
+      setErrorMessage(
         err instanceof Error ? err.message : 'Error al eliminar el producto'
       )
     } finally {
-      setEstaProcesando(false)
+      setIsProcessing(false)
     }
   }
 
   return {
-    estaProcesando,
-    errorMensaje,
-    handleEliminar,
+    isProcessing,
+    errorMessage,
+    handleDelete,
   }
 }
 ```
@@ -3472,24 +3472,24 @@ import { useProductActions } from '@/features/products/hooks'
 
 interface ProductRowProps {
   productId: string
-  nombre: string
-  onEliminado?: () => void
+  name: string
+  onDeleted?: () => void
 }
 
-export default function ProductRow({ productId, nombre, onEliminado }: ProductRowProps) {
-  const { estaProcesando, errorMensaje, handleEliminar } = useProductActions()
+export default function ProductRow({ productId, name, onDeleted }: ProductRowProps) {
+  const { isProcessing, errorMessage, handleDelete } = useProductActions()
 
   return (
     <tr>
-      <td>{nombre}</td>
+      <td>{name}</td>
       <td>
         <button
-          disabled={estaProcesando}
-          onClick={() => handleEliminar(productId, onEliminado)}
+          disabled={isProcessing}
+          onClick={() => handleDelete(productId, onDeleted)}
         >
-          {estaProcesando ? 'Eliminando…' : 'Eliminar'}
+          {isProcessing ? 'Eliminando…' : 'Eliminar'}
         </button>
-        {errorMensaje && <p className="text-sm text-red-600">{errorMensaje}</p>}
+        {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
       </td>
     </tr>
   )
@@ -3533,20 +3533,20 @@ Puedes seguir este mismo enfoque para otras áreas del ecommerce: carrito, check
 ```tsx
 // app/(storefront)/products/page.tsx
 export default async function ProductsPage() {
-  const productos = await getProducts()
-  return <ProductGrid productos={productos} usuario={usuario} carrito={carrito} />
+  const products = await getProducts()
+  return <ProductGrid products={products} user={user} cart={cart} />
 }
 
 // components/product-grid.tsx
-export default function ProductGrid({ productos, usuario, carrito }: any) {
+export default function ProductGrid({ products, user, cart }: any) {
   return (
     <div>
-      {productos.map((p) => (
+      {products.map((p) => (
         <ProductCard
           key={p.id}
           product={p}
-          usuario={usuario}
-          carrito={carrito}
+          user={user}
+          cart={cart}
         />
       ))}
     </div>
@@ -3554,7 +3554,7 @@ export default function ProductGrid({ productos, usuario, carrito }: any) {
 }
 
 // components/product-card.tsx
-export default function ProductCard({ product, usuario, carrito }: any) {
+export default function ProductCard({ product, user, cart }: any) {
   // solo usa product
 }
 ```
@@ -3573,13 +3573,13 @@ export default function ProductCard({ product }: ProductCardProps) {
 
 // components/product-grid.tsx
 export interface ProductGridProps {
-  productos: Product[]
+  products: Product[]
 }
 
-export default function ProductGrid({ productos }: ProductGridProps) {
+export default function ProductGrid({ products }: ProductGridProps) {
   return (
     <div>
-      {productos.map((p) => (
+      {products.map((p) => (
         <ProductCard key={p.id} product={p} />
       ))}
     </div>
@@ -3602,14 +3602,14 @@ export default function CartSummary({ items }: { items: CartItem[] }) {
       <p>
         Total:{' '}
         ${items
-          .reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+          .reduce((acc, item) => acc + item.price * item.quantity, 0)
           .toFixed(2)}
       </p>
       <p>
         Descuento:{' '}
         ${items
-          .filter((i) => i.conDescuento)
-          .reduce((acc, item) => acc + item.precio * 0.1 * item.cantidad, 0)
+          .filter((i) => i.hasDiscount)
+          .reduce((acc, item) => acc + item.price * 0.1 * item.quantity, 0)
           .toFixed(2)}
       </p>
     </div>
@@ -3620,24 +3620,24 @@ export default function CartSummary({ items }: { items: CartItem[] }) {
 **✅ BIEN:**
 
 ```tsx
-function calcularTotal(items: CartItem[]): number {
-  return items.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+function calculateTotal(items: CartItem[]): number {
+  return items.reduce((acc, item) => acc + item.price * item.quantity, 0)
 }
 
-function calcularDescuento(items: CartItem[]): number {
+function calculateDiscount(items: CartItem[]): number {
   return items
-    .filter((i) => i.conDescuento)
-    .reduce((acc, item) => acc + item.precio * 0.1 * item.cantidad, 0)
+    .filter((i) => i.hasDiscount)
+    .reduce((acc, item) => acc + item.price * 0.1 * item.quantity, 0)
 }
 
 export default function CartSummary({ items }: { items: CartItem[] }) {
-  const total = calcularTotal(items)
-  const descuento = calcularDescuento(items)
+  const total = calculateTotal(items)
+  const discount = calculateDiscount(items)
 
   return (
     <div>
       <p>Total: ${total.toFixed(2)}</p>
-      <p>Descuento: ${descuento.toFixed(2)}</p>
+      <p>Descuento: ${discount.toFixed(2)}</p>
     </div>
   )
 }
@@ -3668,9 +3668,9 @@ Regla: si pasas de ~150–200 líneas y el componente hace varias cosas, divide.
 'use client'
 
 export default function CartBad({ items }: { items: CartItem[] }) {
-  const handleIncrementar = (index: number) => {
+  const handleIncrement = (index: number) => {
     // ❌ mutación directa
-    items[index].cantidad++
+    items[index].quantity++
   }
 
   return <div>...</div>
@@ -3683,15 +3683,15 @@ export default function CartBad({ items }: { items: CartItem[] }) {
 'use client'
 
 import { useState } from 'react'
-import type { CartItem } from '@/tipos/carrito'
+import type { CartItem } from '@/types/cart'
 
 export default function CartGood({ initialItems }: { initialItems: CartItem[] }) {
   const [items, setItems] = useState(initialItems)
 
-  const handleIncrementar = (index: number) => {
+  const handleIncrement = (index: number) => {
     setItems((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, cantidad: item.cantidad + 1 } : item
+        i === index ? { ...item, quantity: item.quantity + 1 } : item
       )
     )
   }
@@ -3712,11 +3712,11 @@ export default function CartGood({ initialItems }: { initialItems: CartItem[] })
 import { useEffect, useState } from 'react'
 
 export default function ProductsBad() {
-  const [productos, setProductos] = useState([])
+  const [products, setProducts] = useState([])
 
   useEffect(() => {
     // ❌ Sin cleanup, sin AbortController
-    fetch('/api/productos').then((res) => res.json()).then(setProductos)
+    fetch('/api/products').then((res) => res.json()).then(setProducts)
   }, [])
 
   return <div>...</div>
@@ -3731,14 +3731,14 @@ export default function ProductsBad() {
 import { useEffect, useState } from 'react'
 
 export default function ProductsGood() {
-  const [productos, setProductos] = useState([])
+  const [products, setProducts] = useState([])
 
   useEffect(() => {
     const controller = new AbortController()
 
-    fetch('/api/productos', { signal: controller.signal })
+    fetch('/api/products', { signal: controller.signal })
       .then((res) => res.json())
-      .then(setProductos)
+      .then(setProducts)
       .catch((err) => {
         if (err.name !== 'AbortError') {
           console.error(err)
@@ -3769,9 +3769,9 @@ import { useMemo } from 'react'
 
 export default function ProductCard({ product }: { product: Product }) {
   // ❌ useMemo innecesario para algo barato
-  const nombre = useMemo(() => product.nombre, [product.nombre])
+  const name = useMemo(() => product.name, [product.name])
 
-  return <h3>{nombre}</h3>
+  return <h3>{name}</h3>
 }
 ```
 
@@ -3780,7 +3780,7 @@ export default function ProductCard({ product }: { product: Product }) {
 ```tsx
 export default function ProductCard({ product }: { product: Product }) {
   // ✅ Sin useMemo innecesario
-  return <h3>{product.nombre}</h3>
+  return <h3>{product.name}</h3>
 }
 ```
 
@@ -3805,7 +3805,7 @@ export default function CartBad({ items }: { items: CartItem[] }) {
 
   useEffect(() => {
     setTotal(
-      items.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+      items.reduce((acc, item) => acc + item.price * item.quantity, 0)
     )
   }, [items])
 
@@ -3817,7 +3817,7 @@ export default function CartBad({ items }: { items: CartItem[] }) {
 
 ```tsx
 export default function CartGood({ items }: { items: CartItem[] }) {
-  const total = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+  const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
 
   return <p>Total: ${total}</p>
 }
@@ -3836,7 +3836,7 @@ export default function CartGood({ items }: { items: CartItem[] }) {
 import { getProducts } from '@/features/products/queries'
 
 export default function ProductsPage() {
-  const productos = getProducts() // ❌ llamada sincrónica en cliente
+  const products = getProducts() // ❌ llamada sincrónica en cliente
 
   return <div>...</div>
 }
@@ -3850,8 +3850,8 @@ import { getProducts } from '@/features/products/queries'
 import ProductGrid from '@/components/product-grid'
 
 export default async function ProductsPage() {
-  const productos = await getProducts()
-  return <ProductGrid productos={productos} />
+  const products = await getProducts()
+  return <ProductGrid products={products} />
 }
 ```
 
@@ -3889,32 +3889,32 @@ Aunque uses las herramientas de testing que prefieras (Jest, Vitest, React Testi
 import Image from 'next/image'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { formatPrice } from '@/lib/formateadores'
-import type { Product } from '@/tipos/producto'
+import { formatPrice } from '@/lib/utils'
+import type { Product } from '@/types/product'
 
 export interface ProductCardProps {
   product: Product
-  onVerDetalle?: (slug: string) => void
-  onAgregarAlCarrito?: (productId: string) => void
+  onViewDetail?: (slug: string) => void
+  onAddToCart?: (productId: string) => void
 }
 
 export default function ProductCard({
   product,
-  onVerDetalle,
-  onAgregarAlCarrito,
+  onViewDetail,
+  onAddToCart,
 }: ProductCardProps) {
-  const precioFormateado = formatPrice(product.precio)
+  const formattedPrice = formatPrice(product.price)
 
   return (
     <Card>
       <CardContent>
-        <Image src={product.imagenUrl} alt={product.nombre} width={300} height={200} />
-        <h3>{product.nombre}</h3>
-        <p>{precioFormateado}</p>
+        <Image src={product.imageUrl} alt={product.name} width={300} height={200} />
+        <h3>{product.name}</h3>
+        <p>{formattedPrice}</p>
       </CardContent>
       <CardFooter>
-        <Button onClick={() => onVerDetalle?.(product.slug)}>Ver</Button>
-        <Button onClick={() => onAgregarAlCarrito?.(product.id)}>Agregar</Button>
+        <Button onClick={() => onViewDetail?.(product.slug)}>Ver</Button>
+        <Button onClick={() => onAddToCart?.(product.id)}>Agregar</Button>
       </CardFooter>
     </Card>
   )
@@ -3939,54 +3939,54 @@ Ejemplo conceptual con React Testing Library + Jest/Vitest:
 // src/components/product-card.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react'
 import ProductCard from './product-card'
-import type { Product } from '@/tipos/producto'
+import type { Product } from '@/types/product'
 
 const mockProduct: Product = {
   id: 'prod-1',
   slug: 'camiseta-basica',
-  nombre: 'Camiseta básica',
-  precio: 49.9,
-  imagenUrl: '/images/camiseta.jpg',
-  categoria: 'ropa',
+  name: 'Camiseta básica',
+  price: 49.9,
+  imageUrl: '/images/camiseta.jpg',
+  category: 'ropa',
 }
 
 describe('ProductCard', () => {
-  it('llama a onAgregarAlCarrito con el productId al hacer clic en "Agregar"', () => {
-    const onAgregarAlCarrito = jest.fn()
-    const onVerDetalle = jest.fn()
+  it('llama a onAddToCart con el productId al hacer clic en "Agregar"', () => {
+    const onAddToCart = jest.fn()
+    const onViewDetail = jest.fn()
 
     render(
       <ProductCard
         product={mockProduct}
-        onVerDetalle={onVerDetalle}
-        onAgregarAlCarrito={onAgregarAlCarrito}
+        onViewDetail={onViewDetail}
+        onAddToCart={onAddToCart}
       />
     )
 
     const botonAgregar = screen.getByRole('button', { name: /agregar/i })
     fireEvent.click(botonAgregar)
 
-    expect(onAgregarAlCarrito).toHaveBeenCalledTimes(1)
-    expect(onAgregarAlCarrito).toHaveBeenCalledWith(mockProduct.id)
+    expect(onAddToCart).toHaveBeenCalledTimes(1)
+    expect(onAddToCart).toHaveBeenCalledWith(mockProduct.id)
   })
 
-  it('llama a onVerDetalle con el slug al hacer clic en "Ver"', () => {
-    const onAgregarAlCarrito = jest.fn()
-    const onVerDetalle = jest.fn()
+  it('llama a onViewDetail con el slug al hacer clic en "Ver"', () => {
+    const onAddToCart = jest.fn()
+    const onViewDetail = jest.fn()
 
     render(
       <ProductCard
         product={mockProduct}
-        onVerDetalle={onVerDetalle}
-        onAgregarAlCarrito={onAgregarAlCarrito}
+        onViewDetail={onViewDetail}
+        onAddToCart={onAddToCart}
       />
     )
 
     const botonVer = screen.getByRole('button', { name: /ver/i })
     fireEvent.click(botonVer)
 
-    expect(onVerDetalle).toHaveBeenCalledTimes(1)
-    expect(onVerDetalle).toHaveBeenCalledWith(mockProduct.slug)
+    expect(onViewDetail).toHaveBeenCalledTimes(1)
+    expect(onViewDetail).toHaveBeenCalledWith(mockProduct.slug)
   })
 })
 ```
@@ -4017,8 +4017,8 @@ En su lugar, testea:
 describe('CartSummary', () => {
   it('muestra el total calculado a partir de los items del carrito', () => {
     const items: CartItem[] = [
-      { id: '1', productId: 'p1', precio: 10, cantidad: 2 },
-      { id: '2', productId: 'p2', precio: 5, cantidad: 3 },
+      { id: '1', productId: 'p1', price: 10, quantity: 2 },
+      { id: '2', productId: 'p2', price: 5, quantity: 3 },
     ]
 
     render(<CartSummary items={items} />)
@@ -4077,8 +4077,8 @@ describe('useCart', () => {
       result.current.addItem({
         id: 'item-1',
         productId: 'prod-1',
-        precio: 10,
-        cantidad: 2,
+        price: 10,
+        quantity: 2,
       })
     })
 
@@ -4093,13 +4093,13 @@ describe('useCart', () => {
       result.current.addItem({
         id: 'item-1',
         productId: 'prod-1',
-        precio: 10,
-        cantidad: 1,
+        price: 10,
+        quantity: 1,
       })
       result.current.updateQuantity('item-1', 3)
     })
 
-    expect(result.current.items.cantidad).toBe(3)
+    expect(result.current.items.quantity).toBe(3)
     expect(result.current.total).toBe(30)
   })
 })
@@ -4115,7 +4115,7 @@ describe('useCart', () => {
 
 import { addToCart } from '@/features/cart/actions'
 import { Button } from '@/components/ui/button'
-import type { Product } from '@/tipos/producto'
+import type { Product } from '@/types/product'
 
 export interface AddToCartButtonProps {
   product: Product
@@ -4130,8 +4130,8 @@ export default function AddToCartButton({ product, onAdded }: AddToCartButtonPro
         await addToCart({
           id: product.id,
           productId: product.id,
-          precio: product.precio,
-          cantidad: 1,
+          price: product.price,
+          quantity: 1,
         })
         onAdded?.()
       }}
