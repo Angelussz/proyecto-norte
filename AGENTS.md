@@ -2098,118 +2098,126 @@ function Process() {}
 
 Aplica estas convenciones en todo el proyecto (`app/`, `components/`, `features/`, `lib/`, `types/`) para mantener el código consistente y fácil de leer.
 
-### 🇪🇸 Idioma – Español Obligatorio
+### 🇪🇸 Idioma – Código en Inglés, Descripciones en Español
 
-**TODO el código, documentación y comentarios DEBE estar en español.**
+**TODO el código (nombres de variables, funciones, componentes, tipos) DEBE estar en inglés. Las descripciones (comentarios, JSDoc, documentación de props, textos de usuario, mensajes de error) DEBEN estar en español.**
 
 Esto incluye:
-- **Nombres de variables y funciones** → camelCase en español  
-- **Nombres de componentes** → PascalCase en español  
-- **Comentarios en el código** → español  
-- **Documentación de props** → español  
-- **Textos en JSX/TSX** → español  
-- **Errores y mensajes** → español  
-- **Valores mágicos y constantes** → documentados en español  
+- **Nombres de variables y funciones** → camelCase en inglés (`isLoading`, `fetchProducts`, `formatPrice`)
+- **Nombres de componentes** → PascalCase en inglés (`ProductCard`, `ImageGallery`, `CheckoutForm`)
+- **Nombres de tipos e interfaces** → PascalCase en inglés (`Product`, `CartItem`, `ProductStatus`)
+- **Nombres de archivos** → kebab-case en inglés (`product-card.tsx`, `use-cart.ts`, `cart-item.ts`)
+- **Comentarios en el código** → español (explican el *por qué*, no el *qué*)
+- **Documentación de props (JSDoc)** → español
+- **Textos en JSX/TSX visibles al usuario** → español
+- **Mensajes de error y confirmación** → español
+- **Constantes mágicas** → documentadas en español
 
-**Excepciones (solo valores técnicos internos):**
+**Excepciones (no se traducen):**
 - Imports de librerías externas (no se traducen).
 - Nombres de APIs externas y métodos del navegador.
 - Valores técnicos inamovibles (ej. `method: 'POST'`, `content-type`, etc.).
+- Nombres de paquetes npm.
 
 ---
 
-**✅ BIEN – Hook en español:**
+**✅ BIEN – Hook en inglés con descripciones en español:**
 
 ```ts
-// src/features/galeria/hooks.ts
+// src/features/gallery/hooks.ts
 import { useState, useEffect, useMemo } from 'react'
-import { obtenerImagenes } from './queries'
-import type { Imagen } from '@/tipos/imagen'
+import { getImages } from './queries'
+import type { Image } from '@/types/image'
 
-export function useGaleriaDatos(carpetaId: string) {
-  const [imagenes, setImagenes] = useState<Imagen[]>([])
-  const [estaCargando, setEstaCargando] = useState(true)
-  const [errorMensaje, setErrorMensaje] = useState<string | null>(null)
-  const [terminoBusqueda, setTerminoBusqueda] = useState('')
+export function useGalleryData(folderId: string) {
+  const [images, setImages] = useState<Image[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   /** Obtiene las imágenes del servidor */
   useEffect(() => {
-    let cancelado = false
+    let cancelled = false
 
-    obtenerImagenes({ carpetaId })
-      .then((datos) => {
-        if (!cancelado) setImagenes(datos)
+    getImages({ folderId })
+      .then((data) => {
+        if (!cancelled) setImages(data)
       })
       .catch((error) => {
-        if (!cancelado)
-          setErrorMensaje(error instanceof Error ? error.message : 'Error desconocido')
+        if (!cancelled)
+          setErrorMessage(error instanceof Error ? error.message : 'Error desconocido')
       })
       .finally(() => {
-        if (!cancelado) setEstaCargando(false)
+        if (!cancelled) setIsLoading(false)
       })
 
     return () => {
-      cancelado = true
+      cancelled = true
     }
-  }, [carpetaId])
+  }, [folderId])
 
   // Filtra imágenes por término de búsqueda
-  const imagenesFiltrables = useMemo(() => {
-    const termino = terminoBusqueda.toLowerCase()
-    return imagenes.filter((img) => img.nombre.toLowerCase().includes(termino))
-  }, [imagenes, terminoBusqueda])
+  const filteredImages = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    return images.filter((img) => img.name.toLowerCase().includes(term))
+  }, [images, searchTerm])
 
   return {
-    imagenes,
-    estaCargando,
-    errorMensaje,
-    terminoBusqueda,
-    setTerminoBusqueda,
-    imagenesFiltrables,
+    images,
+    isLoading,
+    errorMessage,
+    searchTerm,
+    setSearchTerm,
+    filteredImages,
   }
 }
 ```
 
 ---
 
-**✅ BIEN – Componente en español:**
+**✅ BIEN – Componente en inglés con textos en español:**
 
 ```tsx
-// src/components/tarjeta-imagen.tsx
+// src/components/image-card.tsx
 'use client'
 
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { formatearTamanioArchivo } from '@/lib/formateadores'
-import type { Imagen } from '@/tipos/imagen'
+import { formatFileSize } from '@/lib/utils'
+import type { Image as ImageType } from '@/types/image'
 
-export interface TarjetaImagenProps {
-  imagen: Imagen
-  onDescargar?: () => void
-  onEliminar?: () => void
+export interface ImageCardProps {
+  /** Objeto con los datos de la imagen a mostrar */
+  image: ImageType
+
+  /** Callback opcional al hacer clic en descargar */
+  onDownload?: () => void
+
+  /** Callback opcional al hacer clic en eliminar */
+  onDelete?: () => void
 }
 
-export default function TarjetaImagen({
-  imagen,
-  onDescargar,
-  onEliminar,
-}: TarjetaImagenProps) {
+export default function ImageCard({
+  image,
+  onDownload,
+  onDelete,
+}: ImageCardProps) {
   return (
     <Card>
       <CardContent className="flex items-center gap-4 p-4">
         <Image
-          src={imagen.miniatura}
-          alt={imagen.nombre}
+          src={image.thumbnail}
+          alt={image.name}
           width={60}
           height={60}
           className="h-16 w-16 rounded object-cover"
         />
 
         <div className="flex-1">
-          <h3 className="text-sm font-medium">{imagen.nombre}</h3>
+          <h3 className="text-sm font-medium">{image.name}</h3>
           <p className="text-xs text-gray-600">
-            {formatearTamanioArchivo(imagen.tamanio)}
+            {formatFileSize(image.size)}
           </p>
         </div>
 
@@ -2217,7 +2225,7 @@ export default function TarjetaImagen({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onDescargar}
+            onClick={onDownload}
             title="Descargar archivo"
           >
             ⬇️
@@ -2225,7 +2233,7 @@ export default function TarjetaImagen({
           <Button
             variant="destructive"
             size="sm"
-            onClick={onEliminar}
+            onClick={onDelete}
             title="Eliminar imagen"
           >
             🗑️
@@ -2239,30 +2247,30 @@ export default function TarjetaImagen({
 
 ---
 
-**✅ BIEN – Página en español:**
+**✅ BIEN – Página con textos en español:**
 
 ```tsx
-// src/app/(admin)/galeria/page.tsx
-import { obtenerImagenes } from '@/features/galeria/queries'
-import TarjetaImagen from '@/components/tarjeta-imagen'
+// src/app/(admin)/gallery/page.tsx
+import { getImages } from '@/features/gallery/queries'
+import ImageCard from '@/components/image-card'
 
-export default async function GaleriaPage() {
-  const imagenes = await obtenerImagenes({ carpetaId: 'principal' })
+export default async function GalleryPage() {
+  const images = await getImages({ folderId: 'main' })
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="mb-4 text-2xl font-bold">Galería de imágenes</h1>
 
-      {imagenes.length === 0 ? (
+      {images.length === 0 ? (
         <p>No hay imágenes en esta galería.</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {imagenes.map((imagen) => (
-            <TarjetaImagen
-              key={imagen.id}
-              imagen={imagen}
-              onDescargar={() => console.log('Descargar', imagen.id)}
-              onEliminar={() => console.log('Eliminar', imagen.id)}
+          {images.map((image) => (
+            <ImageCard
+              key={image.id}
+              image={image}
+              onDownload={() => console.log('Descargar', image.id)}
+              onDelete={() => console.log('Eliminar', image.id)}
             />
           ))}
         </div>
@@ -2274,66 +2282,71 @@ export default async function GaleriaPage() {
 
 ---
 
-**✅ BIEN – Utilidades y tipos en español:**
+**✅ BIEN – Utilidades y tipos en inglés con documentación en español:**
 
 ```ts
-// src/lib/formateadores.ts
+// src/lib/utils.ts
 /**
  * Formatea un tamaño en bytes a una cadena legible.
  * Ejemplo: 1024 → "1 KB"
  */
-export function formatearTamanioArchivo(bytes: number): string {
+export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B'
 
   const k = 1024
-  const tamanios = ['B', 'KB', 'MB', 'GB']
+  const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
 
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${tamanios[i]}`
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`
 }
 ```
 
 ```ts
-// src/tipos/imagen.ts
-export interface Imagen {
+// src/types/image.ts
+export interface Image {
   id: string
-  nombre: string
+  name: string
   url: string
-  miniatura: string
-  tamanio: number
+  thumbnail: string
+  size: number
   createdAt: string
 }
 
-export type EstadoCarga = 'inicial' | 'cargando' | 'exitoso' | 'error'
+/** Estados posibles de carga de imágenes */
+export type LoadStatus = 'idle' | 'loading' | 'success' | 'error'
 ```
 
 ---
 
-**❌ MAL – Mezcla de idiomas:**
+**❌ MAL – Código en español (no hacer):**
 
 ```ts
-// ❌ Nombres en inglés
-const imageList = useState<Imagen[]>([])
-const loadImages = async () => {}
-const handleClick = () => {}
-const errorMessage = useState<string | null>(null)
+// ❌ Nombres de código en español
+const imagenesFiltrables = useState<Imagen[]>([])
+const cargarImagenes = async () => {}
+const handleClic = () => {}
+const mensajeError = useState<string | null>(null)
 
-// ❌ Comentarios en inglés
-// This function loads all images from the server
-const obtenerImagenes = () => {}
-
-// ❌ Props sin traducir
-interface Props {
-  title: string      // ¿Por qué no "titulo"?
-  loading: boolean   // ¿Por qué no "estaCargando"?
-}
+// ✅ Debería ser: filteredImages, loadImages, handleClick, errorMessage
 ```
 
+**❌ MAL – Descripciones en inglés (no hacer):**
+
 ```tsx
-// ❌ Componente con mezcla de idiomas
-export default function ImageCard({ title, loading }: Props) {
-  // ❌ Debería ser TarjetaImagen con titulo y estaCargando
-  return <div>{title}</div>
+// ❌ Comentarios en inglés
+// This function loads all images from the server
+const getImages = () => {}
+
+// ❌ JSDoc en inglés
+/** Fetches all images from the server */
+export async function getImages() {}
+
+// ❌ Props documentados en inglés
+interface Props {
+  /** The image data */
+  image: Image
+  /** Whether the component is loading */
+  isLoading: boolean
 }
 ```
 
@@ -2342,26 +2355,26 @@ export default function ImageCard({ title, loading }: Props) {
 **Excepciones (OK no traducir):**
 
 ```ts
-// ✅ Imports de librerías externas (no se traducen)
+// ✅ Imports de librerías externas
 import { useState, useEffect, useMemo } from 'react'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
 // ✅ Nombres de APIs externas
-const respuesta = await fetch('[https://api.externa.com/imagenes](https://api.externa.com/imagenes)')
+const response = await fetch('https://api.externa.com/images')
 
 // ✅ Valores técnicos inamovibles
-const solicitudHttp = await fetch(url, { method: 'POST' })
+const httpRequest = await fetch(url, { method: 'POST' })
 
 // ✅ Métodos de librerías y del lenguaje
-imagenes.filter((img) => img.nombre.includes(termino))
-Array.isArray(datos)
+images.filter((img) => img.name.includes(term))
+Array.isArray(data)
 Object.entries(config)
 ```
 
 ---
 
-Aplica esta regla en todo el proyecto (`app/`, `components/`, `features/`, `lib/`, `tipos/`) para mantener el código consistente y fácil de entender para todo el equipo en español.
+Aplica esta regla en todo el proyecto (`app/`, `components/`, `features/`, `lib/`, `types/`) para mantener el código consistente: **nombres en inglés para la máquina, descripciones en español para el equipo**.
 ### Estructura Interna de Componentes (Next.js 16)
 
 Mantener un **orden lógico y consistente** dentro de cada archivo `.tsx`.
