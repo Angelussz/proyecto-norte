@@ -25,9 +25,9 @@ docker compose ps
 docker compose logs -f db
 
 # 2. Crear una nueva migración en desarrollo (con la DB encendida)
-pnpm dlx prisma migrate dev --name mi_cambio
-pnpm dlx prisma generate
-pnpm dlx prisma migrate status
+pnpm prisma migrate dev --name mi_cambio
+pnpm prisma generate
+pnpm prisma migrate status
 
 # 3. Resetear la base de datos (borra datos y re-aplica migraciones)
 pnpm dlx prisma migrate reset
@@ -36,23 +36,23 @@ pnpm dlx prisma migrate reset
 # 4. Borrar el volumen y volver a crearlo (hard reset)
 docker compose down -v
 docker compose up -d
-pnpm dlx prisma migrate dev
+pnpm prisma migrate dev
 ```
 
 Flujo completo desde cero (copiar/pegar):
 
 ```bash
 docker compose up -d
-pnpm dlx prisma migrate dev --name init
-pnpm dlx prisma generate
+pnpm prisma migrate dev  # si te sale el nombre dale enter
+pnpm prisma generate
 # ... trabajas, cambias schema.prisma ...
-pnpm dlx prisma migrate dev --name add_mi_cambio
+pnpm prisma migrate dev # si te sale el nombre dale enter
 # ... si algo se rompe ...
-pnpm dlx prisma migrate reset
+pnpm prisma migrate reset
 # ... si quieres partir de un volumen limpio ...
 docker compose down -v
 docker compose up -d
-pnpm dlx prisma migrate dev
+pnpm prisma migrate dev
 ```
 
 Útiles:
