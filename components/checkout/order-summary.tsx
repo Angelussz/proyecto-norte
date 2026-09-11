@@ -89,7 +89,7 @@ export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
           className="flex h-auto w-full items-center justify-center gap-2 rounded-none py-4 text-sm font-semibold uppercase tracking-widest"
         >
           Place Order
-          <Lock className="size-[18px]" aria-hidden />
+          <Lock className="size-4.5" aria-hidden />
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           By placing your order, you agree to our{" "}

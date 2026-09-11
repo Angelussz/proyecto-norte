@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Proyecto NORTE
 
-First, run the development server:
+## Empezando
+
+Primero, ejecute el servidor de desarrollo:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
+
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Base de datos local (Docker + Prisma)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Postgres 16 via `compose.yml` (servicio `db`, volumen `proyecto-norte-pgdata`).
+Requiere Docker Desktop encendido y `.env` con `POSTGRES_PASSWORD`, `POSTGRES_DB` y
+`DATABASE_URL` apuntando a `localhost:5432` (password/db deben coincidir con `POSTGRES_*`).
+Usar `pnpm dlx prisma ...` (no `npx`). Prisma 7: schema en `prisma/schema.prisma`, config en `prisma.config.ts`.
 
-## Learn More
+```bash
+# 1. Encender Postgres
+docker compose up -d
+docker compose ps
+docker compose logs -f db
 
-To learn more about Next.js, take a look at the following resources:
+# 2. Crear una nueva migración en desarrollo (con la DB encendida)
+pnpm dlx prisma migrate dev --name mi_cambio
+pnpm dlx prisma generate
+pnpm dlx prisma migrate status
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 3. Resetear la base de datos (borra datos y re-aplica migraciones)
+pnpm dlx prisma migrate reset
+# te pide confirmar con el nombre de la DB, escribe: <tu POSTGRES_DB>
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# 4. Borrar el volumen y volver a crearlo (hard reset)
+docker compose down -v
+docker compose up -d
+pnpm dlx prisma migrate dev
+```
 
-## Deploy on Vercel
+Flujo completo desde cero (copiar/pegar):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+docker compose up -d
+pnpm dlx prisma migrate dev --name init
+pnpm dlx prisma generate
+# ... trabajas, cambias schema.prisma ...
+pnpm dlx prisma migrate dev --name add_mi_cambio
+# ... si algo se rompe ...
+pnpm dlx prisma migrate reset
+# ... si quieres partir de un volumen limpio ...
+docker compose down -v
+docker compose up -d
+pnpm dlx prisma migrate dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Útiles:
+
+```bash
+docker compose down           # apaga sin borrar datos
+docker volume ls | grep norte # ver el volumen proyecto-norte-pgdata
+```
+
+> No edites SQL de `prisma/migrations/*` ya aplicadas; crea una migración nueva.
+> `migrate deploy` es solo para prod/CI.
+

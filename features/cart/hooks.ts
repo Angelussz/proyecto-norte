@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import type { CartItem, OrderSummary } from "@/types/cart"
+import type { CartItem, OrderSummary } from "@/interfaces/cart.interface"
 
 const EXAMPLE_PRODUCTS: CartItem[] = [
   {
