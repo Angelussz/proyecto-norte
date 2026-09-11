@@ -1,16 +1,16 @@
-export interface ProductoCarrito {
+export interface CartItem {
   id: string
-  nombre: string
+  name: string
   color: string
-  tamanio: string
-  precio: number
-  imagenUrl: string
-  cantidad: number
+  size: string
+  price: number
+  imageUrl: string
+  quantity: number
 }
 
-export interface ResumenPedido {
+export interface OrderSummary {
   subtotal: number
-  envio: string
-  impuestos: string
+  shipping: string
+  taxes: string
   total: number
 }
