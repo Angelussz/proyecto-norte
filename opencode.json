@@ -1,0 +1,4 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [["@upstash/context7-opencode", { "apiKey": "${CONTEXT7_OPENCODE}" }]]
+}

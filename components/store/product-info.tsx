@@ -68,7 +68,7 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <span className="text-sm font-semibold uppercase tracking-widest text-foreground">
-              Size
+              Talla
             </span>
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -106,7 +106,7 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
           disabled={activeStock === 0}
           className="group flex h-auto w-full justify-center gap-3 rounded-none py-5 text-sm font-semibold uppercase tracking-widest"
         >
-          <span>{activeStock === 0 ? "Out of stock" : `Add to Cart`}</span>
+          <span>{activeStock === 0 ? "Sin stock" : `Agregar al Carrito`}</span>
           {!(activeStock === 0) && (
             <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
           )}
@@ -118,18 +118,18 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
           <Truck className="size-6 shrink-0 text-muted-foreground" />
           <div>
             <p className="mb-1 text-sm font-semibold uppercase text-foreground">
-              Free Shipping
+              Envío Gratis
             </p>
-            <p className="text-xs">On all orders over $99. Standard delivery 3-5 business days.</p>
+            <p className="text-xs">En todos los pedidos mayores a $99. Entrega estándar en 3-5 días hábiles.</p>
           </div>
         </li>
         <li className="flex items-start gap-4 text-muted-foreground">
           <RotateCcw className="size-6 shrink-0 text-muted-foreground" />
           <div>
             <p className="mb-1 text-sm font-semibold uppercase text-foreground">
-              14-Day Returns
+              Devoluciones en 14 Días
             </p>
-            <p className="text-xs">Easy returns process. Items must be unworn and unwashed.</p>
+            <p className="text-xs">Proceso de devolución fácil. Las prendas deben estar sin usar y sin lavar.</p>
           </div>
         </li>
       </ul>

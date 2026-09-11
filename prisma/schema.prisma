@@ -1,0 +1,200 @@
+// NORTE store models.
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CARD
+  TRANSFER
+  CASH_ON_DELIVERY
+}
+
+enum PaymentGateway {
+  STRIPE
+  MERCADO_PAGO
+  NONE
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReceiptType {
+  BOLETA
+  FACTURA
+}
+
+enum IdentityDocumentType {
+  DNI
+  RUC
+  CUIT
+}
+
+enum FiscalStatus {
+  ISSUED
+  REJECTED
+  VOIDED
+}
+
+model Users {
+  id            String   @id @default(uuid())
+  name          String
+  last_name     String
+  email         String   @unique
+  password_hash String
+  phone         String
+  role          Role     @default(CUSTOMER)
+  created_at    DateTime @default(now())
+
+  addresses Address[]
+  orders    Orders[]
+}
+
+model Address {
+  id            String  @id @default(uuid())
+  user_id       String
+  recipient     String
+  contact_phone String
+  address_line  String
+  city          String
+  reference     String?
+  is_default    Boolean @default(false)
+
+  user   Users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  orders Orders[]
+}
+
+model Categories {
+  id                 String  @id @default(uuid())
+  parent_category_id String?
+  name               String
+  slug               String  @unique
+  description        String?
+  image_url          String?
+  image_url_id       String?
+
+  parent   Categories?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [id], onDelete: SetNull)
+  children Categories[] @relation("CategoryHierarchy")
+  products Products[]
+}
+
+model Products {
+  id           String   @id @default(uuid())
+  category_id  String
+  name         String
+  slug         String   @unique
+  description  String?  @db.Text
+  material     String
+  base_price   Decimal  @db.Decimal(10, 2)
+  active       Boolean  @default(true)
+  image_url    String?
+  image_url_id String?
+  created_at   DateTime @default(now())
+
+  category Categories       @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  variants ProductVariants[]
+}
+
+model ProductVariants {
+  id           String  @id @default(uuid())
+  product_id   String
+  sku          String  @unique
+  size         String
+  color        String
+  price        Decimal @db.Decimal(10, 2)
+  unit_cost    Decimal @db.Decimal(10, 2)
+  stock        Int     @default(0)
+  active       Boolean @default(true)
+  image_url    String?
+  image_url_id String?
+
+  product     Products       @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  order_items OrderDetails[]
+}
+
+model Orders {
+  id            String      @id @default(uuid())
+  user_id       String
+  address_id    String
+  subtotal      Decimal     @db.Decimal(10, 2)
+  shipping_cost Decimal     @db.Decimal(10, 2)
+  total         Decimal     @db.Decimal(10, 2)
+  status        OrderStatus @default(PENDING_PAYMENT)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  user           Users           @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  address        Address         @relation(fields: [address_id], references: [id], onDelete: Restrict)
+  items          OrderDetails[]
+  payment        Payments?
+  fiscal_receipt FiscalVouchers?
+}
+
+model OrderDetails {
+  id                    String  @id @default(uuid())
+  order_id              String
+  variant_id            String
+  sku_snapshot          String
+  product_name_snapshot String
+  unit_price            Decimal @db.Decimal(10, 2)
+  quantity              Int
+  subtotal              Decimal @db.Decimal(10, 2)
+
+  order   Orders         @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  variant ProductVariants @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+}
+
+model Payments {
+  id                     String         @id @default(uuid())
+  order_id               String         @unique
+  amount                 Decimal        @db.Decimal(10, 2)
+  payment_method         PaymentMethod
+  gateway                PaymentGateway @default(NONE)
+  gateway_transaction_id String?
+  voucher_url            String?
+  status                 PaymentStatus  @default(PENDING)
+  rejection_reason       String?        @db.Text
+  paid_at                DateTime?
+  created_at             DateTime       @default(now())
+
+  order Orders @relation(fields: [order_id], references: [id], onDelete: Restrict)
+}
+
+model FiscalVouchers {
+  id                       String               @id @default(uuid())
+  order_id                 String               @unique
+  voucher_type             ReceiptType
+  identity_document_type   IdentityDocumentType
+  identity_document_number String
+  business_name            String
+  fiscal_address           String
+  serial_number            String               @unique
+  fiscal_status            FiscalStatus         @default(ISSUED)
+  authorization_code       String?
+  pdf_url                  String?
+  xml_url                  String?
+  issued_at                DateTime             @default(now())
+
+  order Orders @relation(fields: [order_id], references: [id], onDelete: Restrict)
+}
