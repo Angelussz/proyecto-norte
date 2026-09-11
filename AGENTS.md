@@ -29,7 +29,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Backend / DB (Docker + Prisma, respetar)
 
-- Postgres 16 via `compose.yml` (servicio `db`, volumen `proyecto-norte-pgdata`). Config en `.env` (`POSTGRES_PASSWORD`, `POSTGRES_DB`, `DATABASE_URL`). `DATABASE_URL` debe apuntar a `localhost:5432` y su password/db deben coincidir con `POSTGRES_*`.
+- Postgres 16 via `docker-compose.yml` (servicio `db`, volumen `proyecto-norte-pgdata`). Config en `.env` (`POSTGRES_PASSWORD`, `POSTGRES_DB`, `DATABASE_URL`). `DATABASE_URL` debe apuntar a `localhost:5432` y su password/db deben coincidir con `POSTGRES_*`.
 - Prisma 7: schema en `prisma/schema.prisma`, config en `prisma.config.ts`, migraciones en `prisma/migrations/`. Cliente generado en `generated/prisma/` (gitignoreado, no editar a mano). Usar `pnpm dlx prisma ...` (no `npx`).
 - Flujo dev: `docker compose up -d` → `pnpm dlx prisma migrate dev --name <nombre>` → `pnpm dlx prisma generate`.
 - Reset: `pnpm dlx prisma migrate reset` (borra datos y re-aplica migraciones). Hard reset: `docker compose down -v` + `docker compose up -d` + `migrate dev`.

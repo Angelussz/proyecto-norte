@@ -1,4 +1,3 @@
-
 # Proyecto NORTE
 
 ## Empezando
@@ -14,7 +13,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Base de datos local (Docker + Prisma)
 
-Postgres 16 via `compose.yml` (servicio `db`, volumen `proyecto-norte-pgdata`).
+Postgres 16 via `docker-compose.yml` (servicio `db`, volumen `proyecto-norte-pgdata`).
 Requiere Docker Desktop encendido y `.env` con `POSTGRES_PASSWORD`, `POSTGRES_DB` y
 `DATABASE_URL` apuntando a `localhost:5432` (password/db deben coincidir con `POSTGRES_*`).
 Usar `pnpm dlx prisma ...` (no `npx`). Prisma 7: schema en `prisma/schema.prisma`, config en `prisma.config.ts`.
@@ -65,4 +64,3 @@ docker volume ls | grep norte # ver el volumen proyecto-norte-pgdata
 
 > No edites SQL de `prisma/migrations/*` ya aplicadas; crea una migración nueva.
 > `migrate deploy` es solo para prod/CI.
-
