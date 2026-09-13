@@ -60,6 +60,7 @@ export const PRODUCT_BY_ID_MOCK = {
   ],
 };
 
+
 export const CHECKOUT_MOCK: CheckoutSummary = {
   shipping: {
     email: "jane.doe@example.com",
@@ -92,3 +93,42 @@ export const CHECKOUT_MOCK: CheckoutSummary = {
   shippingLabel: "Complimentary",
   total: 280,
 };
+
+export const PRODUCTS_MOCK = [
+  {
+    name: "Camisa de lino",
+    category: "Camisas",
+    price: 145,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCe8G22N74E_A_vF_DFLb4Pr4WDTtE7F2om8PrfNlWfz5WiX_o5_V6-jurTcLfOXDu_a67jizLGLsqEHAuGkoesszXs4Sc6wdjeHVvSK22IxmA8MJmcoOdR2AVRX1DK1mJDs5V4THnUWKod-MbakZTLqlArzILiTpFKYiISLsFDiiFEsK6n7oUs9eewAVSFrc0ealoxTmYyl1hkLZUshqLAgDcnq8nVfQbspdsTS0rGnSVimYSVlQQs",
+  },
+  {
+    name: "Field Linen Shirt",
+    category: "Camisas",
+    price: 128,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBMn1DJnKYB5FMQoR7oSs53BpdsFlVDrZSBSzM6Gc9KnBY9Hf8iwcsi8nHXY7BJAG_xlyStcYz6qyhpeqo5yCHvmmyGv_wGsXpEKCfB0IrbKzGufd9raZGSL07Bz8boWB3FwFxLkaUrFROOd4NrA_07soH9StsyQizJ8_WN5jS_SpJ5nYLei3dqXGArKy3btgyKderS1R8Ebnuoas11Ss1iB0AKKJzD3bDUebP5bfC90vYRXKmCcR24",
+  },
+  {
+    name: "Coastal Overshirt",
+    category: "Camisas",
+    price: 139,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBd-YsR-XNfNdYYiIB9pddWYzQC4GRRh3DinlyIPQEjXj4Qo5lD3hjDLANrRM_0GaTR_NjueqE0fduw4-W_Po0s9oVjba9rP0-abr2-VthEqyRv2aeSKUAIrZCp1k_79XQITX-fp8ukMAj9bowci6xAx3A4srU1PDwAPDITKOtfKJazc7Bx5Lh18jBtmts8nffQhSbfPXfBs24Ur0AeKvf--Wdr4PZFFYJXKI5OO9eyFxRJ46_9hMHh",
+  },
+  {
+    name: "Dune Linen Overshirt",
+    category: "Pantalones",
+    price: 152,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCe8G22N74E_A_vF_DFLb4Pr4WDTtE7F2om8PrfNlWfz5WiX_o5_V6-jurTcLfOXDu_a67jizLGLsqEHAuGkoesszXs4Sc6wdjeHVvSK22IxmA8MJmcoOdR2AVRX1DK1mJDs5V4THnUWKod-MbakZTLqlArzILiTpFKYiISLsFDiiFEsK6n7oUs9eewAVSFrc0ealoxTmYyl1hkLZUshqLAgDcnq8nVfQbspdsTS0rGnSVimYSVlQQs",
+  },
+  {
+    name: "Harbor Linen Shirt",
+    category: "Camisas",
+    price: 118,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBMn1DJnKYB5FMQoR7oSs53BpdsFlVDrZSBSzM6Gc9KnBY9Hf8iwcsi8nHXY7BJAG_xlyStcYz6qyhpeqo5yCHvmmyGv_wGsXpEKCfB0IrbKzGufd9raZGSL07Bz8boWB3FwFxLkaUrFROOd4NrA_07soH9StsyQizJ8_WN5jS_SpJ5nYLei3dqXGArKy3btgyKderS1R8Ebnuoas11Ss1iB0AKKJzD3bDUebP5bfC90vYRXKmCcR24",
+  },
+];
+

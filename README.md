@@ -64,3 +64,42 @@ docker volume ls | grep norte # ver el volumen proyecto-norte-pgdata
 
 > No edites SQL de `prisma/migrations/*` ya aplicadas; crea una migración nueva.
 > `migrate deploy` es solo para prod/CI.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Colaboración en Proyecto Norte
+
+### Brian Segovia — Frontend
+
+Participación en el desarrollo frontend del proyecto, trabajando en el listado de productos.
+
+Tareas realizadas:
+
+* Implementación de filtros por categoría.
+* Implementación de filtro por rango de precio.
+* Implementación de ordenamiento por precio.
+* Implementación de ordenamiento por nombre.
+* Desarrollo e integración del grid de productos.
+* Desarrollo e integración de las cards de productos.
+* Implementación del estado vacío cuando no se encuentran productos.
+* Implementación de paginación.
+* Integración de los filtros con la paginación.
+* Trabajo con Git y GitHub mediante ramas para la colaboración del equipo.
+
+### Cómo ver la página de productos
+
+Para visualizar la página desarrollada:
+
+1. Abrir una terminal en la carpeta del proyecto.
+2. Ejecutar:
+
+```bash
+pnpm dev
+```
+
+3. Abrir el navegador y acceder a:
+
+http://localhost:3000/products
+
+Ahí se puede visualizar la página de productos desarrollada.
+
