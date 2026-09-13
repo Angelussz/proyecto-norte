@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { getGalleryImages } from "@/lib/products";
-import { getProductDetail } from "@/services/product.service";
-import { ProductInfo } from "@/components/store/product-info";
-import { ProductSuggestions } from "@/components/store/product-suggestions";
+import { getProductDetail } from "@/features/product/services/product.service";
+import { ProductInfo } from "@/features/store/components/product-info";
+import { ProductSuggestions } from "@/features/store/components/product-suggestions";
 
 const CRUMBS = ["Shop", "Hombres", "Camisetas"];
 
@@ -28,7 +28,7 @@ export default async function ProductPage({ params }: {
 }) {
   const { id } = await params;
   const data = await getProductDetail(id);
-  
+
   if (!data) notFound();
 
   const { product, suggestions } = data;

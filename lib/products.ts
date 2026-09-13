@@ -1,4 +1,4 @@
-import type { ProductDetail, ProductVariant } from "../interfaces/product.interface";
+import type { ProductDetail, ProductVariant } from "@/features/product/types/product.interface";
 
 /**
  * Helpers puros de producto (sin fetching ni mocks).

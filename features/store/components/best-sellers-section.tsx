@@ -31,27 +31,27 @@ const BEST_SELLERS = [
 
 export function BestSellersSection() {
   return (
-    <section className="py-[64px] px-5 md:px-[64px] max-w-[1280px] mx-auto">
-      <div className="flex justify-between items-end mb-[32px] border-b border-[#D8D2C4] pb-4">
+    <section className="py-16 px-5 md:px-16 max-w-7xl mx-auto">
+      <div className="flex justify-between items-end mb-8 border-b border-[#D8D2C4] pb-4">
         <h2 
-          className="text-[32px] leading-[36px] tracking-[0.02em] text-[#1e1c13] uppercase"
+          className="text-[32px] leading-9 tracking-[0.02em] text-[#1e1c13] uppercase"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
           Best Sellers
         </h2>
         <Link
           href="#"
-          className="text-[14px] font-semibold uppercase tracking-[0.05em] text-[#534438] flex items-center hover:text-[#1e1c13] transition-colors"
+          className="text-sm font-semibold uppercase tracking-wider text-[#534438] flex items-center hover:text-[#1e1c13] transition-colors"
         >
-          View All <ArrowRight className="ml-1 w-[18px] h-[18px]" />
+          View All <ArrowRight className="ml-1 size-4.5" />
         </Link>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-[24px] gap-y-[32px]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 gap-y-8">
         {BEST_SELLERS.map((product) => (
           <div key={product.id} className="group relative">
             <button className="absolute top-4 right-4 z-10 text-[#534438] hover:text-[#C77D2E] transition-colors">
-              <Heart className="w-[24px] h-[24px]" />
+              <Heart className="size-6" />
             </button>
             <Link href={`/product/${product.id}`} className="block">
               <div className="relative aspect-square mb-4 bg-[#eee8d9] p-4 flex items-center justify-center">
@@ -64,8 +64,8 @@ export function BestSellersSection() {
               </div>
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-[14px] font-semibold text-[#1e1c13]">{product.title}</h3>
-                  <p className="text-[12px] font-medium text-[#534438] mt-1">${product.price.toFixed(2)}</p>
+                  <h3 className="text-sm font-semibold text-[#1e1c13]">{product.title}</h3>
+                  <p className="text-xs font-medium text-[#534438] mt-1">${product.price.toFixed(2)}</p>
                 </div>
               </div>
             </Link>

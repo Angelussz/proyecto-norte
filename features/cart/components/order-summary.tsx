@@ -1,6 +1,6 @@
+import Link from 'next/link'
 import { Lock } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import type { OrderSummary } from '@/types/cart'
+import type { OrderSummary } from '@/features/cart/types/cart.interface'
 
 interface OrderSummaryProps {
   summary: OrderSummary
@@ -34,11 +34,12 @@ export default function OrderSummaryComponent({ summary }: OrderSummaryProps) {
           <span>${summary.total.toFixed(2)}</span>
         </div>
 
-        <Button
-          className="w-full py-5 text-sm font-semibold uppercase tracking-widest bg-[#C77D2E] hover:bg-primary-container text-white sm:py-6 sm:text-base"
+        <Link
+          href="/checkout"
+          className="inline-flex w-full items-center justify-center py-5 text-sm font-semibold uppercase tracking-widest bg-[#C77D2E] hover:bg-primary-container text-white sm:py-6 sm:text-base"
         >
           Proceder al Pago
-        </Button>
+        </Link>
 
         <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground sm:mt-6">
           <Lock className="w-4 h-4" />

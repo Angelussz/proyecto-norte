@@ -1,6 +1,6 @@
 import { Bebas_Neue, Inter } from "next/font/google";
-import { StoreHeader } from "@/components/store/store-header";
-import { StoreFooter } from "@/components/store/store-footer";
+import { StoreHeader } from "@/features/store/components/store-header";
+import { StoreFooter } from "@/features/store/components/store-footer";
 
 const display = Bebas_Neue({
   weight: "400",

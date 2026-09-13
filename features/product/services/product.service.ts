@@ -1,4 +1,4 @@
-import type { ProductDetailResponse } from "@/interfaces/product.interface";
+import type { ProductDetailResponse } from "@/features/product/types/product.interface";
 import { PRODUCT_BY_ID_MOCK } from "@/lib/mocks";
 
 function delay(ms: number) {

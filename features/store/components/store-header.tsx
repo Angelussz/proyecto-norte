@@ -36,9 +36,9 @@ export function StoreHeader() {
           <button aria-label="Profile" className="transition-colors hover:text-primary">
             <User className="size-6" />
           </button>
-          <button aria-label="Cart" className="transition-colors hover:text-primary">
+          <Link href="/cart" aria-label="Cart" className="transition-colors hover:text-primary">
             <ShoppingBag className="size-6" />
-          </button>
+          </Link>
           <button aria-label="Menu" className="transition-colors hover:text-primary md:hidden">
             <Menu className="size-6" />
           </button>

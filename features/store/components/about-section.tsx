@@ -4,9 +4,9 @@ import { ArrowRight } from "lucide-react";
 
 export function AboutSection() {
   return (
-    <section className="py-[64px] px-5 md:px-[64px] max-w-[1280px] mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-[64px] items-center">
-        <div className="relative h-[500px] bg-[#D8D2C4]">
+    <section className="py-16 px-5 md:px-16 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+        <div className="relative h-125 bg-[#D8D2C4]">
           <Image
             alt="About Us"
             className="absolute inset-0 w-full h-full object-cover"
@@ -15,23 +15,23 @@ export function AboutSection() {
           />
         </div>
         <div className="flex flex-col items-start">
-          <span className="text-[14px] font-semibold uppercase text-[#534438] tracking-[0.05em] mb-[16px]">
+          <span className="text-sm font-semibold uppercase text-[#534438] tracking-wider mb-4">
             About Us
           </span>
           <h2 
-            className="text-[32px] md:text-[48px] leading-tight md:leading-[48px] tracking-[0.02em] text-[#1e1c13] mb-[32px] uppercase"
+            className="text-[32px] md:text-[48px] leading-tight md:leading-12 tracking-wider text-[#1e1c13] mb-8 uppercase"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
             Style that feels<br />as good as it<br />looks.
           </h2>
-          <p className="text-[18px] leading-[28px] text-[#534438] mb-[32px] max-w-md">
+          <p className="text-lg leading-7 text-[#534438] mb-8 max-w-md">
             We believe great style should be simple, sustainable, and made to move with you. Our collections are designed for the modern individual who values both form and function.
           </p>
           <Link
             href="#"
-            className="inline-flex items-center justify-center bg-transparent text-[#1e1c13] border border-[#D8D2C4] text-[14px] font-semibold uppercase px-8 py-4 tracking-[0.05em] hover:border-[#1e1c13] transition-colors rounded-none"
+            className="inline-flex items-center justify-center bg-transparent text-[#1e1c13] border border-[#D8D2C4] text-sm font-semibold uppercase px-8 py-4 tracking-wider hover:border-[#1e1c13] transition-colors rounded-none"
           >
-            Learn More <ArrowRight className="ml-2 w-[18px] h-[18px]" />
+            Learn More <ArrowRight className="ml-2 size-4.5" />
           </Link>
         </div>
       </div>

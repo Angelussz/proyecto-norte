@@ -1,4 +1,4 @@
-import type { CheckoutShipping } from "@/interfaces/checkout.interface";
+import type { CheckoutShipping } from "@/features/checkout/types/checkout.interface";
 import {
   Card,
   CardAction,

@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, RotateCcw, Truck } from "lucide-react";
 import { formatPrice, isSizeAvailable } from "@/lib/products";
-import type { ProductDetail } from "@/interfaces/product.interface";
+import type { ProductDetail } from "@/features/product/types/product.interface";
 import { Button } from "@/components/ui/button";
 
 export function ProductInfo({ product }: { product: ProductDetail }) {
+  const router = useRouter();
   const firstAvailable = useMemo(
     () => product.variants.find(isSizeAvailable)?.size ?? "",
     [product]
@@ -52,9 +54,8 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
                   aria-label={color.name}
                   aria-pressed={active}
                   onClick={() => setSelected(color.name)}
-                  className={`flex size-10 cursor-pointer items-center justify-center rounded-full border p-0.5 transition-colors ${
-                    active ? "border-foreground" : "border-border hover:border-foreground"
-                  }`}
+                  className={`flex size-10 cursor-pointer items-center justify-center rounded-full border p-0.5 transition-colors ${active ? "border-foreground" : "border-border hover:border-foreground"
+                    }`}
                 >
                   <span className="size-full rounded-full" style={{ backgroundColor: color.hex }} />
                 </button>
@@ -83,13 +84,12 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
                   aria-pressed={active}
                   onClick={() => setSize(variant.size)}
                   title={available ? `${variant.stock} en stock` : "Sin stock"}
-                  className={`py-3 text-sm font-semibold uppercase transition-all border ${
-                    !available
+                  className={`py-3 text-sm font-semibold uppercase transition-all border ${!available
                       ? "cursor-not-allowed border-border text-muted-foreground opacity-50"
                       : !active
                         ? "border-border text-foreground hover:border-foreground hover:bg-muted"
                         : "border-foreground bg-foreground text-background"
-                  }`}
+                    }`}
                 >
                   {variant.size}
                 </button>
@@ -104,6 +104,7 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
           type="button"
           size="lg"
           disabled={activeStock === 0}
+          onClick={() => router.push("/cart")}
           className="group flex h-auto w-full justify-center gap-3 rounded-none py-5 text-sm font-semibold uppercase tracking-widest"
         >
           <span>{activeStock === 0 ? "Sin stock" : `Agregar al Carrito`}</span>

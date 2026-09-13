@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/products";
-import type { Suggestion } from "@/interfaces/product.interface";
+import type { Suggestion } from "@/features/product/types/product.interface";
 
 export function ProductSuggestions({ items }: { items: Suggestion[] }) {
   if (items.length === 0) return null;
