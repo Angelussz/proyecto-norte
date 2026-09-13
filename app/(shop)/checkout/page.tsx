@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { getCheckoutSummary } from "@/services/checkout.service";
-import { CheckoutSteps } from "@/components/checkout/checkout-steps";
-import { ShippingSummary } from "@/components/checkout/shipping-summary";
-import { PaymentMethodForm } from "@/components/checkout/payment-method-form";
-import { OrderSummary } from "@/components/checkout/order-summary";
+import { getCheckoutSummary } from "@/features/checkout/services/checkout.service";
+import { CheckoutSteps } from "@/features/checkout/components/checkout-steps";
+import { ShippingSummary } from "@/features/checkout/components/shipping-summary";
+import { PaymentMethodForm } from "@/features/checkout/components/payment-method-form";
+import { OrderSummary } from "@/features/checkout/components/order-summary";
 
 export const metadata: Metadata = {
   title: "Checkout — NORTE",

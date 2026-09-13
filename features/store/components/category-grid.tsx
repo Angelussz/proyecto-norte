@@ -23,27 +23,27 @@ const CATEGORIES = [
 
 export function CategoryGrid() {
   return (
-    <section className="bg-[#33402F] py-[64px] text-[#fff9ed]">
-      <div className="px-5 md:px-[64px] max-w-[1280px] mx-auto">
-        <div className="flex justify-between items-end mb-[32px] border-b border-[#D8D2C4]/20 pb-4">
+    <section className="bg-[#33402F] py-16 text-[#fff9ed]">
+      <div className="px-5 md:px-16 max-w-7xl mx-auto">
+        <div className="flex justify-between items-end mb-8 border-b border-[#D8D2C4]/20 pb-4">
           <h2 
-            className="text-[32px] leading-[36px] tracking-[0.02em] uppercase"
+            className="text-[32px] leading-9 tracking-[0.02em] uppercase"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
             Shop By Category
           </h2>
           <Link
             href="#"
-            className="text-[14px] font-semibold uppercase tracking-[0.05em] flex items-center hover:text-[#C77D2E] transition-colors"
+            className="text-[14px] font-semibold uppercase tracking-wider flex items-center hover:text-[#C77D2E] transition-colors"
           >
-            Explore All <ArrowRight className="ml-1 w-[18px] h-[18px]" />
+            Explore All <ArrowRight className="ml-1 w-4.5 h-4.5" />
           </Link>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-[24px]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {CATEGORIES.map((category) => (
             <Link key={category.title} href="#" className="group block text-center">
-              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-none bg-[#f4eddf]">
+              <div className="relative aspect-3/4 mb-4 overflow-hidden rounded-none bg-[#f4eddf]">
                 <Image
                   alt={`${category.title} Category`}
                   className="object-cover absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
@@ -52,7 +52,7 @@ export function CategoryGrid() {
                   sizes="(max-width: 768px) 50vw, 25vw"
                 />
               </div>
-              <h3 className="text-[14px] font-semibold uppercase tracking-[0.05em]">{category.title}</h3>
+              <h3 className="text-[14px] font-semibold uppercase tracking-wider">{category.title}</h3>
               <p className="text-[12px] font-medium text-[#fff9ed]/70">Collection</p>
             </Link>
           ))}

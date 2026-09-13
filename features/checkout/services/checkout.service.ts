@@ -1,4 +1,4 @@
-import type { CheckoutSummary } from "@/interfaces/checkout.interface";
+import type { CheckoutSummary } from "@/features/checkout/types/checkout.interface";
 import { CHECKOUT_MOCK } from "@/lib/mocks";
 
 function delay(ms: number) {

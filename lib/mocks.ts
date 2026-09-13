@@ -1,4 +1,4 @@
-import type { CheckoutSummary } from "@/interfaces/checkout.interface";
+import type { CheckoutSummary } from "@/features/checkout/types/checkout.interface";
 
 export const PRODUCT_BY_ID_MOCK = {
   data: {

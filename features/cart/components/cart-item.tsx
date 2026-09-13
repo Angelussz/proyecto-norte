@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import type { CartItem } from "@/interfaces/cart.interface";
+import type { CartItem } from "@/features/cart/types/cart.interface";
 
 interface CartItemProps {
   item: CartItem;
