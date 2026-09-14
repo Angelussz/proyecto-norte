@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ProductGrid } from "@/components/store/product-grid";
+import { ProductGrid } from "@/features/store/components/product-grid";
 import { PRODUCTS_MOCK } from "@/lib/mocks";
 
 export default function ProductsPage() {
