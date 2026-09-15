@@ -98,15 +98,28 @@ export async function GET(req: NextRequest) {
 
   try {
     // ── Filtros de Prisma ─────────────────────────────────────────────────
+    const isCategoryFilter =
+      categorySlug &&
+      categorySlug.toLowerCase() !== "todas" &&
+      categorySlug.trim() !== "";
+
+    const parsedMin = minPrice ? Number(minPrice) : null;
+    const parsedMax = maxPrice ? Number(maxPrice) : null;
+
     const where: Prisma.ProductsWhereInput = {
       active: true,
-      ...(categorySlug && {
-        category: { slug: categorySlug },
+      ...(isCategoryFilter && {
+        category: {
+          slug: {
+            equals: categorySlug.toLowerCase(),
+            mode: "insensitive" as Prisma.QueryMode,
+          },
+        },
       }),
-      ...((minPrice || maxPrice) && {
+      ...((parsedMin !== null || parsedMax !== null) && {
         base_price: {
-          ...(minPrice && { gte: Number(minPrice) }),
-          ...(maxPrice && { lte: Number(maxPrice) }),
+          ...(parsedMin !== null && !isNaN(parsedMin) && { gte: parsedMin }),
+          ...(parsedMax !== null && !isNaN(parsedMax) && { lte: parsedMax }),
         },
       }),
     };
@@ -121,7 +134,7 @@ export async function GET(req: NextRequest) {
     const orderBy = orderByMap[sortBy] ?? orderByMap.newest;
 
     // ── Consulta con Prisma ──────────────────────────────────────────────
-    const [products, total] = await prisma.$transaction([
+    const [products, total, totalInDb] = await prisma.$transaction([
       prisma.products.findMany({
         where,
         orderBy,
@@ -143,32 +156,33 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.products.count({ where }),
+      prisma.products.count(),
     ]);
 
-    // Si la base de datos tiene productos, los devolvemos
-    if (total > 0 || products.length > 0) {
-      const data = products.map((p) => ({
-        ...p,
-        base_price: Number(p.base_price),
-      }));
-
-      const response: ProductCatalogResponse = {
-        data,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
-      };
-
-      return NextResponse.json(response);
+    // Si la tabla de productos en la base de datos está vacía (sin seeds), responder con el mock
+    if (totalInDb === 0) {
+      return NextResponse.json(
+        getMockCatalogResponse(categorySlug, minPrice, maxPrice, sortBy, page, limit)
+      );
     }
 
-    // Si la DB está vacía (sin seeds), responder con el mock
-    return NextResponse.json(
-      getMockCatalogResponse(categorySlug, minPrice, maxPrice, sortBy, page, limit)
-    );
+    // Si la DB tiene productos, devolvemos el resultado de la consulta
+    const data = products.map((p) => ({
+      ...p,
+      base_price: Number(p.base_price),
+    }));
+
+    const response: ProductCatalogResponse = {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     // Si la conexión a la base de datos falla (por ejemplo si Docker aún no está corriendo)
     console.warn(

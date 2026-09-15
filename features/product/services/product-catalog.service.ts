@@ -63,6 +63,13 @@ function getLocalMockFallback(params: ProductCatalogParams): ProductCatalogRespo
   };
 }
 
+function getBaseUrl(): string {
+  if (typeof window !== "undefined") return "";
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
 /**
  * Servicio del catálogo público de productos.
  * Consume: GET /api/products (con conexión a base de datos PostgreSQL via Prisma).
@@ -80,7 +87,8 @@ export async function getProductCatalog(
   if (params.page !== undefined)     query.set("page", String(params.page));
   if (params.limit !== undefined)    query.set("limit", String(params.limit));
 
-  const url = `/api/products?${query.toString()}`;
+  const queryString = query.toString();
+  const url = `${getBaseUrl()}/api/products${queryString ? `?${queryString}` : ""}`;
 
   try {
     const res = await fetch(url, {
