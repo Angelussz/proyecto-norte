@@ -1,4 +1,5 @@
 import type { CheckoutSummary } from "@/features/checkout/types/checkout.interface";
+import type { Order } from "@/features/orders/types/order.interface";
 
 export const PRODUCT_BY_ID_MOCK = {
   data: {
@@ -129,6 +130,65 @@ export const PRODUCTS_MOCK = [
     price: 118,
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuBMn1DJnKYB5FMQoR7oSs53BpdsFlVDrZSBSzM6Gc9KnBY9Hf8iwcsi8nHXY7BJAG_xlyStcYz6qyhpeqo5yCHvmmyGv_wGsXpEKCfB0IrbKzGufd9raZGSL07Bz8boWB3FwFxLkaUrFROOd4NrA_07soH9StsyQizJ8_WN5jS_SpJ5nYLei3dqXGArKy3btgyKderS1R8Ebnuoas11Ss1iB0AKKJzD3bDUebP5bfC90vYRXKmCcR24",
+  },
+];
+
+export const ORDERS_MOCK: Order[] = [
+  {
+    id: "e3b0c442-98fc-42c1-b978-2026a8d00001",
+    user_id: "usr_998877665544",
+    address_id: "addr_1234567890",
+    subtotal: 140.0,
+    shipping_cost: 15.0,
+    total: 155.0,
+    status: "DELIVERED",
+    created_at: "2026-03-10T14:30:00.000Z",
+    updated_at: "2026-03-12T10:00:00.000Z",
+    items: [
+      {
+        id: "det_001",
+        order_id: "e3b0c442-98fc-42c1-b978-2026a8d00001",
+        variant_id: "var_polo_negro_m",
+        sku_snapshot: "POLO-BLK-M",
+        product_name_snapshot: "Polo Oversize Algodón Negro",
+        unit_price: 50.0,
+        quantity: 2,
+        subtotal: 100.0,
+      },
+      {
+        id: "det_002",
+        order_id: "e3b0c442-98fc-42c1-b978-2026a8d00001",
+        variant_id: "var_gorra_azul",
+        sku_snapshot: "CAP-BLU-UNI",
+        product_name_snapshot: "Gorra Urbana Azul",
+        unit_price: 40.0,
+        quantity: 1,
+        subtotal: 40.0,
+      },
+    ],
+  },
+  {
+    id: "f4c1d553-10ad-53d2-c089-3137b9e00002",
+    user_id: "usr_998877665544",
+    address_id: "addr_1234567890",
+    subtotal: 120.0,
+    shipping_cost: 10.0,
+    total: 130.0,
+    status: "PENDING_PAYMENT",
+    created_at: "2026-03-15T09:15:00.000Z",
+    updated_at: "2026-03-15T09:15:00.000Z",
+    items: [
+      {
+        id: "det_003",
+        order_id: "f4c1d553-10ad-53d2-c089-3137b9e00002",
+        variant_id: "var_casaca_jean_l",
+        sku_snapshot: "JKT-DEN-L",
+        product_name_snapshot: "Casaca Denim Clásica",
+        unit_price: 120.0,
+        quantity: 1,
+        subtotal: 120.0,
+      },
+    ],
   },
 ];
 
