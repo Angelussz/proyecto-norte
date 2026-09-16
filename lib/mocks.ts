@@ -132,3 +132,7 @@ export const PRODUCTS_MOCK = [
   },
 ];
 
+export const CATEGORIES_MOCK = [
+  { name: "Camisas", slug: "camisas" },
+  { name: "Pantalones", slug: "pantalones" },
+];
