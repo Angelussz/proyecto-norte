@@ -39,3 +39,12 @@ export type OrderListResponse = {
     totalPages: number;
   };
 };
+
+export type UpdateOrderStatusParams = {
+  status: OrderStatus;
+  expectedUpdatedAt: string;
+};
+
+export type UpdateOrderStatusResult =
+  | { success: true; order: Order }
+  | { success: false; error: string };

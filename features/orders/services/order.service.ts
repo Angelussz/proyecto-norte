@@ -1,4 +1,10 @@
-import type { Order, OrderListParams, OrderListResponse } from "@/features/orders/types/order.interface";
+import type {
+  Order,
+  OrderListParams,
+  OrderListResponse,
+  UpdateOrderStatusParams,
+  UpdateOrderStatusResult,
+} from "@/features/orders/types/order.interface";
 import { ORDERS_MOCK } from "@/lib/mocks";
 
 const DEFAULT_ITEMS = 12
@@ -66,4 +72,60 @@ export async function getOrdersPaginated(params?: OrderListParams): Promise<Orde
       totalPages: Math.max(1, Math.ceil(total / limit)),
     },
   };
+}
+
+const VALID_STATUSES = [
+  "PENDING_PAYMENT",
+  "PAID",
+  "PREPARING",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+] as const;
+
+/**
+ * Actualiza el status de una orden con control de concurrencia optimista.
+ * Verifica que el updated_at coincida con el valor esperado por el cliente.
+ * Si otro usuario modificó la orden primero, retorna 409 Conflict.
+ *
+ * Para conectar la API real, reemplazar el cuerpo por:
+ *   const res = await fetch(`${process.env.API_URL}/api/orders/${orderId}`, {
+ *     method: "PATCH",
+ *     headers: { "Content-Type": "application/json" },
+ *     body: JSON.stringify(params),
+ *   });
+ *   if (!res.ok) return { success: false, error: "Error al actualizar" };
+ *   return (await res.json()) as UpdateOrderStatusResult;
+ */
+export async function updateOrderStatus(
+  orderId: string,
+  params: UpdateOrderStatusParams
+): Promise<UpdateOrderStatusResult> {
+  await delay(150);
+
+  if (!VALID_STATUSES.includes(params.status)) {
+    return { success: false, error: "Status inválido" };
+  }
+
+  const index = ORDERS_MOCK.findIndex((o) => o.id === orderId);
+  if (index === -1) {
+    return { success: false, error: "Orden no encontrada" };
+  }
+
+  const order = ORDERS_MOCK[index];
+
+  if (order.updated_at !== params.expectedUpdatedAt) {
+    return {
+      success: false,
+      error: "Conflicto: la orden fue modificada por otro usuario",
+    };
+  }
+
+  ORDERS_MOCK[index] = {
+    ...order,
+    status: params.status,
+    updated_at: new Date().toISOString(),
+  };
+
+  return { success: true, order: ORDERS_MOCK[index] };
 }
