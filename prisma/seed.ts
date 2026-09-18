@@ -6,28 +6,25 @@ import {
   ADDRESSES_MOCK,
   SEED_ORDERS_MOCK,
   ORDER_ITEMS_MOCK,
+  CATEGORIES_MOCK,
 } from "../lib/mocks";
-
 async function main() {
   console.log("Iniciando seed de la base de datos...");
 
   // 1. Categorías
   const categoriesMap = new Map<string, string>();
 
-  for (const item of PRODUCTS_MOCK) {
-    const slug = item.category.toLowerCase().replace(/\s+/g, "-");
-    if (!categoriesMap.has(slug)) {
-      const category = await prisma.categories.upsert({
-        where: { slug },
-        update: { name: item.category },
-        create: {
-          name: item.category,
-          slug,
-          description: `Categoría ${item.category}`,
-        },
-      });
-      categoriesMap.set(slug, category.id);
-    }
+  // Categorias
+  for (const category of CATEGORIES_MOCK) {
+    const record = await prisma.categories.upsert({
+      where: { slug: category.slug },
+      update: { name: category.name },
+      create: {
+        name: category.name,
+        slug: category.slug,
+      },
+    });
+    categoriesMap.set(category.slug, record.id);
   }
 
   // 2. Productos y variantes

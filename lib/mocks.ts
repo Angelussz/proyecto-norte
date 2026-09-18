@@ -377,3 +377,7 @@ export const ORDER_ITEMS_MOCK = [
   },
 ];
 
+export const CATEGORIES_MOCK = [
+  { name: "Camisas", slug: "camisas" },
+  { name: "Pantalones", slug: "pantalones" },
+];
