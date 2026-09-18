@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getOrderById,
-  updateOrderStatus,
-} from "@/features/orders/services/order.service";
+import { prisma } from "@/lib/prisma";
+import { serializeOrder } from "@/lib/orders";
 import type { OrderStatus } from "@/generated/prisma/client";
 
 const VALID_STATUSES: OrderStatus[] = [
@@ -23,7 +21,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const order = await getOrderById(id);
+
+  const order = await prisma.orders.findUnique({
+    where: { id },
+    include: { items: true },
+  });
 
   if (!order) {
     return NextResponse.json(
@@ -32,7 +34,7 @@ export async function GET(
     );
   }
 
-  return NextResponse.json(order);
+  return NextResponse.json(serializeOrder(order));
 }
 
 /**
@@ -42,12 +44,6 @@ export async function GET(
  * Body:
  *   status           - nuevo status (requerido)
  *   expectedUpdatedAt - timestamp que el cliente tiene (requerido)
- *
- * Respuestas:
- *   200 → { success: true, order }
- *   400 → { error: "..." }
- *   404 → { error: "Orden no encontrada" }
- *   409 → { error: "Conflicto: la orden fue modificada por otro usuario" }
  */
 export async function PATCH(
   req: NextRequest,
@@ -74,15 +70,32 @@ export async function PATCH(
     return NextResponse.json({ error: "Status inválido" }, { status: 400 });
   }
 
-  const result = await updateOrderStatus(id, {
-    status: normalizedStatus,
-    expectedUpdatedAt: body.expectedUpdatedAt,
+  const result = await prisma.orders.updateMany({
+    where: {
+      id,
+      updated_at: new Date(body.expectedUpdatedAt),
+    },
+    data: { status: normalizedStatus },
   });
 
-  if (!result.success) {
-    const status = result.error.includes("no encontrada") ? 404 : 409;
-    return NextResponse.json({ error: result.error }, { status });
+  if (result.count === 0) {
+    const exists = await prisma.orders.findUnique({ where: { id } });
+    if (!exists) {
+      return NextResponse.json(
+        { error: "Orden no encontrada" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Conflicto: la orden fue modificada por otro usuario" },
+      { status: 409 }
+    );
   }
 
-  return NextResponse.json(result);
+  const updated = await prisma.orders.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+
+  return NextResponse.json({ success: true, order: serializeOrder(updated!) });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrdersPaginated } from "@/features/orders/services/order.service";
+import { prisma } from "@/lib/prisma";
+import { serializeOrder } from "@/lib/orders";
 import type { OrderStatus } from "@/generated/prisma/client";
 
 const VALID_STATUSES: OrderStatus[] = [
@@ -10,17 +11,13 @@ const VALID_STATUSES: OrderStatus[] = [
   "DELIVERED",
   "CANCELLED",
 ];
-const DEFAULT_ITEMS = 12
+const DEFAULT_ITEMS = 12;
 const MIN_PAGE = 1;
 const MAX_LIMIT = 48;
+
 /**
  * GET /api/orders
  * Listado paginado de órdenes con filtro opcional por status.
- *
- * Query params:
- *   page   - número de página, empieza en 1 (default: 1)
- *   limit  - órdenes por página (default: 12, máx: 48)
- *   status - filtrar por estado de la orden (opcional)
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -39,6 +36,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const result = await getOrdersPaginated({ page, limit, status });
-  return NextResponse.json(result);
+  const where = status ? { status } : {};
+  const [orders, total] = await Promise.all([
+    prisma.orders.findMany({
+      where,
+      include: { items: true },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { created_at: "desc" },
+    }),
+    prisma.orders.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    data: orders.map(serializeOrder),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    },
+  });
 }
