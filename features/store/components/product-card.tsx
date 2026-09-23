@@ -1,50 +1,49 @@
 import Image from "next/image";
+import Link from "next/link";
+import type { ProductCatalogItem } from "@/features/product/types/product-catalog.interface";
+import { formatPrice } from "@/lib/products";
 
 interface ProductCardProps {
-  name: string;
-  category: string;
-  price: number;
-  image: string;
+  product: ProductCatalogItem;
 }
 
-export function ProductCard({
-  name,
-  category,
-  price,
-  image,
-}: ProductCardProps) {
+export function ProductCard({ product }: ProductCardProps) {
   return (
-    <article className="group">
-      <div className="relative aspect-4/5 overflow-hidden bg-muted">
-        <Image
-          src={image}
-          alt={name}
-          fill
-          sizes="(max-width: 768px) 100vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-      </div>
+    <Link href={`/product/${product.id}`} className="group block">
+      <article>
+        <div className="relative aspect-4/5 overflow-hidden bg-muted">
+          {product.image_url ? (
+            <Image
+              src={product.image_url}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, 25vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : null}
+        </div>
 
-      <div className="mt-3">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">
-          {category}
-        </p>
+        <div className="mt-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            {product.category.name}
+          </p>
 
-        <h2 className="mt-1 text-sm font-medium">
-          {name}
-        </h2>
+          <h2 className="mt-1 text-sm font-medium">
+            {product.name}
+          </h2>
 
-        <p className="mt-1 text-sm">
-          ${price}
-        </p>
+          <p className="mt-1 text-sm">
+            {formatPrice(product.base_price)}
+          </p>
 
-        <button
-          type="button"
-          className="mt-3 w-full rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          Agregar al carrito
-        </button>
-      </div>
-    </article>
+          <button
+            type="button"
+            className="mt-3 w-full rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            Agregar al carrito
+          </button>
+        </div>
+      </article>
+    </Link>
   );
 }
