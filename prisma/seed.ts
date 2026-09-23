@@ -11,6 +11,18 @@ import {
 async function main() {
   console.log("Iniciando seed de la base de datos...");
 
+  // Categoría de prueba
+  const testCategory = await prisma.categories.upsert({
+    where: { slug: "categoria-de-prueba" },
+    update: {},
+    create: {
+      name: "Categoría de Prueba",
+      slug: "categoria-de-prueba",
+      description: "Categoría ficticia para testing",
+    },
+  });
+
+  // Categorías base
   // 1. Categorías
   const categoriesMap = new Map<string, string>();
 
