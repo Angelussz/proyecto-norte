@@ -43,6 +43,10 @@ export default function ProductsPage() {
     key: string;
     catalog: ProductCatalogResponse | null;
   }>({ key: "", catalog: null });
+  const [error, setError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
 
   const filterKey = JSON.stringify([
     mapCategory(category),
@@ -63,17 +67,30 @@ export default function ProductsPage() {
       page: currentPage,
     };
 
-    getProductCatalog(params).then((response) => {
-      if (!cancelled) {
-        setResult({ key: filterKey, catalog: response });
-      }
-    });
+    getProductCatalog(params)
+      .then((response) => {
+        if (!cancelled) {
+          setResult({ key: filterKey, catalog: response });
+        }
+      })
+      .catch((caught: unknown) => {
+        if (!cancelled) {
+          console.error("[products-page] Error al cargar el catálogo:", caught);
+          setError({
+            key: filterKey,
+            message:
+              "No pudimos cargar los productos. Intentá de nuevo más tarde.",
+          });
+        }
+      });
 
     return () => {
       cancelled = true;
     };
   }, [category, minPrice, maxPrice, sortBy, currentPage, filterKey]);
 
+  const currentError =
+    error !== null && error.key === filterKey ? error.message : null;
   const loading = result.key !== filterKey;
   const catalog = loading ? null : result.catalog;
   const totalPages = catalog?.pagination.totalPages ?? 0;
@@ -130,7 +147,11 @@ export default function ProductsPage() {
         </select>
       </div>
 
-      {loading ? (
+      {currentError ? (
+        <div className="py-12 text-center">
+          <p className="text-lg font-medium">{currentError}</p>
+        </div>
+      ) : loading ? (
         <div className="py-12 text-center">
           <p className="text-lg font-medium">Cargando productos…</p>
         </div>
