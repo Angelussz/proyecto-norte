@@ -1,75 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { PRODUCTS_MOCK } from "@/lib/mocks";
 import type {
-  ProductCatalogItem,
   ProductCatalogResponse,
 } from "@/features/product/types/product-catalog.interface";
 import type { Prisma } from "@/generated/prisma/client";
-
-/**
- * Fallback con datos mock para cuando la base de datos local (Postgres)
- * aún no esté levantada con Docker o esté vacía.
- */
-function getMockCatalogResponse(
-  categorySlug?: string,
-  minPrice?: string | null,
-  maxPrice?: string | null,
-  sortBy: string = "newest",
-  page: number = 1,
-  limit: number = 12
-): ProductCatalogResponse {
-  let filtered: ProductCatalogItem[] = PRODUCTS_MOCK.map((item, idx) => ({
-    id: String(idx + 1),
-    name: item.name,
-    slug: item.name.toLowerCase().replace(/\s+/g, "-"),
-    base_price: item.price,
-    image_url: item.image,
-    category: {
-      id: `cat-${item.category.toLowerCase()}`,
-      name: item.category,
-      slug: item.category.toLowerCase(),
-    },
-  }));
-
-  if (categorySlug && categorySlug !== "Todas" && categorySlug !== "todas") {
-    filtered = filtered.filter(
-      (p) =>
-        p.category.slug.toLowerCase() === categorySlug.toLowerCase() ||
-        p.category.name.toLowerCase() === categorySlug.toLowerCase()
-    );
-  }
-
-  if (minPrice) {
-    filtered = filtered.filter((p) => p.base_price >= Number(minPrice));
-  }
-
-  if (maxPrice) {
-    filtered = filtered.filter((p) => p.base_price <= Number(maxPrice));
-  }
-
-  if (sortBy === "price_asc" || sortBy === "price-asc") {
-    filtered.sort((a, b) => a.base_price - b.base_price);
-  } else if (sortBy === "price_desc" || sortBy === "price-desc") {
-    filtered.sort((a, b) => b.base_price - a.base_price);
-  } else if (sortBy === "name_asc" || sortBy === "name") {
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  const total = filtered.length;
-  const skip = (page - 1) * limit;
-  const data = filtered.slice(skip, skip + limit);
-
-  return {
-    data,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-    },
-  };
-}
 
 /**
  * GET /api/products
@@ -159,11 +93,18 @@ export async function GET(req: NextRequest) {
       prisma.products.count(),
     ]);
 
-    // Si la tabla de productos en la base de datos está vacía (sin seeds), responder con el mock
+    // Si la tabla de productos en la base de datos está vacía (sin seeds),
+    // devolvemos un catálogo vacío en lugar de datos mock.
     if (totalInDb === 0) {
-      return NextResponse.json(
-        getMockCatalogResponse(categorySlug, minPrice, maxPrice, sortBy, page, limit)
-      );
+      return NextResponse.json({
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      });
     }
 
     // Si la DB tiene productos, devolvemos el resultado de la consulta
@@ -186,12 +127,10 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     // Si la conexión a la base de datos falla (por ejemplo si Docker aún no está corriendo)
     console.warn(
-      "[GET /api/products] Base de datos no disponible, usando fallback mock:",
+      "[GET /api/products] Base de datos no disponible:",
       error instanceof Error ? error.message : error
     );
 
-    return NextResponse.json(
-      getMockCatalogResponse(categorySlug, minPrice, maxPrice, sortBy, page, limit)
-    );
+    return NextResponse.json({ error: "INTERNAL" }, { status: 500 });
   }
 }
