@@ -33,9 +33,9 @@ export function StoreHeader() {
           <button aria-label="Search" className="transition-colors hover:text-primary">
             <Search className="size-6" />
           </button>
-          <button aria-label="Profile" className="transition-colors hover:text-primary">
+          <Link href="/login" aria-label="Profile" className="transition-colors hover:text-primary">
             <User className="size-6" />
-          </button>
+          </Link>
           <Link href="/cart" aria-label="Cart" className="transition-colors hover:text-primary">
             <ShoppingBag className="size-6" />
           </Link>
