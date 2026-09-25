@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ProductGrid } from "@/features/store/components/product-grid";
-import type { ProductCatalogParams, ProductCatalogResponse } from "@/features/product/types/product-catalog.interface";
+import type { ProductCatalogParams } from "@/features/product/types/product-catalog.interface";
 import { getProductCatalog } from "@/features/product/services/product-catalog.service";
 
 function mapCategory(value: string): string | undefined {
@@ -39,62 +40,35 @@ export default function ProductsPage() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
-  const [result, setResult] = useState<{
-    key: string;
-    catalog: ProductCatalogResponse | null;
-  }>({ key: "", catalog: null });
-  const [error, setError] = useState<{
-    key: string;
-    message: string;
-  } | null>(null);
 
-  const filterKey = JSON.stringify([
-    mapCategory(category),
-    parsePrice(minPrice),
-    parsePrice(maxPrice),
-    mapSortBy(sortBy),
-    currentPage,
-  ]);
+  const params: ProductCatalogParams = {
+    category: mapCategory(category),
+    minPrice: parsePrice(minPrice),
+    maxPrice: parsePrice(maxPrice),
+    sortBy: mapSortBy(sortBy),
+    page: currentPage,
+  };
+
+  const { data, isLoading, isError, isPlaceholderData, isFetching } = useQuery({
+    queryKey: ["product-catalog", params],
+    queryFn: ({ signal }) => getProductCatalog(params, { signal }),
+    placeholderData: keepPreviousData,
+  });
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    let cancelled = false;
+    queryClient.cancelQueries({
+      predicate: (query) =>
+        query.queryKey[0] === "product-catalog" &&
+        !query.isActive() &&
+        query.state.fetchStatus === "fetching",
+    });
+  }, [category, minPrice, maxPrice, sortBy, currentPage, queryClient]);
 
-    const params: ProductCatalogParams = {
-      category: mapCategory(category),
-      minPrice: parsePrice(minPrice),
-      maxPrice: parsePrice(maxPrice),
-      sortBy: mapSortBy(sortBy),
-      page: currentPage,
-    };
-
-    getProductCatalog(params)
-      .then((response) => {
-        if (!cancelled) {
-          setResult({ key: filterKey, catalog: response });
-        }
-      })
-      .catch((caught: unknown) => {
-        if (!cancelled) {
-          console.error("[products-page] Error al cargar el catálogo:", caught);
-          setError({
-            key: filterKey,
-            message:
-              "No pudimos cargar los productos. Intentá de nuevo más tarde.",
-          });
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [category, minPrice, maxPrice, sortBy, currentPage, filterKey]);
-
-  const currentError =
-    error !== null && error.key === filterKey ? error.message : null;
-  const loading = result.key !== filterKey;
-  const catalog = loading ? null : result.catalog;
-  const totalPages = catalog?.pagination.totalPages ?? 0;
-  const hasProducts = catalog !== null && catalog.data.length > 0;
+  const totalPages = data?.pagination.totalPages ?? 0;
+  const hasProducts = (data?.data.length ?? 0) > 0;
+  const refreshing = isFetching && isPlaceholderData;
 
   const handleFilterChange =
     (setter: (value: string) => void) =>
@@ -147,16 +121,25 @@ export default function ProductsPage() {
         </select>
       </div>
 
-      {currentError ? (
+      {isError ? (
         <div className="py-12 text-center">
-          <p className="text-lg font-medium">{currentError}</p>
+          <p className="text-lg font-medium">
+            No pudimos cargar los productos. Intentá de nuevo más tarde.
+          </p>
         </div>
-      ) : loading ? (
+      ) : isLoading ? (
         <div className="py-12 text-center">
           <p className="text-lg font-medium">Cargando productos…</p>
         </div>
       ) : hasProducts ? (
-        <ProductGrid items={catalog!.data} />
+        <div>
+          {refreshing && (
+            <p className="mb-3 text-center text-sm text-muted-foreground">
+              Actualizando resultados…
+            </p>
+          )}
+          <ProductGrid items={data!.data} />
+        </div>
       ) : (
         <div className="py-12 text-center">
           <p className="text-lg font-medium">
@@ -169,7 +152,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {!loading && totalPages > 1 && (
+      {!isLoading && totalPages > 1 && (
         <div className="mt-8 flex items-center justify-center gap-2">
           <button
             onClick={() => setCurrentPage((page) => page - 1)}
@@ -195,7 +178,7 @@ export default function ProductsPage() {
 
           <button
             onClick={() => setCurrentPage((page) => page + 1)}
-            disabled={currentPage === totalPages}
+            disabled={currentPage >= totalPages}
             className="rounded-md border px-4 py-2 text-sm disabled:opacity-50"
           >
             Siguiente

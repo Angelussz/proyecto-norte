@@ -16,7 +16,8 @@ function getBaseUrl(): string {
  * Lanza un error si la API falla; no usa fallback mock en el cliente.
  */
 export async function getProductCatalog(
-  params: ProductCatalogParams = {}
+  params: ProductCatalogParams = {},
+  options?: { signal?: AbortSignal }
 ): Promise<ProductCatalogResponse> {
   const query = new URLSearchParams();
 
@@ -30,7 +31,7 @@ export async function getProductCatalog(
   const queryString = query.toString();
   const url = `${getBaseUrl()}/api/products${queryString ? `?${queryString}` : ""}`;
 
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: options?.signal });
 
   if (!res.ok) {
     throw new Error(`La API devolvió ${res.status} al obtener el catálogo`);
