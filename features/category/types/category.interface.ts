@@ -5,3 +5,7 @@ export type Category = {
   image_url: string | null;
   image_url_id: string | null;
 };
+
+export type CategoriesResponse = {
+  data: Category[];
+};
