@@ -38,13 +38,25 @@ export default function ProductsPage() {
   const [category, setCategory] = useState("Todas");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [debouncedMin, setDebouncedMin] = useState("");
+  const [debouncedMax, setDebouncedMax] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedMin(minPrice), 300);
+    return () => clearTimeout(timer);
+  }, [minPrice]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedMax(maxPrice), 300);
+    return () => clearTimeout(timer);
+  }, [maxPrice]);
+
   const params: ProductCatalogParams = {
     category: mapCategory(category),
-    minPrice: parsePrice(minPrice),
-    maxPrice: parsePrice(maxPrice),
+    minPrice: parsePrice(debouncedMin),
+    maxPrice: parsePrice(debouncedMax),
     sortBy: mapSortBy(sortBy),
     page: currentPage,
   };
@@ -64,7 +76,7 @@ export default function ProductsPage() {
         !query.isActive() &&
         query.state.fetchStatus === "fetching",
     });
-  }, [category, minPrice, maxPrice, sortBy, currentPage, queryClient]);
+  }, [category, debouncedMin, debouncedMax, sortBy, currentPage, queryClient]);
 
   const totalPages = data?.pagination.totalPages ?? 0;
   const hasProducts = (data?.data.length ?? 0) > 0;
