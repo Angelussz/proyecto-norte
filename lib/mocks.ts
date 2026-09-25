@@ -61,7 +61,6 @@ export const PRODUCT_BY_ID_MOCK = {
   ],
 };
 
-
 export const CHECKOUT_MOCK: CheckoutSummary = {
   shipping: {
     email: "jane.doe@example.com",
@@ -344,7 +343,10 @@ export const SEED_ORDERS_MOCK = [
 // Products (index): 0=Camisa de lino, 1=Field Linen Shirt, 2=Coastal Overshirt
 export const ORDER_ITEMS_MOCK = [
   {
-    order_ref: { user_email: "carlos.mendoza@example.com", status: "PAID" as const },
+    order_ref: {
+      user_email: "carlos.mendoza@example.com",
+      status: "PAID" as const,
+    },
     sku_snapshot: "CAMISA-DE-LINO-1-S",
     product_name_snapshot: "Camisa de lino",
     quantity: 1,
@@ -352,7 +354,10 @@ export const ORDER_ITEMS_MOCK = [
     subtotal: 145.0,
   },
   {
-    order_ref: { user_email: "carlos.mendoza@example.com", status: "PAID" as const },
+    order_ref: {
+      user_email: "carlos.mendoza@example.com",
+      status: "PAID" as const,
+    },
     sku_snapshot: "FIELD-LINEN-SHIRT-2-M",
     product_name_snapshot: "Field Linen Shirt",
     quantity: 1,
@@ -360,7 +365,10 @@ export const ORDER_ITEMS_MOCK = [
     subtotal: 122.0,
   },
   {
-    order_ref: { user_email: "valeria.rios@example.com", status: "DELIVERED" as const },
+    order_ref: {
+      user_email: "valeria.rios@example.com",
+      status: "DELIVERED" as const,
+    },
     sku_snapshot: "CAMISA-DE-LINO-1-L",
     product_name_snapshot: "Camisa de lino",
     quantity: 2,
@@ -368,7 +376,10 @@ export const ORDER_ITEMS_MOCK = [
     subtotal: 290.0,
   },
   {
-    order_ref: { user_email: "rodrigo.alva@example.com", status: "PREPARING" as const },
+    order_ref: {
+      user_email: "rodrigo.alva@example.com",
+      status: "PREPARING" as const,
+    },
     sku_snapshot: "COASTAL-OVERSHIRT-3-M",
     product_name_snapshot: "Coastal Overshirt",
     quantity: 1,
@@ -378,6 +389,18 @@ export const ORDER_ITEMS_MOCK = [
 ];
 
 export const CATEGORIES_MOCK = [
-  { name: "Camisas", slug: "camisas" },
-  { name: "Pantalones", slug: "pantalones" },
+  {
+    id: "3441408a-6408-4259-9dc1-76035bf2d6a3",
+    name: "Camisas",
+    slug: "camisas",
+    image_url: null,
+    image_url_id: null,
+  },
+  {
+    id: "66f4eeba-cf72-491b-b088-017644c436cd",
+    name: "Pantalones",
+    slug: "pantalones",
+    image_url: null,
+    image_url_id: null,
+  },
 ];
