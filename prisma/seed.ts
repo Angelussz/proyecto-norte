@@ -57,7 +57,7 @@ async function main() {
           product_id: product.id,
           sku,
           size,
-          color: "Estándar",
+          color: "000000", // EL COLOR DEBE SER EN FROMAT HEXADECIMAL
           price: item.price,
           unit_cost: Math.round(item.price * 0.5),
           stock: 10,

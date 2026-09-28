@@ -1,34 +1,24 @@
-/**
- * Contrato backend para el detalle de producto.
- * Fuente de verdad futura: GET /api/products/[id] -> ProductDetailResponse
- * Fase actual: mock en lib/mocks.ts que respeta estos tipos.
- */
-
 export type ProductVariant = {
   size: string;
   stock: number;
 }
-
-export type ProductImages = {
-  main: string;
-  thumbnails: string[];
-};
 
 export type ProductDetail = {
   id: string;
   name: string;
   description: string;
   price: number;
+  category_name: string;
   colors: { name: string; hex: string }[];
   variants: ProductVariant[];
-  images: ProductImages;
+  images: string[];
 };
 
 export type Suggestion = {
   id: string;
   name: string;
-  price: number;
-  image: string;
+  base_price: number;
+  image_url: string;
 };
 
 export type ProductDetailResponse = {
