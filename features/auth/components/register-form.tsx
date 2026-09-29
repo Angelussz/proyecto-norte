@@ -258,9 +258,9 @@ export function RegisterForm() {
 
       {/* ── Auth social ── */}
       <div id="register-social-auth" className="space-y-2.5">
-        {/* Google */}
-        <button
-          type="button"
+        {/* Google — redirige al flujo OAuth real */}
+        <a
+          href="/api/auth/google"
           id="register-google-btn"
           className="
             flex w-full items-center justify-center gap-3
@@ -272,7 +272,7 @@ export function RegisterForm() {
         >
           <GoogleIcon />
           <span>Continuar con Google</span>
-        </button>
+        </a>
 
         {/* Apple */}
         <button

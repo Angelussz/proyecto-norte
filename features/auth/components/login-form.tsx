@@ -221,9 +221,9 @@ export function LoginForm() {
 
       {/* ── Auth social ── */}
       <div id="login-social-auth" className="space-y-3">
-        {/* Google */}
-        <button
-          type="button"
+        {/* Google — redirige al flujo OAuth real */}
+        <a
+          href="/api/auth/google"
           id="login-google-btn"
           className="
             flex w-full items-center justify-center gap-3
@@ -237,7 +237,7 @@ export function LoginForm() {
         >
           <GoogleIcon />
           <span className="tracking-wide">Continuar con Google</span>
-        </button>
+        </a>
 
         {/* Apple */}
         <button

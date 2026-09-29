@@ -72,13 +72,13 @@ async function main() {
   for (const u of USERS_MOCK) {
     await prisma.users.upsert({
       where: { email: u.email },
-      update: { name: u.name, last_name: u.last_name, phone: u.phone },
+      update: { name: u.name, last_name: u.last_name, phone: u.phone, password_hash: "$2b$10$CLiXN3Xl.36WI6gaGBlhu.8vwI.s9BLDx2QmVcnsrM6DTlcXzIbnC" },
       create: {
         name: u.name,
         last_name: u.last_name,
         email: u.email,
         phone: u.phone,
-        password_hash: "$2b$10$EpRnTzVlqHNP0.fUbXUwSOyuiXe/QLSUG6xNekdhpbJ3.gPpv7hW2",
+        password_hash: "$2b$10$CLiXN3Xl.36WI6gaGBlhu.8vwI.s9BLDx2QmVcnsrM6DTlcXzIbnC",
         role: u.role,
       },
     });
