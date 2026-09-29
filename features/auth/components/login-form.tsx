@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import type { LoginResponse } from "@/features/auth/types/auth.interface";
 
 // ─── Google SVG Icon ────────────────────────────────────────────────────────
 function GoogleIcon() {
@@ -48,15 +50,50 @@ function AppleIcon() {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  /**
+   * handleSubmit — conecta el formulario con el endpoint POST /api/auth/login.
+   *
+   * Usamos fetch() nativo (no una librería) para tener control total:
+   *  - Si la respuesta es 200 → el servidor ya guardó el JWT en la cookie
+   *    HTTP-only automáticamente. Solo necesitamos redirigir.
+   *  - Si es 401 → mostramos "Credenciales inválidas" al usuario.
+   *  - Si es otro error → mensaje genérico.
+   */
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError(null);
+
     startTransition(async () => {
-      // TODO: conectar con NextAuth / acción de servidor
-      await new Promise((r) => setTimeout(r, 800));
-      console.log("Login con:", email);
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (res.ok) {
+          // Login exitoso: el JWT ya está en la cookie.
+          // router.refresh() le dice a Next.js que re-ejecute los
+          // Server Components para que lean la nueva cookie.
+          const data: LoginResponse = await res.json();
+          console.log("Bienvenido:", data.user.name);
+          router.refresh();
+          router.push("/");
+        } else if (res.status === 401) {
+          setError("Correo o contraseña incorrectos.");
+        } else {
+          setError("Ocurrió un error. Intentá de nuevo.");
+        }
+      } catch {
+        setError("No se pudo conectar con el servidor.");
+      }
     });
   }
 
@@ -97,11 +134,66 @@ export function LoginForm() {
           />
         </div>
 
+        {/* Campo contraseña */}
+        <div className="space-y-1.5">
+          <label
+            htmlFor="login-password"
+            className="block text-[13px] font-medium tracking-wide text-foreground"
+          >
+            Contraseña
+          </label>
+          <div className="relative">
+            <input
+              id="login-password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              placeholder="Tu contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="
+                w-full rounded-lg border border-border bg-card px-4 py-3 pr-11
+                text-sm text-foreground placeholder:text-muted-foreground/60
+                transition duration-200
+                focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/25
+                disabled:opacity-50
+              "
+              disabled={isPending}
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              onClick={() => setShowPassword((v) => !v)}
+              className="
+                absolute inset-y-0 right-0 flex items-center pr-3.5
+                text-muted-foreground transition-colors hover:text-foreground focus:outline-none
+              "
+            >
+              {showPassword ? (
+                <EyeOff className="size-4" strokeWidth={1.6} />
+              ) : (
+                <Eye className="size-4" strokeWidth={1.6} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mensaje de error */}
+        {error && (
+          <p
+            role="alert"
+            className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
+            {error}
+          </p>
+        )}
+
         {/* Botón principal */}
         <button
           id="login-submit-btn"
           type="submit"
-          disabled={isPending || !email}
+          disabled={isPending || !email || !password}
           className="
             flex w-full items-center justify-center gap-2
             rounded-lg bg-primary px-6 py-3.5
@@ -113,7 +205,7 @@ export function LoginForm() {
           "
         >
           {isPending && <Loader2 className="size-4 animate-spin" />}
-          Continuar
+          Ingresar
         </button>
       </form>
 
