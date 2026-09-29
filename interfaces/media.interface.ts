@@ -18,3 +18,8 @@ export interface ProductImageResponse {
   image_url: string | null
   image_url_id: string | null
 }
+
+export interface CategoryImageResponse {
+  image_url: string | null
+  image_url_id: string | null
+}
