@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import type { LoginResponse } from "@/features/auth/types/auth.interface";
 
@@ -51,6 +51,11 @@ function AppleIcon() {
 // ─── Component ───────────────────────────────────────────────────────────────
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Si el middleware redirigió aquí desde una ruta protegida,
+  // `redirectTo` contiene la ruta original para volver después del login.
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -85,9 +90,13 @@ export function LoginForm() {
           const data: LoginResponse = await res.json();
           console.log("Bienvenido:", data.user.name);
           router.refresh();
-          router.push("/");
+          // Redirigir a la ruta original (o a la tienda si no hay ninguna).
+          router.push(redirectTo);
         } else if (res.status === 401) {
           setError("Correo o contraseña incorrectos.");
+        } else if (res.status === 429) {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error ?? "Demasiados intentos. Intentá más tarde.");
         } else {
           setError("Ocurrió un error. Intentá de nuevo.");
         }

@@ -6,6 +6,13 @@ import { prisma } from "@/lib/prisma";
 
 const STATE_COOKIE = "google_oauth_state";
 
+/** Redirige a login y borra la cookie de state para no dejarla huérfana. */
+function redirectToLoginClean(base: string) {
+  const res = NextResponse.redirect(new URL("/login", base));
+  res.cookies.set({ name: STATE_COOKIE, value: "", maxAge: 0, path: "/" });
+  return res;
+}
+
 /**
  * GET /api/auth/google/callback
  *
@@ -20,7 +27,7 @@ const STATE_COOKIE = "google_oauth_state";
  */
 export async function GET(req: NextRequest) {
   const appUrl = new URL("/", req.url).toString();
-  const loginUrl = new URL("/login", req.url).toString();
+  const base = req.url;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -30,18 +37,18 @@ export async function GET(req: NextRequest) {
 
     // El usuario canceló el login en la pantalla de Google
     if (errorParam) {
-      return NextResponse.redirect(loginUrl);
+      return redirectToLoginClean(base);
     }
 
     if (!code || !stateFromGoogle) {
-      return NextResponse.redirect(loginUrl);
+      return redirectToLoginClean(base);
     }
 
     // ── 1. Verificar state anti-CSRF ──────────────────────────────────────────
     const stateCookie = req.cookies.get(STATE_COOKIE)?.value;
     if (!stateCookie || stateCookie !== stateFromGoogle) {
       console.error("[Google OAuth] State mismatch — posible ataque CSRF");
-      return NextResponse.redirect(loginUrl);
+      return redirectToLoginClean(base);
     }
 
     // ── 2. Intercambiar code por access_token ─────────────────────────────────
@@ -52,7 +59,7 @@ export async function GET(req: NextRequest) {
 
     if (!googleUser.email_verified) {
       console.error("[Google OAuth] Email no verificado:", googleUser.email);
-      return NextResponse.redirect(loginUrl);
+      return redirectToLoginClean(base);
     }
 
     // ── 4. Buscar o crear usuario en la DB ────────────────────────────────────
@@ -110,6 +117,6 @@ export async function GET(req: NextRequest) {
     return res;
   } catch (error) {
     console.error("[Google OAuth callback]", error);
-    return NextResponse.redirect(loginUrl);
+    return redirectToLoginClean(base);
   }
 }
