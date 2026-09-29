@@ -135,6 +135,27 @@ export const PRODUCTS_MOCK = [
 // ─── Seed mocks: Usuarios ────────────────────────────────────────────
 export const USERS_MOCK = [
   {
+    name: "Admin",
+    last_name: "NORTE",
+    email: "admin@admin.com",
+    phone: "+51 900 000 001",
+    role: "ADMIN" as const,
+  },
+  {
+    name: "Cliente",
+    last_name: "Prueba",
+    email: "cliente@cliente.com",
+    phone: "+51 900 000 002",
+    role: "CUSTOMER" as const,
+  },
+  {
+    name: "Claudio",
+    last_name: "Dev",
+    email: "claudio.fullstack.dev@gmail.com",
+    phone: "+51 900 000 003",
+    role: "ADMIN" as const,
+  },
+  {
     name: "Carlos",
     last_name: "Mendoza",
     email: "carlos.mendoza@example.com",
