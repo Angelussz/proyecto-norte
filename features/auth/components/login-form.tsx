@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import type { LoginResponse } from "@/features/auth/types/auth.interface";
 
 // ─── Google SVG Icon ────────────────────────────────────────────────────────
 function GoogleIcon() {
@@ -87,8 +86,7 @@ export function LoginForm() {
           // Login exitoso: el JWT ya está en la cookie.
           // router.refresh() le dice a Next.js que re-ejecute los
           // Server Components para que lean la nueva cookie.
-          const data: LoginResponse = await res.json();
-          console.log("Bienvenido:", data.user.name);
+          await res.json();
           router.refresh();
           // Redirigir a la ruta original (o a la tienda si no hay ninguna).
           router.push(redirectTo);

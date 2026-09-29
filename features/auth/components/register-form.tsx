@@ -89,6 +89,7 @@ function PasswordInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
+          suppressHydrationWarning
           className="
             w-full rounded-lg border border-border bg-card px-4 py-3 pr-11
             text-sm text-foreground placeholder:text-muted-foreground/60 shadow-sm
@@ -148,7 +149,6 @@ export function RegisterForm() {
     startTransition(async () => {
       // TODO: conectar con Server Action / API Route de registro
       await new Promise((r) => setTimeout(r, 800));
-      console.log("Registro con:", email);
     });
   }
 
@@ -182,6 +182,7 @@ export function RegisterForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isPending}
+            suppressHydrationWarning
             className="
               w-full rounded-lg border border-border bg-card px-4 py-3
               text-sm text-foreground placeholder:text-muted-foreground/60 shadow-sm
