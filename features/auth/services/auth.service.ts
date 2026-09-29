@@ -46,6 +46,7 @@ export async function verifyCredentials(
       name: true,
       password_hash: true,
       role: true,
+      email_verified: true, // necesario para el TODO de bloqueo por verificación
     },
   });
 
@@ -54,6 +55,11 @@ export async function verifyCredentials(
   if (!user) {
     throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
   }
+
+  // TODO: bloquear login si !user.email_verified cuando se implemente el
+  //       flujo de verificación por email (Resend / SendGrid).
+  //       Responder 403 con código "EMAIL_NOT_VERIFIED" para que el cliente
+  //       pueda mostrar un mensaje específico y un botón "Reenviar correo".
 
   // 3. Comparar la contraseña enviada con el hash almacenado
   const passwordMatches = await compare(password, user.password_hash);
