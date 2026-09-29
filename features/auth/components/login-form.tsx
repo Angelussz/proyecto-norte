@@ -132,6 +132,7 @@ export function LoginForm() {
             placeholder="m@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            suppressHydrationWarning
             className="
               w-full rounded-lg border border-border bg-card px-4 py-3
               text-sm text-foreground placeholder:text-muted-foreground/60
@@ -161,6 +162,7 @@ export function LoginForm() {
               placeholder="Tu contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              suppressHydrationWarning
               className="
                 w-full rounded-lg border border-border bg-card px-4 py-3 pr-11
                 text-sm text-foreground placeholder:text-muted-foreground/60
