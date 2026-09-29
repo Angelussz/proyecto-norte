@@ -1,55 +1,67 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useSyncExternalStore } from "react"
+import {
+  getCartServerSnapshot,
+  getCartSnapshot,
+  hasStoredCart,
+  parseCartItems,
+  subscribeToCart,
+  writeCartItems,
+} from "@/features/cart/services/cart-storage"
 import type { CartItem, OrderSummary } from "@/features/cart/types/cart.interface"
 
-const EXAMPLE_PRODUCTS: CartItem[] = [
+const CART_SEED_ITEMS: CartItem[] = [
   {
-    id: "1",
-    name: "Structured Wool Coat",
-    color: "Stone Grey",
-    size: "L",
-    price: 450,
+    id: "04611bb1-3ade-422d-aa8f-c39e5596dbce",
+    name: "Coastal Overshirt",
+    color: "Estándar",
+    size: "M",
+    price: 139,
     imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBrtrcFGyOp3-sKX00ylLWfidMZMSfdxEUvZwD5E2E9THKqE9q9zDflOSBiQEvKX37HTyYB3EnUrAIDjw0dumhUZ4oQ1QiQpel85rqSBBxtkHMWIxbcD_LWJOvOunMC_Tdgd4Aa0iAWwRi7PIF9Tq1ZV3IEDBlxukUUIcB-3kHLip9F_JCX2gj7rUr1orwZrmqmKGaUcrWWSSGb0YYyAJtjN0rzfrkbxTPLx50ka887dPzDEGFql3B7",
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBd-YsR-XNfNdYYiIB9pddWYzQC4GRRh3DinlyIPQEjXj4Qo5lD3hjDLANrRM_0GaTR_NjueqE0fduw4-W_Po0s9oVjba9rP0-abr2-VthEqyRv2aeSKUAIrZCp1k_79XQITX-fp8ukMAj9bowci6xAx3A4srU1PDwAPDITKOtfKJazc7Bx5Lh18jBtmts8nffQhSbfPXfBs24Ur0AeKvf--Wdr4PZFFYJXKI5OO9eyFxRJ46_9hMHh",
     quantity: 1,
   },
   {
-    id: "2",
-    name: "Premium Leather Boots",
-    color: "Warm Black",
-    size: "42",
-    price: 320,
+    id: "095fe8ab-659f-4eea-85ef-59938a1444af",
+    name: "Field Linen Shirt",
+    color: "Estándar",
+    size: "L",
+    price: 128,
     imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuArWqimaebFD9-z-m0fSd0_KCGAjWNYsJHOzYUglWMVF3N9fcIunWHL-iyDMnOxUJJqpa3TQZQ3mFjHAkRrN7-C7y-XatidzziLsW3THfKA7flScjuzLJOgLMB4jXSiJmx9urn2k78KhkhcHwsvOuUpcjntFpBoTqWbDH57gij1eY-XU_2eFLe-zN6AKeaQ0wO4NyU8JjzkmCRjKbnbrv-0P_y6hkmK2sA84fK4v1bTNCu78-deE45v",
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBMn1DJnKYB5FMQoR7oSs53BpdsFlVDrZSBSzM6Gc9KnBY9Hf8iwcsi8nHXY7BJAG_xlyStcYz6qyhpeqo5yCHvmmyGv_wGsXpEKCfB0IrbKzGufd9raZGSL07Bz8boWB3FwFxLkaUrFROOd4NrA_07soH9StsyQizJ8_WN5jS_SpJ5nYLei3dqXGArKy3btgyKderS1R8Ebnuoas11Ss1iB0AKKJzD3bDUebP5bfC90vYRXKmCcR24",
     quantity: 1,
   },
 ]
 
-const CART_KEY = "cart-norte"
-
 export function useCart() {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === "undefined") return EXAMPLE_PRODUCTS
-    const saved = localStorage.getItem(CART_KEY)
-    return saved ? JSON.parse(saved) : EXAMPLE_PRODUCTS
-  })
+  const snapshot = useSyncExternalStore(
+    subscribeToCart,
+    getCartSnapshot,
+    getCartServerSnapshot
+  )
+  const items = useMemo(() => parseCartItems(snapshot), [snapshot])
 
+  // Siembra inicial solo cuando nunca hubo carrito guardado.
+  // Escribe en el store externo (localStorage) en vez de usar setState.
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(items))
-  }, [items])
+    if (hasStoredCart(snapshot)) return
+
+    writeCartItems(CART_SEED_ITEMS)
+  }, [snapshot])
 
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return
-    setItems((prev) =>
-      prev.map((item) =>
+
+    writeCartItems(
+      items.map((item) =>
         item.id === id ? { ...item, quantity: newQuantity } : item
       )
     )
   }
 
   const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
+    writeCartItems(items.filter((item) => item.id !== id))
   }
 
   const subtotal = items.reduce(
@@ -69,11 +81,14 @@ export function useCart() {
     total: subtotal,
   }
 
+  const isLoading = !hasStoredCart(snapshot)
+
   return {
     items,
     summary,
     totalItems,
     updateQuantity,
     removeItem,
+    isLoading,
   }
 }
