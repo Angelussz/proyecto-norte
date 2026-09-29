@@ -84,6 +84,8 @@ export async function GET(req: NextRequest) {
     const token = await signToken({
       sub: user.id,
       email: user.email,
+      name: user.name,
+      picture: googleUser.picture,  // avatar de Google → se muestra en el header
       role: user.role,
     });
 
