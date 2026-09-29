@@ -118,6 +118,7 @@ function MenuItem({
 export function UserMenu() {
   const { user, isLoading, isAdmin } = useSession();
   const [open, setOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -163,11 +164,19 @@ export function UserMenu() {
   // ── Logout ──────────────────────────────────────────────────────────────────
   async function handleLogout() {
     setOpen(false);
-    await fetch("/api/auth/logout", { method: "POST" });
-    // Invalidamos la caché de sesión → el header vuelve al estado "sin sesión"
-    queryClient.invalidateQueries({ queryKey: ["session"] });
-    router.push("/login");
-    router.refresh();
+    setLogoutError(false);
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (!res.ok) throw new Error("Logout fallido");
+      // Invalidamos la caché de sesión → el header vuelve al estado "sin sesión"
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+      router.push("/login");
+      router.refresh();
+    } catch {
+      // Si el fetch falla, NO invalidamos la caché ni redirigimos.
+      // El usuario sigue logueado (estado consistente) y ve el error.
+      setLogoutError(true);
+    }
   }
 
   // ── Estado: con sesión → avatar + dropdown ──────────────────────────────────
@@ -238,6 +247,11 @@ export function UserMenu() {
             <MenuItem icon={LogOut} danger onClick={handleLogout}>
               Cerrar sesión
             </MenuItem>
+            {logoutError && (
+              <p className="px-4 pb-2 text-[11px] text-destructive">
+                Error al cerrar sesión. Intentá de nuevo.
+              </p>
+            )}
           </div>
         </div>
       )}

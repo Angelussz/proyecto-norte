@@ -18,7 +18,10 @@ export const env = {
   CLOUDINARY_API_KEY: optional('CLOUDINARY_API_KEY'),
   CLOUDINARY_API_SECRET: optional('CLOUDINARY_API_SECRET'),
   ADMIN_API_TOKEN: optional('ADMIN_API_TOKEN'),
-  GOOGLE_CLIENT_ID: optional('GOOGLE_CLIENT_ID'),
-  GOOGLE_CLIENT_SECRET: optional('GOOGLE_CLIENT_SECRET'),
-  GOOGLE_REDIRECT_URI: optional('GOOGLE_REDIRECT_URI'),
+  // Google OAuth — requeridas para el flujo de login con Google.
+  // Si no están definidas, el error aparece al arrancar el servidor
+  // (mucho más fácil de diagnosticar que un crash en runtime).
+  GOOGLE_CLIENT_ID: required('GOOGLE_CLIENT_ID'),
+  GOOGLE_CLIENT_SECRET: required('GOOGLE_CLIENT_SECRET'),
+  GOOGLE_REDIRECT_URI: required('GOOGLE_REDIRECT_URI'),
 } as const

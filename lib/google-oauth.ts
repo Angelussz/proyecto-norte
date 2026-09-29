@@ -52,12 +52,6 @@ export function buildGoogleAuthUrl(state: string): string {
   const clientId = env.GOOGLE_CLIENT_ID;
   const redirectUri = env.GOOGLE_REDIRECT_URI;
 
-  if (!clientId || !redirectUri) {
-    throw new Error(
-      "GOOGLE_CLIENT_ID y GOOGLE_REDIRECT_URI deben estar configurados en .env"
-    );
-  }
-
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -80,10 +74,6 @@ export async function exchangeCodeForToken(
   const clientId = env.GOOGLE_CLIENT_ID;
   const clientSecret = env.GOOGLE_CLIENT_SECRET;
   const redirectUri = env.GOOGLE_REDIRECT_URI;
-
-  if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error("Faltan variables de entorno de Google OAuth");
-  }
 
   const res = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
