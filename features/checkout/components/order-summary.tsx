@@ -69,7 +69,13 @@ export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Shipping</dt>
-            <dd className="font-semibold">{summary.shippingLabel}</dd>
+            <dd className="font-semibold">
+              {summary.shippingLabel} · {formatPrice(summary.shippingCost)}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Taxes</dt>
+            <dd className="font-semibold">{formatPrice(summary.taxes)}</dd>
           </div>
           <div className="flex justify-between border-t border-border pt-4">
             <dt className="text-base font-bold uppercase tracking-wider">

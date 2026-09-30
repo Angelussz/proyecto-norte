@@ -74,12 +74,7 @@ export function useCart() {
     0
   )
 
-  const summary: OrderSummary = {
-    subtotal,
-    shipping: "Calculated at checkout",
-    taxes: "Calculated at checkout",
-    total: subtotal,
-  }
+  const summary: OrderSummary = { subtotal }
 
   const isLoading = !hasStoredCart(snapshot)
 

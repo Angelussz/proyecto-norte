@@ -1,7 +1,7 @@
 /**
  * Contrato backend para el checkout.
- * Fuente de verdad futura: GET /api/checkout -> CheckoutSummary
- * Fase actual: mock en lib/mocks.ts (CHECKOUT_MOCK) que respeta estos tipos.
+ * Fuente de verdad: POST /api/checkout/quote -> { data: CheckoutQuote }
+ * shippingCost y taxes los calcula el servidor (hoy constantes temporales).
  * No importar mocks ni fetch aquí.
  */
 
@@ -26,6 +26,14 @@ export type CheckoutSummary = {
   shipping: CheckoutShipping;
   items: CheckoutItem[];
   subtotal: number;
+  shippingCost: number;
   shippingLabel: string;
+  taxes: number;
   total: number;
 };
+
+/**
+ * Respuesta de POST /api/checkout/quote.
+ * Igual al resumen pero sin dirección: el cliente aún no la envía.
+ */
+export type CheckoutQuote = Omit<CheckoutSummary, "shipping">;
