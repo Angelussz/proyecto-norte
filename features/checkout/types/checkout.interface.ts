@@ -2,7 +2,8 @@
  * Contrato backend para el checkout.
  * Fuente de verdad: POST /api/checkout/quote -> { data: CheckoutQuote }
  * shippingCost y taxes los calcula el servidor (hoy constantes temporales).
- * No importar mocks ni fetch aquí.
+ * La dirección de envío no viaja aquí: la muestra ShippingSummary aparte.
+ * No importar mocks ni fetch.
  */
 
 export type CheckoutItem = {
@@ -22,8 +23,7 @@ export type CheckoutShipping = {
   city: string;
 };
 
-export type CheckoutSummary = {
-  shipping: CheckoutShipping;
+export type CheckoutQuote = {
   items: CheckoutItem[];
   subtotal: number;
   shippingCost: number;
@@ -31,9 +31,3 @@ export type CheckoutSummary = {
   taxes: number;
   total: number;
 };
-
-/**
- * Respuesta de POST /api/checkout/quote.
- * Igual al resumen pero sin dirección: el cliente aún no la envía.
- */
-export type CheckoutQuote = Omit<CheckoutSummary, "shipping">;

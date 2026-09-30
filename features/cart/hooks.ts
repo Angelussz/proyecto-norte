@@ -64,6 +64,10 @@ export function useCart() {
     writeCartItems(items.filter((item) => item.id !== id))
   }
 
+  const clearCart = () => {
+    writeCartItems([])
+  }
+
   const subtotal = items.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0
@@ -84,6 +88,7 @@ export function useCart() {
     totalItems,
     updateQuantity,
     removeItem,
+    clearCart,
     isLoading,
   }
 }

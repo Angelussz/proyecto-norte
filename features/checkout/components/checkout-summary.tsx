@@ -10,7 +10,7 @@ import {
   getCheckoutQuote,
 } from "@/features/checkout/services/checkout.service";
 import { OrderSummary } from "@/features/checkout/components/order-summary";
-import { CHECKOUT_SHIPPING_MOCK } from "@/lib/mocks";
+import { PlaceOrderButton } from "@/features/checkout/components/place-order-button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 /**
@@ -62,7 +62,8 @@ export function CheckoutSummary() {
   if (quoteQuery.data) {
     return (
       <OrderSummary
-        summary={{ ...quoteQuery.data, shipping: CHECKOUT_SHIPPING_MOCK }}
+        summary={quoteQuery.data}
+        action={<PlaceOrderButton />}
       />
     );
   }

@@ -13,6 +13,7 @@ function optional(name: string): string | undefined {
 
 export const env = {
   DATABASE_URL: required('DATABASE_URL'),
+  STRIPE_SECRET_KEY: required('STRIPE_SECRET_KEY'),
   CLOUDINARY_CLOUD_NAME: optional('CLOUDINARY_CLOUD_NAME'),
   CLOUDINARY_API_KEY: optional('CLOUDINARY_API_KEY'),
   CLOUDINARY_API_SECRET: optional('CLOUDINARY_API_SECRET'),

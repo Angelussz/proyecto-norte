@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { CreditCard, Lock, Wallet } from "lucide-react";
-import {
-  loadStripe,
-  type StripeCardElementChangeEvent,
-  type StripeCardElementOptions,
+import type {
+  StripeCardElementChangeEvent,
+  StripeCardElementOptions,
 } from "@stripe/stripe-js";
-import { CardElement, Elements } from "@stripe/react-stripe-js";
+import { CardElement } from "@stripe/react-stripe-js";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -19,11 +18,6 @@ import {
 import { cn } from "@/lib/utils";
 
 type Method = "credit_card" | "paypal";
-
-const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-
-// Una sola carga de Stripe.js para toda la app (patrón oficial).
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 function RadioDot({ checked }: { checked: boolean }) {
   return (
@@ -38,8 +32,6 @@ function RadioDot({ checked }: { checked: boolean }) {
     </span>
   );
 }
-// ! Revisar como se envia formulario a stripe con sdk de stripe 
-
 // Los tokens del tema están en oklch; Stripe solo acepta hex/rgb(a)/hsl.
 // El truco de canvas normaliza cualquier color CSS a un formato soportado.
 function normalizeColor(value: string, fallback: string): string {
@@ -176,42 +168,38 @@ export function PaymentMethodForm() {
 
         {method === "credit_card" && (
           <div className="ml-2 border-l border-border py-4 pl-4">
-            {stripePromise ? (
-              <Elements stripe={stripePromise} options={{ locale: "en" }}>
-                <CardDetailsField />
-              </Elements>
-            ) : (
-              <p role="alert" className="text-xs font-semibold uppercase tracking-widest text-destructive">
-                Stripe is not configured: missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-              </p>
-            )}
+            {/* El contexto Elements lo provee el wrapper del checkout. */}
+            <CardDetailsField />
           </div>
         )}
 
+        {/* PayPal deshabilitado temporalmente (próximo sprint). */}
         <label
-          className={cn(
-            "relative flex cursor-pointer rounded-none border p-4 transition-all focus:outline-none",
-            method === "paypal"
-              ? "border-foreground opacity-100"
-              : "border-border opacity-70 hover:border-foreground hover:opacity-100"
-          )}
+          className="relative flex rounded-none border p-4 border-border opacity-50"
+          aria-disabled="true"
         >
           <input
             type="radio"
             name="payment_method"
             value="paypal"
-            checked={method === "paypal"}
-            onChange={() => setMethod("paypal")}
+            checked={false}
+            disabled
             className="sr-only"
           />
           <span className="flex w-full items-center justify-between">
             <span className="flex items-center gap-4">
-              <RadioDot checked={method === "paypal"} />
+              <RadioDot checked={false} />
               <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
                 PayPal
               </span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1">
+                Próximamente
+              </span>
             </span>
-            <Wallet className="size-6 text-muted-foreground" aria-hidden />
+            <Wallet
+              className="size-6 text-muted-foreground"
+              aria-hidden
+            />
           </span>
         </label>
         </div>
