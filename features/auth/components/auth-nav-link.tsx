@@ -24,7 +24,7 @@ export function AuthNavLink() {
 
   return (
     <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-      Colección 2025
+      Colección 2026
     </span>
   );
 }

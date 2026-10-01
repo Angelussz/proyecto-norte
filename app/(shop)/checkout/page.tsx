@@ -7,7 +7,7 @@ import { OrderSummary } from "@/features/checkout/components/order-summary";
 
 export const metadata: Metadata = {
   title: "Checkout — NORTE",
-  description: "Complete your NORTE order: shipping, payment and review.",
+  description: "Completá tu pedido NORTE: envío, pago y confirmación.",
 };
 
 export default async function CheckoutPage() {

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Menu, Search, ShoppingBag, User } from "lucide-react";
+import { Menu, ShoppingBag, User } from "lucide-react";
 
-const NAV = ["New In", "Shop", "Collections", "About", "Contact"];
+const NAV = [{ item: 'Tienda', link: '/products' }, { item: 'Sobre Nosotros', link: '/products' }];
 
 export function StoreHeader() {
   return (
@@ -17,29 +17,22 @@ export function StoreHeader() {
         <nav className="hidden items-center gap-8 md:flex">
           {NAV.map((item) => (
             <Link
-              key={item}
-              href="#"
-              className={`text-sm font-semibold uppercase tracking-widest transition-colors hover:text-primary ${
-                item === "Shop"
-                  ? "border-b-2 border-primary pb-1 text-primary"
-                  : "text-muted-foreground"
-              }`}
+              key={item.item}
+              href={item.link}
+              className={`text-sm font-semibold uppercase tracking-widest transition-colors hover:text-primary`}
             >
-              {item}
+              {item.item}
             </Link>
           ))}
         </nav>
         <div className="flex items-center gap-4 text-foreground">
-          <button aria-label="Search" className="transition-colors hover:text-primary">
-            <Search className="size-6" />
-          </button>
-          <Link href="/login" aria-label="Profile" className="transition-colors hover:text-primary">
+          <Link href="/login" aria-label="Perfil" className="transition-colors hover:text-primary">
             <User className="size-6" />
           </Link>
-          <Link href="/cart" aria-label="Cart" className="transition-colors hover:text-primary">
+          <Link href="/cart" aria-label="Carrito" className="transition-colors hover:text-primary">
             <ShoppingBag className="size-6" />
           </Link>
-          <button aria-label="Menu" className="transition-colors hover:text-primary md:hidden">
+          <button aria-label="Menú" className="transition-colors hover:text-primary md:hidden">
             <Menu className="size-6" />
           </button>
         </div>

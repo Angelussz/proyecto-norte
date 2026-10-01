@@ -20,7 +20,7 @@ export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
           className="text-2xl uppercase tracking-wide"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          Order Summary
+          Resumen del Pedido
         </CardTitle>
       </CardHeader>
 
@@ -68,7 +68,7 @@ export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
             <dd className="font-semibold">{formatPrice(summary.subtotal)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Shipping</dt>
+            <dt className="text-muted-foreground">Envio</dt>
             <dd className="font-semibold">{summary.shippingLabel}</dd>
           </div>
           <div className="flex justify-between border-t border-border pt-4">
@@ -88,17 +88,17 @@ export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
           size="lg"
           className="flex h-auto w-full items-center justify-center gap-2 rounded-none py-4 text-sm font-semibold uppercase tracking-widest"
         >
-          Place Order
+          Realizar Pedido
           <Lock className="size-4.5" aria-hidden />
         </Button>
         <p className="text-center text-xs text-muted-foreground">
-          By placing your order, you agree to our{" "}
+          Al realizar su pedido, acepta nuestros{" "}
           <Link href="#" className="underline hover:text-foreground">
-            Terms of Service
+            Términos de servicio
           </Link>{" "}
-          and{" "}
+          y{" "}
           <Link href="#" className="underline hover:text-foreground">
-            Privacy Policy
+            Política de privacidad
           </Link>
           .
         </p>
