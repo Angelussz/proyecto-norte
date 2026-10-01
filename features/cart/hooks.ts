@@ -3,44 +3,47 @@
 import { useState, useEffect } from "react"
 import type { CartItem, OrderSummary } from "@/features/cart/types/cart.interface"
 
-const EXAMPLE_PRODUCTS: CartItem[] = [
-  {
-    id: "1",
-    name: "Structured Wool Coat",
-    color: "Stone Grey",
-    size: "L",
-    price: 450,
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBrtrcFGyOp3-sKX00ylLWfidMZMSfdxEUvZwD5E2E9THKqE9q9zDflOSBiQEvKX37HTyYB3EnUrAIDjw0dumhUZ4oQ1QiQpel85rqSBBxtkHMWIxbcD_LWJOvOunMC_Tdgd4Aa0iAWwRi7PIF9Tq1ZV3IEDBlxukUUIcB-3kHLip9F_JCX2gj7rUr1orwZrmqmKGaUcrWWSSGb0YYyAJtjN0rzfrkbxTPLx50ka887dPzDEGFql3B7",
-    quantity: 1,
-  },
-  {
-    id: "2",
-    name: "Premium Leather Boots",
-    color: "Warm Black",
-    size: "42",
-    price: 320,
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuArWqimaebFD9-z-m0fSd0_KCGAjWNYsJHOzYUglWMVF3N9fcIunWHL-iyDMnOxUJJqpa3TQZQ3mFjHAkRrN7-C7y-XatidzziLsW3THfKA7flScjuzLJOgLMB4jXSiJmx9urn2k78KhkhcHwsvOuUpcjntFpBoTqWbDH57gij1eY-XU_2eFLe-zN6AKeaQ0wO4NyU8JjzkmCRjKbnbrv-0P_y6hkmK2sA84fK4v1bTNCu78-deE45v",
-    quantity: 1,
-  },
-]
-
 const CART_KEY = "cart-norte"
 
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === "undefined") return EXAMPLE_PRODUCTS
+    if (typeof window === "undefined") return []
+
     const saved = localStorage.getItem(CART_KEY)
-    return saved ? JSON.parse(saved) : EXAMPLE_PRODUCTS
+
+    return saved ? JSON.parse(saved) : []
   })
 
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(items))
   }, [items])
 
+  const addItem = (newItem: CartItem) => {
+    setItems((prev) => {
+      const existingItem = prev.find(
+        (item) =>
+          item.id === newItem.id &&
+          item.color === newItem.color &&
+          item.size === newItem.size
+      )
+
+      if (existingItem) {
+        return prev.map((item) =>
+          item.id === newItem.id &&
+          item.color === newItem.color &&
+          item.size === newItem.size
+            ? { ...item, quantity: item.quantity + newItem.quantity }
+            : item
+        )
+      }
+
+      return [...prev, newItem]
+    })
+  }
+
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return
+
     setItems((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, quantity: newQuantity } : item
@@ -73,6 +76,7 @@ export function useCart() {
     items,
     summary,
     totalItems,
+    addItem,
     updateQuantity,
     removeItem,
   }
