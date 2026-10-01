@@ -6,20 +6,42 @@ import { ArrowRight, RotateCcw, Truck } from "lucide-react";
 import { formatPrice, isSizeAvailable } from "@/lib/products";
 import type { ProductDetail } from "@/features/product/types/product.interface";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/features/cart/hooks";
 
 export function ProductInfo({ product }: { product: ProductDetail }) {
   const router = useRouter();
+  const { addItem } = useCart();
+
   const firstAvailable = useMemo(
     () => product.variants.find(isSizeAvailable)?.size ?? "",
     [product]
   );
+
   const [size, setSize] = useState(firstAvailable);
   const [selected, setSelected] = useState(product.colors[0]?.name ?? "");
+  const [showAdded, setShowAdded] = useState(false);
 
-  const currentColor = product.colors.find((c) => c.name === selected) ?? product.colors[0];
+  const currentColor =
+    product.colors.find((c) => c.name === selected) ?? product.colors[0];
 
   const activeVariant = product.variants.find((v) => v.size === size);
   const activeStock = activeVariant?.stock ?? 0;
+
+  const handleAddToCart = () => {
+    if (activeStock === 0) return;
+
+    addItem({
+      id: product.id,
+      name: product.name,
+      color: selected,
+      size,
+      price: product.price,
+      imageUrl: product.images[0] || "",
+      quantity: 1,
+    });
+
+    setShowAdded(true);
+  };
 
   return (
     <div className="flex flex-col pt-4 md:pt-0">
@@ -30,10 +52,14 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
         >
           {product.name}
         </h1>
+
         <p className="mb-6 text-lg text-muted-foreground">
           {formatPrice(product.price)}
         </p>
-        <p className="leading-relaxed text-muted-foreground">{product.description}</p>
+
+        <p className="leading-relaxed text-muted-foreground">
+          {product.description}
+        </p>
       </div>
 
       <div className="mb-8">
@@ -41,12 +67,16 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
           <div className="mb-3 flex items-center justify-between">
             <span className="text-sm font-semibold uppercase tracking-widest text-foreground">
               Color:{" "}
-              <span className="font-normal text-muted-foreground">{currentColor?.name}</span>
+              <span className="font-normal text-muted-foreground">
+                {currentColor?.name}
+              </span>
             </span>
           </div>
+
           <div className="flex gap-3">
             {product.colors.map((color) => {
               const active = color.name === currentColor?.name;
+
               return (
                 <button
                   key={color.name}
@@ -54,10 +84,16 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
                   aria-label={color.name}
                   aria-pressed={active}
                   onClick={() => setSelected(color.name)}
-                  className={`flex size-10 cursor-pointer items-center justify-center rounded-full border p-0.5 transition-colors ${active ? "border-foreground" : "border-border hover:border-foreground"
-                    }`}
+                  className={`flex size-10 cursor-pointer items-center justify-center rounded-full border p-0.5 transition-colors ${
+                    active
+                      ? "border-foreground"
+                      : "border-border hover:border-foreground"
+                  }`}
                 >
-                  <span className="size-full rounded-full" style={{ backgroundColor: color.hex }} />
+                  <span
+                    className="size-full rounded-full"
+                    style={{ backgroundColor: color.hex }}
+                  />
                 </button>
               );
             })}
@@ -72,10 +108,12 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
               Talla
             </span>
           </div>
+
           <div className="grid grid-cols-4 gap-2">
             {product.variants.map((variant) => {
               const available = isSizeAvailable(variant);
               const active = variant.size === size;
+
               return (
                 <button
                   key={variant.size}
@@ -83,13 +121,18 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
                   disabled={!available}
                   aria-pressed={active}
                   onClick={() => setSize(variant.size)}
-                  title={available ? `${variant.stock} en stock` : "Sin stock"}
-                  className={`py-3 text-sm font-semibold uppercase transition-all border ${!available
+                  title={
+                    available
+                      ? `${variant.stock} en stock`
+                      : "Sin stock"
+                  }
+                  className={`py-3 text-sm font-semibold uppercase transition-all border ${
+                    !available
                       ? "cursor-not-allowed border-border text-muted-foreground opacity-50"
                       : !active
                         ? "border-border text-foreground hover:border-foreground hover:bg-muted"
                         : "border-foreground bg-foreground text-background"
-                    }`}
+                  }`}
                 >
                   {variant.size}
                 </button>
@@ -104,11 +147,14 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
           type="button"
           size="lg"
           disabled={activeStock === 0}
-          onClick={() => router.push("/cart")}
+          onClick={handleAddToCart}
           className="group flex h-auto w-full justify-center gap-3 rounded-none py-5 text-sm font-semibold uppercase tracking-widest"
         >
-          <span>{activeStock === 0 ? "Sin stock" : `Agregar al Carrito`}</span>
-          {!(activeStock === 0) && (
+          <span>
+            {activeStock === 0 ? "Sin stock" : "Agregar al Carrito"}
+          </span>
+
+          {activeStock !== 0 && (
             <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
           )}
         </Button>
@@ -117,23 +163,65 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
       <ul className="mb-8 flex flex-col gap-4 border-t border-border pt-8">
         <li className="flex items-start gap-4 text-muted-foreground">
           <Truck className="size-6 shrink-0 text-muted-foreground" />
+
           <div>
             <p className="mb-1 text-sm font-semibold uppercase text-foreground">
               Envío Gratis
             </p>
-            <p className="text-xs">En todos los pedidos mayores a $99. Entrega estándar en 3-5 días hábiles.</p>
+
+            <p className="text-xs">
+              En todos los pedidos mayores a $99. Entrega estándar en 3-5 días
+              hábiles.
+            </p>
           </div>
         </li>
+
         <li className="flex items-start gap-4 text-muted-foreground">
           <RotateCcw className="size-6 shrink-0 text-muted-foreground" />
+
           <div>
             <p className="mb-1 text-sm font-semibold uppercase text-foreground">
               Devoluciones en 14 Días
             </p>
-            <p className="text-xs">Proceso de devolución fácil. Las prendas deben estar sin usar y sin lavar.</p>
+
+            <p className="text-xs">
+              Proceso de devolución fácil. Las prendas deben estar sin usar y
+              sin lavar.
+            </p>
           </div>
         </li>
       </ul>
+
+      {showAdded && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md bg-background p-6 shadow-lg">
+            <h2 className="text-xl font-semibold">
+              Producto agregado al carrito
+            </h2>
+
+            <p className="mt-2 text-muted-foreground">
+              {product.name}
+            </p>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAdded(false)}
+              >
+                Seguir comprando
+              </Button>
+
+              <Button
+                type="button"
+                onClick={() => router.push("/cart")}
+              >
+                Ir al carrito
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
