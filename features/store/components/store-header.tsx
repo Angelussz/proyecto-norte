@@ -1,5 +1,15 @@
+"use client";
+
+/**
+ * features/store/components/store-header.tsx
+ *
+ * Header sticky de la tienda.
+ * Es Client Component porque necesita el UserMenu interactivo.
+ */
+
 import Link from "next/link";
-import { Menu, Search, ShoppingBag, User } from "lucide-react";
+import { Menu, Search, ShoppingBag } from "lucide-react";
+import { UserMenu } from "@/features/store/components/user-menu";
 
 const NAV = ["New In", "Shop", "Collections", "About", "Contact"];
 
@@ -19,11 +29,10 @@ export function StoreHeader() {
             <Link
               key={item}
               href="#"
-              className={`text-sm font-semibold uppercase tracking-widest transition-colors hover:text-primary ${
-                item === "Shop"
+              className={`text-sm font-semibold uppercase tracking-widest transition-colors hover:text-primary ${item === "Shop"
                   ? "border-b-2 border-primary pb-1 text-primary"
                   : "text-muted-foreground"
-              }`}
+                }`}
             >
               {item}
             </Link>
@@ -33,9 +42,10 @@ export function StoreHeader() {
           <button aria-label="Search" className="transition-colors hover:text-primary">
             <Search className="size-6" />
           </button>
-          <button aria-label="Profile" className="transition-colors hover:text-primary">
-            <User className="size-6" />
-          </button>
+
+          {/* UserMenu maneja los 3 estados: loading, sin sesión, con sesión */}
+          <UserMenu />
+
           <Link href="/cart" aria-label="Cart" className="transition-colors hover:text-primary">
             <ShoppingBag className="size-6" />
           </Link>

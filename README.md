@@ -103,3 +103,29 @@ http://localhost:3000/products
 
 Ahí se puede visualizar la página de productos desarrollada.
 
+### Claudio Peñalva — Backend / API
+
+Participación en el desarrollo del endpoint de catálogo público de productos con conexión a PostgreSQL via Prisma y fallback mock resiliente.
+
+Tareas realizadas:
+
+* Creación del endpoint público `GET /api/products`.
+* Conexión a la base de datos PostgreSQL mediante Prisma ORM (Docker + Prisma 7).
+* Filtros por categoría (`category`), rango de precio (`minPrice`, `maxPrice`) y ordenamiento (`price_asc`, `price_desc`, `name_asc`, `newest`).
+* Paginación dinámica (`page`, `limit`).
+* Sistema de fallback automático con MOCK: Si la base de datos PostgreSQL no está disponible (Docker apagado) o si la tabla de productos está vacía (sin seeds), el endpoint y la capa de servicio responden automáticamente con los datos mock, evitando caídas o bloqueos para el equipo de desarrollo.
+* Implementación de la capa de servicio `getProductCatalog` (`features/product/services/product-catalog.service.ts`) con soporte tanto en client-side como en server-side.
+
+### Cómo probar el endpoint de productos
+
+1. Con el servidor de desarrollo encendido (`pnpm dev`).
+2. Abrir en el navegador o herramienta de peticiones HTTP:
+
+http://localhost:3000/api/products
+
+3. Ejemplos de filtros soportados:
+
+* Por categoría: `http://localhost:3000/api/products?category=Camisas`
+* Por precio y ordenamiento: `http://localhost:3000/api/products?minPrice=100&maxPrice=150&sortBy=price_asc`
+* Paginación: `http://localhost:3000/api/products?page=1&limit=6`
+

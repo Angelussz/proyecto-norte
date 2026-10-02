@@ -40,7 +40,7 @@ export function BestSellersSection() {
           Best Sellers
         </h2>
         <Link
-          href="#"
+          href="/products"
           className="text-sm font-semibold uppercase tracking-wider text-[#534438] flex items-center hover:text-[#1e1c13] transition-colors"
         >
           View All <ArrowRight className="ml-1 size-4.5" />
