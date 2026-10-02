@@ -6,7 +6,7 @@ import type { ProductDetail, ProductVariant } from "@/features/product/types/pro
  */
 
 export function getGalleryImages(product: ProductDetail): string[] {
-  return [product.images.main, ...product.images.thumbnails];
+  return product.images;
 }
 
 /** Fuente de verdad: stock por variante. stock === 0 => talla no disponible. */
