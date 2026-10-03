@@ -1,28 +1,26 @@
 import type { ProductDetailResponse } from "@/features/product/types/product.interface";
-import { PRODUCT_BY_ID_MOCK } from "@/lib/mocks";
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { getBaseUrl } from "@/features/product/services/product-catalog.service";
 
 /**
- * Capa de servicio — simula el llamado al backend.
- * Hoy resuelve desde lib/mock.ts (PRODUCT_BY_ID_MOCK).
- * Para conectar la API real, reemplazar el cuerpo por:
- *   const res = await fetch(`${process.env.API_URL}/api/products/${id}`, { cache: "force-cache" });
- *   if (!res.ok) return null;
- *   return (await res.json()) as ProductDetailResponse;
+ * Capa de servicio — detalle de producto.
+ * Consume: GET /api/products/[id] -> { product, suggestions }
+ * - Devuelve null si la API responde 404 (la page hace notFound()).
+ * - Lanza un error si la API falla (500/red); React Query lo marca como isError.
  */
 export async function getProductDetail(
-  id: string
+  id: string,
 ): Promise<ProductDetailResponse | null> {
-  // Simula latencia de red
-  await delay(150);
+  const res = await fetch(`${getBaseUrl()}/api/products/${id}`, {
+    next: { revalidate: 60 },
+  });
 
-  if (id !== PRODUCT_BY_ID_MOCK.data.product.id) return null;
+  if (res.status === 404) return null;
 
-  return {
-    product: PRODUCT_BY_ID_MOCK.data.product,
-    suggestions: PRODUCT_BY_ID_MOCK.suggestions,
-  };
+  if (!res.ok) {
+    throw new Error(
+      `[product.service] GET /api/products/${id} devolvió ${res.status}`,
+    );
+  }
+
+  return (await res.json()) as ProductDetailResponse;
 }

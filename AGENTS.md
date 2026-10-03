@@ -14,18 +14,19 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16.3.4 (App Router) + React 19 + TypeScript 5. Package manager: **pnpm** (Volta: node 24.20.0, pnpm 11.26.0).
 - Tailwind CSS v4 (`app/globals.css` con `@import "tailwindcss"` + tokens oklch beige/naranja/verde) + shadcn `base-nova` + `lucide-react` (no Material Symbols). `dark` por clase `.dark`.
+- Data fetching client-side con **TanStack React Query v5** (`@tanstack/react-query`). Provider montado en `app/providers.tsx` → envuelve `children` en `app/layout.tsx` (raíz). `QueryClient` de scope módulo con `staleTime: 60_000` y `refetchOnWindowFocus: false`.
 - Comandos: `pnpm dev` / `pnpm build` / `pnpm start` / `pnpm lint` / `pnpm exec tsc --noEmit`.
 
 ## Estructura y capas (respetar)
 
 - `app/(shop)/` — route group tienda (no aparece en la URL). `app/(shop)/layout.tsx` monta `StoreHeader/Footer` + fuentes `Bebas Neue`/`Inter`. No meter Header/Footer en `app/layout.tsx` raíz.
 - `app/(shop)/product/[id]/page.tsx` — **Server Component async** (`params: Promise<{id}>`). Sin `useState`/`useMemo`; la interactividad vive en componentes `"use client"`. Incluye `generateMetadata` + `not-found.tsx`.
-- `services/` — fetching/simulate API (ej. `services/product.service.ts::getProductDetail`). Hoy mock + `delay()`; mañana `fetch` con `cache: "force-cache"`. No poner fetching en `lib/`.
-- `interfaces/` — contrato backend puro (ej. `interfaces/product.interface.ts`). No importar mocks ni fetch aquí.
+- `features/<feature>/` — módulos por dominio: `types/` (contrato backend puro, sin mocks ni fetch), `services/` (fetch/simulate API), `hooks/` (data-fetching con React Query) y `components/`. Ejemplos: `features/product/services/product.service.ts::getProductDetail`, `features/category/services/category.service.ts::getCategories`, `features/category/hooks/useCategories.ts::useCategories`.
 - `lib/mocks.ts` — datos mock (`PRODUCT_BY_ID_MOCK`, forma `{ data: { product }, suggestions }`). El service adapta a `{ product, suggestions }`.
 - `lib/products.ts` — solo helpers puros (`getGalleryImages`, `isSizeAvailable`, `formatPrice`). Fuente de verdad de disponibilidad: `variant.stock > 0`.
 - `components/store/` — UI tienda (`store-header`, `store-footer`, `product-info` client, `product-suggestions`). Reutilizar `components/ui/*` (shadcn/Base-UI). Iconos siempre de `lucide-react`.
 - `components.json` — aliases `@/components`, `@/lib`, `@/components/ui`.
+- Endpoints API en `app/api/*`: `GET /api/categories` → `{ data: Category[] }` (type en `features/category/types/category.interface.ts`). Sin fallback en la ruta: devuelve `500 { error }` si la DB no responde → el service lanza y React Query marca `isError` (el grid muestra error + Reintentar). Hooks nuevos: `useCategories` (`queryKey: ["categories"]`).
 
 ## Backend / DB (Docker + Prisma, respetar)
 
