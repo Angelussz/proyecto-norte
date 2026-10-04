@@ -16,7 +16,36 @@ import {
   type CreatePaymentIntentInput,
 } from "@/features/checkout/services/checkout.service";
 
-type PayStatus = "idle" | "confirming" | "succeeded" | "error";
+type PayStatus = "idle" | "confirming" | "processing" | "succeeded" | "error";
+
+const POLL_ATTEMPTS = 20;
+const POLL_DELAY_MS = 1500;
+
+/**
+ * Espera a que el webhook marque la orden PAID en la DB.
+ * El éxito de confirmCardPayment solo dice que Stripe cobró; la verdad
+ * para vaciar el carrito es GET /api/orders/[id] -> status PAID.
+ */
+async function waitForOrderPaid(
+  orderId: string
+): Promise<"PAID" | "CANCELLED" | "TIMEOUT"> {
+  for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const order = (await res.json()) as { status?: string };
+        if (order.status === "PAID") return "PAID";
+        if (order.status === "CANCELLED") return "CANCELLED";
+      }
+    } catch {
+      // Reintentar en el siguiente ciclo.
+    }
+    await new Promise((resolve) => setTimeout(resolve, POLL_DELAY_MS));
+  }
+  return "TIMEOUT";
+}
 
 /**
  * Botón "Place Order": crea el PaymentIntent con el carrito vivo (mutación
@@ -35,7 +64,10 @@ export function PlaceOrderButton() {
       createPaymentIntent(input),
   });
 
-  const isProcessing = intentMutation.isPending || status === "confirming";
+  const isProcessing =
+    intentMutation.isPending ||
+    status === "confirming" ||
+    status === "processing";
   const disabled =
     !stripe || !elements || items.length === 0 || isProcessing;
 
@@ -51,7 +83,7 @@ export function PlaceOrderButton() {
         quantity: item.quantity,
       })),
       {
-        onSuccess: async ({ clientSecret }) => {
+        onSuccess: async ({ clientSecret, orderId }) => {
           const card = elements.getElement(CardElement);
           if (!card) {
             setStatus("error");
@@ -73,8 +105,23 @@ export function PlaceOrderButton() {
           }
 
           if (paymentIntent?.status === "succeeded") {
-            setStatus("succeeded");
-            clearCart();
+            setStatus("processing");
+
+            const result = await waitForOrderPaid(orderId);
+            if (result === "PAID") {
+              setStatus("succeeded");
+              clearCart();
+            } else if (result === "CANCELLED") {
+              setStatus("error");
+              setErrorMessage(
+                "El pago no pudo completarse. Revisa tu carrito."
+              );
+            } else {
+              setStatus("error");
+              setErrorMessage(
+                "Pago recibido, la confirmación está tardando. Revisa tus pedidos en unos minutos."
+              );
+            }
           } else {
             setStatus("error");
             setErrorMessage(
@@ -118,7 +165,11 @@ export function PlaceOrderButton() {
         onClick={handleClick}
         className="flex h-auto w-full items-center justify-center gap-2 rounded-none py-4 text-sm font-semibold uppercase tracking-widest"
       >
-        {isProcessing ? "Processing..." : "Place Order"}
+        {status === "processing"
+          ? "Confirmando pago..."
+          : isProcessing
+            ? "Processing..."
+            : "Place Order"}
         <Lock className="size-4.5" aria-hidden />
       </Button>
       {status === "error" && errorMessage ? (

@@ -131,7 +131,8 @@ export async function POST(req: NextRequest) {
         });
         await tx.payments.update({
           where: { order_id: existing.id },
-          data: { amount: total },
+          // Un reintento del mismo carrito reabre el pago para el nuevo intento.
+          data: { amount: total, status: "PENDING", rejection_reason: null },
         });
         return updated;
       }
