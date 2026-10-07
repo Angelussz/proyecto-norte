@@ -3,7 +3,7 @@ import { CheckoutContent } from "@/features/checkout/components/checkout-content
 
 export const metadata: Metadata = {
   title: "Checkout — NORTE",
-  description: "Complete your NORTE order: shipping, payment and review.",
+  description: "Completá tu pedido NORTE: envío, pago y confirmación.",
 };
 
 export default function CheckoutPage() {

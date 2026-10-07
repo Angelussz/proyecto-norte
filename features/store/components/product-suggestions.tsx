@@ -13,13 +13,13 @@ export function ProductSuggestions({ items }: { items: Suggestion[] }) {
           className="text-3xl uppercase tracking-wide text-foreground md:text-4xl"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          You may also like
+          También te puede gustar
         </h2>
         <Link
           href="#"
           className="text-xs uppercase tracking-widest text-muted-foreground underline decoration-1 hover:text-primary"
         >
-          View all
+          Ver todo
         </Link>
       </div>
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
@@ -27,7 +27,7 @@ export function ProductSuggestions({ items }: { items: Suggestion[] }) {
           <Link key={item.id} href={`/product/${item.id}`} className="group flex flex-col gap-3">
             <div className="relative aspect-3/4 w-full overflow-hidden bg-muted">
               <Image
-                src={item.image}
+                src={item.image_url}
                 alt={item.name}
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
@@ -38,7 +38,7 @@ export function ProductSuggestions({ items }: { items: Suggestion[] }) {
               <p className="text-sm font-semibold uppercase tracking-wide text-foreground">
                 {item.name}
               </p>
-              <p className="text-sm text-muted-foreground">{formatPrice(item.price)}</p>
+              <p className="text-sm text-muted-foreground">{formatPrice(item.base_price)}</p>
             </div>
           </Link>
         ))}

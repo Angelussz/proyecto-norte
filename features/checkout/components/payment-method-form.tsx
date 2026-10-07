@@ -136,10 +136,10 @@ export function PaymentMethodForm() {
           className="text-3xl uppercase tracking-wide"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          Payment Method
+          Método de Pago
         </CardTitle>
         <CardDescription className="text-xs font-semibold uppercase tracking-widest">
-          Secure encrypted payment
+          Pago seguro y cifrado
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 md:px-8">
@@ -164,7 +164,7 @@ export function PaymentMethodForm() {
             <span className="flex items-center gap-4">
               <RadioDot checked={method === "credit_card"} />
               <span className="text-sm font-semibold uppercase tracking-widest text-foreground">
-                Credit Card
+                Tarjeta de Crédito
               </span>
             </span>
             <CreditCard

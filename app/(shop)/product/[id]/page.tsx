@@ -2,12 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { getGalleryImages } from "@/lib/products";
 import { getProductDetail } from "@/features/product/services/product.service";
 import { ProductInfo } from "@/features/store/components/product-info";
 import { ProductSuggestions } from "@/features/store/components/product-suggestions";
-
-const CRUMBS = ["Shop", "Hombres", "Camisetas"];
 
 export async function generateMetadata({ params }: {
   params: Promise<{ id: string }>;
@@ -32,24 +29,31 @@ export default async function ProductPage({ params }: {
   if (!data) notFound();
 
   const { product, suggestions } = data;
-  const [main, ...rest] = getGalleryImages(product);
+
+  const crumbs = [
+    { label: "Tienda", href: "/" },
+    { label: product.category_name ?? "Productos", href: '/products' },
+    { label: product.name ?? 'N/A', href: '' },
+  ];
 
   return (
     <section className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 md:px-16 md:py-12">
       <nav
-        aria-label="Breadcrumbs"
+        aria-label="Migas de pan"
         className="mb-4 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground"
       >
-        {CRUMBS.map((crumb: string, i: number) => {
-          const last = i === CRUMBS.length - 1;
+        {crumbs.map((crumb, i: number) => {
+          const last = i === crumbs.length - 1;
           return (
-            <span key={crumb} className="flex items-center gap-2">
-              {last ? (
-                <span className="text-foreground">{crumb}</span>
+            <span key={`${crumb.label}-${i}`} className="flex items-center gap-2">
+              {last || !crumb.href ? (
+                <span aria-current="page" className="text-foreground">
+                  {crumb.label}
+                </span>
               ) : (
                 <>
-                  <Link href="#" className="transition-colors hover:text-primary">
-                    {crumb}
+                  <Link href={crumb.href} className="transition-colors hover:text-primary">
+                    {crumb.label}
                   </Link>
                   <ChevronRight className="size-4" />
                 </>
@@ -60,29 +64,29 @@ export default async function ProductPage({ params }: {
       </nav>
 
       <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-12">
-        <div className="md:col-span-7">
+        <div className="md:col-span-5">
           <div className="flex flex-col gap-2">
             <div className="group relative aspect-4/5 w-full overflow-hidden bg-muted">
               <Image
-                src={main}
+                src={product.images[0] || ""}
                 alt={product.name}
                 fill
                 priority
-                sizes="(max-width: 768px) 100vw, 60vw"
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {rest.slice(0, 2).map((src: string, i: number) => (
+            <div className="flex gap-2">
+              {product.images.map((src: string, i: number) => (
                 <div
                   key={src + i}
-                  className="relative aspect-4/5 w-full overflow-hidden bg-muted"
+                  className={`relative aspect-square w-24 shrink-0 overflow-hidden bg-muted md:w-28 ${i === 0 ? "ring-1 ring-foreground" : ""}`}
                 >
                   <Image
                     src={src}
-                    alt={`${product.name} — vista ${i + 2}`}
+                    alt={`${product.name} — vista ${i + 1}`}
                     fill
-                    sizes="(max-width: 768px) 50vw, 30vw"
+                    sizes="100px"
                     className="object-cover"
                   />
                 </div>
@@ -90,7 +94,7 @@ export default async function ProductPage({ params }: {
             </div>
           </div>
         </div>
-        <div className="md:col-span-5 md:sticky md:top-24">
+        <div className="md:col-span-6 md:sticky md:top-24">
           <ProductInfo product={product} />
         </div>
       </div>

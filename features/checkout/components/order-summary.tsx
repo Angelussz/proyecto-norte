@@ -25,7 +25,7 @@ export function OrderSummary({
           className="text-2xl uppercase tracking-wide"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          Order Summary
+          Resumen del Pedido
         </CardTitle>
       </CardHeader>
 
@@ -73,14 +73,15 @@ export function OrderSummary({
             <dd className="font-semibold">{formatPrice(summary.subtotal)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Shipping</dt>
+            <dt className="text-muted-foreground">Envio</dt>
             <dd className="font-semibold">
               {summary.shippingLabel} · {formatPrice(summary.shippingCost)}
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Taxes</dt>
+            <dt className="text-muted-foreground">Impuestos</dt>
             <dd className="font-semibold">{formatPrice(summary.taxes)}</dd>
+
           </div>
           <div className="flex justify-between border-t border-border pt-4">
             <dt className="text-base font-bold uppercase tracking-wider">
@@ -96,13 +97,13 @@ export function OrderSummary({
       <CardFooter className="flex-col items-stretch gap-4 bg-transparent px-6 md:px-8">
         {action}
         <p className="text-center text-xs text-muted-foreground">
-          By placing your order, you agree to our{" "}
+          Al realizar su pedido, acepta nuestros{" "}
           <Link href="#" className="underline hover:text-foreground">
-            Terms of Service
+            Términos de servicio
           </Link>{" "}
-          and{" "}
+          y{" "}
           <Link href="#" className="underline hover:text-foreground">
-            Privacy Policy
+            Política de privacidad
           </Link>
           .
         </p>
