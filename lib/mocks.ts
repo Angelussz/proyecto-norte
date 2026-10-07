@@ -90,7 +90,7 @@ export const CHECKOUT_MOCK: CheckoutSummary = {
     },
   ],
   subtotal: 280,
-  shippingLabel: "Complimentary",
+  shippingLabel: "Complementario",
   total: 280,
 };
 

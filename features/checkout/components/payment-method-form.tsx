@@ -42,10 +42,10 @@ export function PaymentMethodForm() {
           className="text-3xl uppercase tracking-wide"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          Payment Method
+          Método de Pago
         </CardTitle>
         <CardDescription className="text-xs font-semibold uppercase tracking-widest">
-          Secure encrypted payment
+          Pago seguro y cifrado
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 md:px-8">
@@ -70,7 +70,7 @@ export function PaymentMethodForm() {
             <span className="flex items-center gap-4">
               <RadioDot checked={method === "credit_card"} />
               <span className="text-sm font-semibold uppercase tracking-widest text-foreground">
-                Credit Card
+                Tarjeta de Crédito
               </span>
             </span>
             <CreditCard
@@ -87,7 +87,7 @@ export function PaymentMethodForm() {
                 htmlFor="cc-number"
                 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
               >
-                Card Number
+                Número de Tarjeta
               </Label>
               <Input
                 id="cc-number"
@@ -104,14 +104,14 @@ export function PaymentMethodForm() {
                 htmlFor="cc-exp"
                 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
               >
-                Expiration Date
+                Fecha de Vencimiento
               </Label>
               <Input
                 id="cc-exp"
                 name="cc-exp"
                 type="text"
                 autoComplete="cc-exp"
-                placeholder="MM/YY"
+                placeholder="MM/AA"
                 className={underlineInput}
               />
             </div>
@@ -137,14 +137,14 @@ export function PaymentMethodForm() {
                 htmlFor="cc-name"
                 className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
               >
-                Name on Card
+                Nombre en la Tarjeta
               </Label>
               <Input
                 id="cc-name"
                 name="cc-name"
                 type="text"
                 autoComplete="cc-name"
-                placeholder="JANE DOE"
+                placeholder="NOMBRE APELLIDO"
                 className={cn(underlineInput, "uppercase")}
               />
             </div>
