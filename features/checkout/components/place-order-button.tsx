@@ -15,6 +15,7 @@ import {
   createPaymentIntent,
   type CreatePaymentIntentInput,
 } from "@/features/checkout/services/checkout.service";
+import { useCardElementState } from "@/features/checkout/components/card-element-context";
 
 type PayStatus = "idle" | "confirming" | "processing" | "succeeded" | "error";
 
@@ -51,11 +52,14 @@ async function waitForOrderPaid(
  * Botón "Place Order": crea el PaymentIntent con el carrito vivo (mutación
  * TanStack, fase 1) y confirma la tarjeta ante Stripe (fase 2, manual porque
  * usa Stripe.js y el 3D Secure, no un fetch). Requiere el contexto Elements.
+ * Solo se habilita con la tarjeta completa y bloquea el mutate si no lo está,
+ * para no crear órdenes PENDING_PAYMENT basura.
  */
 export function PlaceOrderButton() {
   const stripe = useStripe();
   const elements = useElements();
   const { items, clearCart } = useCart();
+  const { cardComplete } = useCardElementState();
   const [status, setStatus] = useState<PayStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -69,10 +73,21 @@ export function PlaceOrderButton() {
     status === "confirming" ||
     status === "processing";
   const disabled =
-    !stripe || !elements || items.length === 0 || isProcessing;
+    !stripe ||
+    !elements ||
+    items.length === 0 ||
+    !cardComplete ||
+    isProcessing;
 
   const handleClick = () => {
     if (!stripe || !elements || intentMutation.isPending) return;
+
+    // Guardia: sin tarjeta completa no se crea intent ni orden.
+    if (!cardComplete) {
+      setStatus("error");
+      setErrorMessage("Completa los datos de tu tarjeta.");
+      return;
+    }
 
     setStatus("idle");
     setErrorMessage(null);

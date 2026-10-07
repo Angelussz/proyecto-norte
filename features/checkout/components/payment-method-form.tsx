@@ -7,6 +7,7 @@ import type {
   StripeCardElementOptions,
 } from "@stripe/stripe-js";
 import { CardElement } from "@stripe/react-stripe-js";
+import { useCardElementState } from "@/features/checkout/components/card-element-context";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -90,6 +91,7 @@ function buildCardOptions(): StripeCardElementOptions {
 function CardDetailsField() {
   const [error, setError] = useState<string | null>(null);
   const [options] = useState<StripeCardElementOptions>(buildCardOptions);
+  const { reportCardChange } = useCardElementState();
 
   return (
     <div className="flex flex-col gap-3">
@@ -100,7 +102,13 @@ function CardDetailsField() {
         <CardElement
           options={options}
           onChange={(event: StripeCardElementChangeEvent) => {
-            setError(event.error ? (event.error.message ?? "Invalid card details") : null);
+            const message = event.error
+              ? (event.error.message ?? "Invalid card details")
+              : null;
+            setError(message);
+            // Única fuente de `complete`: CardElement no lo expone
+            // de forma imperativa, solo vía onChange.
+            reportCardChange(event.complete, message);
           }}
         />
       </div>
