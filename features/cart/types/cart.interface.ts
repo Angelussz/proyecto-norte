@@ -8,9 +8,10 @@ export interface CartItem {
   quantity: number
 }
 
+/**
+ * Resumen del carrito: solo lo que el cliente conoce (suma de prendas x unidades).
+ * Envío e impuestos los calcula el backend en el checkout (GET /api/checkout).
+ */
 export interface OrderSummary {
   subtotal: number
-  shipping: string
-  taxes: string
-  total: number
 }

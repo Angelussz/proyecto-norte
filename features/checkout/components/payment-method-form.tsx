@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Wallet } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { CreditCard, Lock, Wallet } from "lucide-react";
+import type {
+  StripeCardElementChangeEvent,
+  StripeCardElementOptions,
+} from "@stripe/stripe-js";
+import { CardElement } from "@stripe/react-stripe-js";
+import { useCardElementState } from "@/features/checkout/components/card-element-context";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -15,9 +20,6 @@ import { cn } from "@/lib/utils";
 
 type Method = "credit_card" | "paypal";
 
-const underlineInput =
-  "rounded-none border-0 border-b border-border bg-transparent px-0 py-2 shadow-none focus-visible:border-foreground focus-visible:ring-0 placeholder:text-muted-foreground";
-
 function RadioDot({ checked }: { checked: boolean }) {
   return (
     <span
@@ -29,6 +31,98 @@ function RadioDot({ checked }: { checked: boolean }) {
     >
       {checked && <span className="size-2 rounded-full bg-foreground" />}
     </span>
+  );
+}
+// Los tokens del tema están en oklch; Stripe solo acepta hex/rgb(a)/hsl.
+// El truco de canvas normaliza cualquier color CSS a un formato soportado.
+function normalizeColor(value: string, fallback: string): string {
+  const raw = value.trim();
+  if (!raw) return fallback;
+  const ctx = document.createElement("canvas").getContext("2d");
+  if (!ctx) return fallback;
+  ctx.fillStyle = fallback;
+  ctx.fillStyle = raw;
+  return ctx.fillStyle;
+}
+
+function buildCardOptions(): StripeCardElementOptions {
+  const fallback = {
+    foreground: "#111111",
+    muted: "#737373",
+    danger: "#b91c1c",
+    font: "Inter, sans-serif",
+  };
+
+  if (typeof window === "undefined") {
+    return {
+      style: {
+        base: {
+          fontFamily: fallback.font,
+          fontSize: "16px",
+          color: fallback.foreground,
+          "::placeholder": { color: fallback.muted },
+        },
+        invalid: { color: fallback.danger, iconColor: fallback.danger },
+      },
+    };
+  }
+
+  const styles = getComputedStyle(document.documentElement);
+
+  return {
+    style: {
+      base: {
+        fontFamily: getComputedStyle(document.body).fontFamily || fallback.font,
+        fontSize: "16px",
+        color: normalizeColor(styles.getPropertyValue("--foreground"), fallback.foreground),
+        "::placeholder": {
+          color: normalizeColor(styles.getPropertyValue("--muted-foreground"), fallback.muted),
+        },
+        fontSmoothing: "antialiased",
+      },
+      invalid: {
+        color: normalizeColor(styles.getPropertyValue("--destructive"), fallback.danger),
+        iconColor: normalizeColor(styles.getPropertyValue("--destructive"), fallback.danger),
+      },
+    },
+  };
+}
+
+function CardDetailsField() {
+  const [error, setError] = useState<string | null>(null);
+  const [options] = useState<StripeCardElementOptions>(buildCardOptions);
+  const { reportCardChange } = useCardElementState();
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        Card Details
+      </Label>
+      <div className="rounded-none border border-border bg-transparent px-3 py-3 transition-colors focus-within:border-foreground">
+        <CardElement
+          options={options}
+          onChange={(event: StripeCardElementChangeEvent) => {
+            const message = event.error
+              ? (event.error.message ?? "Invalid card details")
+              : null;
+            setError(message);
+            // Única fuente de `complete`: CardElement no lo expone
+            // de forma imperativa, solo vía onChange.
+            reportCardChange(event.complete, message);
+          }}
+        />
+      </div>
+      {error ? (
+        <p role="alert" className="text-xs font-semibold uppercase tracking-widest text-destructive">
+          {error}
+        </p>
+      ) : (
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <Lock className="size-3.5 shrink-0" aria-hidden />
+          Encrypted by Stripe — test card 4242 4242 4242 4242
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -81,100 +175,39 @@ export function PaymentMethodForm() {
         </label>
 
         {method === "credit_card" && (
-          <div className="ml-2 grid grid-cols-1 gap-x-4 gap-y-6 border-l border-border py-4 pl-4 sm:grid-cols-6">
-            <div className="col-span-full">
-              <Label
-                htmlFor="cc-number"
-                className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
-              >
-                Número de Tarjeta
-              </Label>
-              <Input
-                id="cc-number"
-                name="cc-number"
-                type="text"
-                inputMode="numeric"
-                autoComplete="cc-number"
-                placeholder="0000 0000 0000 0000"
-                className={underlineInput}
-              />
-            </div>
-            <div className="col-span-full sm:col-span-3">
-              <Label
-                htmlFor="cc-exp"
-                className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
-              >
-                Fecha de Vencimiento
-              </Label>
-              <Input
-                id="cc-exp"
-                name="cc-exp"
-                type="text"
-                autoComplete="cc-exp"
-                placeholder="MM/AA"
-                className={underlineInput}
-              />
-            </div>
-            <div className="col-span-full sm:col-span-3">
-              <Label
-                htmlFor="cc-cvc"
-                className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
-              >
-                CVC
-              </Label>
-              <Input
-                id="cc-cvc"
-                name="cc-cvc"
-                type="text"
-                inputMode="numeric"
-                autoComplete="cc-csc"
-                placeholder="123"
-                className={underlineInput}
-              />
-            </div>
-            <div className="col-span-full mt-2">
-              <Label
-                htmlFor="cc-name"
-                className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
-              >
-                Nombre en la Tarjeta
-              </Label>
-              <Input
-                id="cc-name"
-                name="cc-name"
-                type="text"
-                autoComplete="cc-name"
-                placeholder="NOMBRE APELLIDO"
-                className={cn(underlineInput, "uppercase")}
-              />
-            </div>
+          <div className="ml-2 border-l border-border py-4 pl-4">
+            {/* El contexto Elements lo provee el wrapper del checkout. */}
+            <CardDetailsField />
           </div>
         )}
 
+        {/* PayPal deshabilitado temporalmente (próximo sprint). */}
         <label
-          className={cn(
-            "relative flex cursor-pointer rounded-none border p-4 transition-all focus:outline-none",
-            method === "paypal"
-              ? "border-foreground opacity-100"
-              : "border-border opacity-70 hover:border-foreground hover:opacity-100"
-          )}
+          className="relative flex rounded-none border p-4 border-border opacity-50"
+          aria-disabled="true"
         >
           <input
             type="radio"
             name="payment_method"
             value="paypal"
-            checked={method === "paypal"}
-            onChange={() => setMethod("paypal")}
+            checked={false}
+            disabled
             className="sr-only"
           />
           <span className="flex w-full items-center justify-between">
             <span className="flex items-center gap-4">
-              <RadioDot checked={method === "paypal"} />
+              <RadioDot checked={false} />
               <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
                 PayPal
               </span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1">
+                Próximamente
+              </span>
             </span>
-            <Wallet className="size-6 text-muted-foreground" aria-hidden />
+            <Wallet
+              className="size-6 text-muted-foreground"
+              aria-hidden
+            />
           </span>
         </label>
         </div>

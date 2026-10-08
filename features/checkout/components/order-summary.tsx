@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import type { ReactNode } from "react";
 import {
   Card,
   CardContent,
@@ -10,9 +9,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatPrice } from "@/lib/products";
-import type { CheckoutSummary } from "@/features/checkout/types/checkout.interface";
+import type { CheckoutQuote } from "@/features/checkout/types/checkout.interface";
 
-export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
+export function OrderSummary({
+  summary,
+  action,
+}: {
+  summary: CheckoutQuote;
+  action?: ReactNode;
+}) {
   return (
     <Card className="rounded-none bg-muted py-6 md:py-8">
       <CardHeader className="px-6 md:px-8">
@@ -69,7 +74,14 @@ export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Envio</dt>
-            <dd className="font-semibold">{summary.shippingLabel}</dd>
+            <dd className="font-semibold">
+              {summary.shippingLabel} · {formatPrice(summary.shippingCost)}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Impuestos</dt>
+            <dd className="font-semibold">{formatPrice(summary.taxes)}</dd>
+
           </div>
           <div className="flex justify-between border-t border-border pt-4">
             <dt className="text-base font-bold uppercase tracking-wider">
@@ -83,14 +95,7 @@ export function OrderSummary({ summary }: { summary: CheckoutSummary }) {
       </CardContent>
 
       <CardFooter className="flex-col items-stretch gap-4 bg-transparent px-6 md:px-8">
-        <Button
-          type="button"
-          size="lg"
-          className="flex h-auto w-full items-center justify-center gap-2 rounded-none py-4 text-sm font-semibold uppercase tracking-widest"
-        >
-          Realizar Pedido
-          <Lock className="size-4.5" aria-hidden />
-        </Button>
+        {action}
         <p className="text-center text-xs text-muted-foreground">
           Al realizar su pedido, acepta nuestros{" "}
           <Link href="#" className="underline hover:text-foreground">
