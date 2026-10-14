@@ -91,7 +91,7 @@ export default function ProductsPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-5 py-10 md:px-16">
-      <h1 className="mb-8 text-center text-2xl font-semibold">
+      <h1 className="font-headline text-3xl md:text-5xl uppercase leading-none text-foreground sm:text-[80px] mb-4">
         Productos
       </h1>
 

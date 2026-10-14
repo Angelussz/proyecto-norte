@@ -8,32 +8,32 @@ export function TrustBar() {
           <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-2 md:space-y-0 md:space-x-4 px-4 py-4 md:py-0">
             <ShieldCheck className="text-[#C77D2E] size-8" />
             <div className="text-center md:text-left">
-              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Premium Quality</h4>
-              <p className="text-xs font-medium text-[#534438]">Materials</p>
+              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Calidad Premium</h4>
+              <p className="text-xs font-medium text-[#534438]">en Materiales</p>
             </div>
           </div>
-          
+
           <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-2 md:space-y-0 md:space-x-4 px-4 py-4 md:py-0 border-t md:border-t-0 md:border-l border-[#D8D2C4]">
             <Truck className="text-[#C77D2E] size-8" />
             <div className="text-center md:text-left">
-              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Free Shipping</h4>
-              <p className="text-xs font-medium text-[#534438]">On Orders Over $99</p>
+              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Envío Gratis</h4>
+              <p className="text-xs font-medium text-[#534438]">En Pedidos desde $99</p>
             </div>
           </div>
-          
+
           <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-2 md:space-y-0 md:space-x-4 px-4 py-4 md:py-0 border-t md:border-t-0 md:border-l border-[#D8D2C4]">
             <RotateCcw className="text-[#C77D2E] size-8" />
             <div className="text-center md:text-left">
-              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">14-Day Easy</h4>
-              <p className="text-xs font-medium text-[#534438]">Returns</p>
+              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Devoluciones</h4>
+              <p className="text-xs font-medium text-[#534438]">Fáciles en 14 Días</p>
             </div>
           </div>
-          
+
           <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-2 md:space-y-0 md:space-x-4 px-4 py-4 md:py-0 border-t md:border-t-0 md:border-l border-[#D8D2C4]">
             <Lock className="text-[#C77D2E] size-8" />
             <div className="text-center md:text-left">
-              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Secure Payments</h4>
-              <p className="text-xs font-medium text-[#534438]">100% Protected</p>
+              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Pagos Seguros</h4>
+              <p className="text-xs font-medium text-[#534438]">100% Protegidos</p>
             </div>
           </div>
         </div>

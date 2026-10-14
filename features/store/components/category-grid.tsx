@@ -50,7 +50,7 @@ export function CategoryGrid() {
           <Link key={category.id} href="/products" className="group block text-center">
             <div className="relative aspect-3/4 mb-4 overflow-hidden rounded-none bg-[#f4eddf]">
               <Image
-                alt={`${category.name} Category`}
+                alt={`Categoría de ${category.name}`}
                 className="object-cover absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
                 src={category.image_url ?? "/category-accessories.jpg"}
                 fill
@@ -60,7 +60,7 @@ export function CategoryGrid() {
             <h3 className="text-[14px] font-semibold uppercase tracking-wider">
               {category.slug}
             </h3>
-            <p className="text-[12px] font-medium text-[#fff9ed]/70">Collection</p>
+            <p className="text-[12px] font-medium text-[#fff9ed]/70">Colección</p>
           </Link>
         ))}
       </div>
@@ -75,7 +75,7 @@ export function CategoryGrid() {
             className="text-[32px] leading-9 tracking-[0.02em] uppercase"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
-            Comprar por Categoria
+            Comprar por Categoría
           </h2>
           <Link
             href="/products"

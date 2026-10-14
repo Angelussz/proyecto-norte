@@ -15,23 +15,13 @@ export default function OrderSummaryComponent({ summary }: OrderSummaryProps) {
         </h3>
 
         <div className="mb-6 space-y-3 sm:mb-8 sm:space-y-4">
-          <div className="flex justify-between text-sm text-muted-foreground sm:text-base">
+          <div className="flex justify-between pt-4 font-headline text-xl text-foreground border-t border-border sm:pt-6 sm:text-[32px]">
             <span>Subtotal</span>
             <span>${summary.subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-sm text-muted-foreground sm:text-base">
-            <span>Envío</span>
-            <span>{summary.shipping}</span>
-          </div>
-          <div className="flex justify-between text-sm text-muted-foreground sm:text-base">
-            <span>Impuestos</span>
-            <span>{summary.taxes}</span>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-4 mb-6 font-headline text-xl text-foreground border-t border-border sm:pt-6 sm:mb-8 sm:text-[32px]">
-          <span>Total</span>
-          <span>${summary.total.toFixed(2)}</span>
+          <p className="text-sm text-muted-foreground">
+            Impuestos y costo de envío se calculan en el checkout.
+          </p>
         </div>
 
         <Link

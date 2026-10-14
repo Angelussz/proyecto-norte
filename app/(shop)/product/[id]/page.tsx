@@ -31,7 +31,7 @@ export default async function ProductPage({ params }: {
   const { product, suggestions } = data;
 
   const crumbs = [
-    { label: "Shop", href: "/" },
+    { label: "Tienda", href: "/" },
     { label: product.category_name ?? "Productos", href: '/products' },
     { label: product.name ?? 'N/A', href: '' },
   ];
@@ -39,7 +39,7 @@ export default async function ProductPage({ params }: {
   return (
     <section className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 md:px-16 md:py-12">
       <nav
-        aria-label="Breadcrumbs"
+        aria-label="Migas de pan"
         className="mb-4 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground"
       >
         {crumbs.map((crumb, i: number) => {

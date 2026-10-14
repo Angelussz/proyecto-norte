@@ -13,13 +13,13 @@ export function ProductSuggestions({ items }: { items: Suggestion[] }) {
           className="text-3xl uppercase tracking-wide text-foreground md:text-4xl"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          You may also like
+          También te puede gustar
         </h2>
         <Link
           href="#"
           className="text-xs uppercase tracking-widest text-muted-foreground underline decoration-1 hover:text-primary"
         >
-          View all
+          Ver todo
         </Link>
       </div>
       <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
