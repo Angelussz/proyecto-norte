@@ -72,14 +72,25 @@ async function main() {
   for (const u of USERS_MOCK) {
     await prisma.users.upsert({
       where: { email: u.email },
-      update: { name: u.name, last_name: u.last_name, phone: u.phone },
+      update: {
+        name: u.name,
+        last_name: u.last_name,
+        phone: u.phone,
+        password_hash: "$2b$10$w8RaRMP8qWos4cjPN8pVmeFfMFl8TvDVQ4PHIw/gn6Y2u47jNSW12",
+        role: u.role,
+        // En dev los marcamos como verificados para no necesitar el flujo de email.
+        email_verified: true,
+        email_verified_at: new Date(),
+      },
       create: {
         name: u.name,
         last_name: u.last_name,
         email: u.email,
         phone: u.phone,
-        password_hash: "$2b$10$EpRnTzVlqHNP0.fUbXUwSOyuiXe/QLSUG6xNekdhpbJ3.gPpv7hW2",
+        password_hash: "$2b$10$w8RaRMP8qWos4cjPN8pVmeFfMFl8TvDVQ4PHIw/gn6Y2u47jNSW12",
         role: u.role,
+        email_verified: true,
+        email_verified_at: new Date(),
       },
     });
   }

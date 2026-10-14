@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/features/auth/components/login-form";
@@ -30,7 +31,9 @@ export default function LoginPage() {
       </div>
 
       {/* Formulario cliente */}
-      <LoginForm />
+      <Suspense fallback={<div className="h-64 w-full animate-pulse bg-muted/10" />}>
+        <LoginForm />
+      </Suspense>
 
       {/* Link a registro */}
       <p className="mt-8 text-center text-xs text-muted-foreground">
