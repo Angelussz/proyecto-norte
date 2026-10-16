@@ -403,4 +403,18 @@ export const CATEGORIES_MOCK = [
     image_url: null,
     image_url_id: null,
   },
+  {
+    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    name: "Accesorios",
+    slug: "accesorios",
+    image_url: null,
+    image_url_id: null,
+  },
+  {
+    id: "b2c3d4e5-f6a7-8901-bcde-f01234567891",
+    name: "Calzados",
+    slug: "calzados",
+    image_url: null,
+    image_url_id: null,
+  },
 ];
