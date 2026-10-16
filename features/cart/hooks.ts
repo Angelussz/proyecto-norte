@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
+
 import {
   getCartServerSnapshot,
   getCartSnapshot,
@@ -9,6 +10,7 @@ import {
   subscribeToCart,
   writeCartItems,
 } from '@/features/cart/services/cart-storage';
+
 import type {
   CartItem,
   OrderSummary,
@@ -43,6 +45,7 @@ export function useCart() {
     getCartSnapshot,
     getCartServerSnapshot,
   );
+
   const items = useMemo(() => parseCartItems(snapshot), [snapshot]);
 
   // Siembra inicial solo cuando nunca hubo carrito guardado.
@@ -52,6 +55,31 @@ export function useCart() {
 
     writeCartItems(CART_SEED_ITEMS);
   }, [snapshot]);
+
+  const addItem = (newItem: CartItem) => {
+    const existingItem = items.find(
+      (item) =>
+        item.id === newItem.id &&
+        item.color === newItem.color &&
+        item.size === newItem.size,
+    );
+
+    if (existingItem) {
+      writeCartItems(
+        items.map((item) =>
+          item.id === newItem.id &&
+          item.color === newItem.color &&
+          item.size === newItem.size
+            ? { ...item, quantity: item.quantity + newItem.quantity }
+            : item,
+        ),
+      );
+
+      return;
+    }
+
+    writeCartItems([...items, newItem]);
+  };
 
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -86,6 +114,7 @@ export function useCart() {
     items,
     summary,
     totalItems,
+    addItem,
     updateQuantity,
     removeItem,
     clearCart,
