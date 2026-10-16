@@ -6,6 +6,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { ProductGrid } from "@/features/store/components/product-grid";
 import type { ProductCatalogParams } from "@/features/product/types/product-catalog.interface";
 import { getProductCatalog } from "@/features/product/services/product-catalog.service";
+import { useCategories } from "@/features/category/hooks/useCategories";
 
 function mapCategory(value: string): string | undefined {
   const trimmed = value.trim();
@@ -35,6 +36,7 @@ function mapSortBy(value: string): ProductCatalogParams["sortBy"] {
 }
 
 export default function ProductsPage() {
+  const { data: categoriesData } = useCategories();
   const [category, setCategory] = useState("Todas");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -102,8 +104,11 @@ export default function ProductsPage() {
           className="rounded-md border px-4 py-2 text-sm"
         >
           <option value="Todas">Todas</option>
-          <option value="Camisas">Camisas</option>
-          <option value="Pantalones">Pantalones</option>
+          {(categoriesData ?? []).map((cat) => (
+            <option key={cat.id} value={cat.name}>
+              {cat.name}
+            </option>
+          ))}
         </select>
         <input
           type="number"
