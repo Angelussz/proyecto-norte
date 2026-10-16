@@ -30,9 +30,6 @@ export async function GET() {
       error instanceof Error ? error.message : error,
     );
 
-    return NextResponse.json(
-      { error: "No se pudieron cargar las categorías" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "No se pudieron cargar las categorías" }, { status: 500 });
   }
 }

@@ -44,9 +44,7 @@ export function StoreFooter() {
           ))}
         </div>
         <div className="flex flex-col gap-4">
-          <span className="text-sm font-semibold uppercase text-foreground">
-            Mantente al día
-          </span>
+          <span className="text-sm font-semibold uppercase text-foreground">Mantente al día</span>
           <p className="text-base text-muted-foreground">
             Suscribite a nuestro newsletter para acceder anticipadamente a las nuevas colecciones.
           </p>

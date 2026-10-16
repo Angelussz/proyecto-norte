@@ -41,9 +41,7 @@ export function StoreHeader() {
                 key={item.item}
                 href={item.link}
                 className={`text-sm font-semibold uppercase tracking-widest transition-colors hover:text-primary ${
-                  isActive
-                    ? "border-b-2 border-primary pb-1 text-primary"
-                    : "text-muted-foreground"
+                  isActive ? "border-b-2 border-primary pb-1 text-primary" : "text-muted-foreground"
                 }`}
               >
                 {item.item}

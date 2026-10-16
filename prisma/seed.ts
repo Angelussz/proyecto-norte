@@ -136,16 +136,18 @@ async function main() {
       where: { user_id: user.id, status: o.status },
     });
 
-    const order = existingOrder ?? await prisma.orders.create({
-      data: {
-        user_id: user.id,
-        address_id: address.id,
-        subtotal: o.subtotal,
-        shipping_cost: o.shipping_cost,
-        total: o.total,
-        status: o.status,
-      },
-    });
+    const order =
+      existingOrder ??
+      (await prisma.orders.create({
+        data: {
+          user_id: user.id,
+          address_id: address.id,
+          subtotal: o.subtotal,
+          shipping_cost: o.shipping_cost,
+          total: o.total,
+          status: o.status,
+        },
+      }));
 
     // Pago
     if (o.payment) {

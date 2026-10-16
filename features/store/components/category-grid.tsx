@@ -24,9 +24,7 @@ export function CategoryGrid() {
   } else if (isError) {
     content = (
       <div className="py-12 text-center">
-        <p className="text-[14px] uppercase tracking-wider">
-          No pudimos cargar las categorías.
-        </p>
+        <p className="text-[14px] uppercase tracking-wider">No pudimos cargar las categorías.</p>
         <button
           onClick={() => refetch()}
           className="mt-4 inline-flex items-center gap-2 text-[14px] font-semibold uppercase tracking-wider text-[#fff9ed] hover:text-[#C77D2E] transition-colors"
@@ -38,9 +36,7 @@ export function CategoryGrid() {
   } else if (!categories?.length) {
     content = (
       <div className="py-12 text-center">
-        <p className="text-[14px] uppercase tracking-wider">
-          No hay categorías disponibles.
-        </p>
+        <p className="text-[14px] uppercase tracking-wider">No hay categorías disponibles.</p>
       </div>
     );
   } else {
