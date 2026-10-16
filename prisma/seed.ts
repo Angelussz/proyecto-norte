@@ -16,10 +16,14 @@ async function main() {
   for (const category of CATEGORIES_MOCK) {
     const record = await prisma.categories.upsert({
       where: { slug: category.slug },
-      update: { name: category.name },
+      update: {
+        name: category.name,
+        image_url: category.image_url,
+      },
       create: {
         name: category.name,
         slug: category.slug,
+        image_url: category.image_url,
       },
     });
     categoriesMap.set(category.slug, record.id);
@@ -132,16 +136,18 @@ async function main() {
       where: { user_id: user.id, status: o.status },
     });
 
-    const order = existingOrder ?? await prisma.orders.create({
-      data: {
-        user_id: user.id,
-        address_id: address.id,
-        subtotal: o.subtotal,
-        shipping_cost: o.shipping_cost,
-        total: o.total,
-        status: o.status,
-      },
-    });
+    const order =
+      existingOrder ??
+      (await prisma.orders.create({
+        data: {
+          user_id: user.id,
+          address_id: address.id,
+          subtotal: o.subtotal,
+          shipping_cost: o.shipping_cost,
+          total: o.total,
+          status: o.status,
+        },
+      }));
 
     // Pago
     if (o.payment) {
