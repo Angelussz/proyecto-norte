@@ -16,10 +16,14 @@ async function main() {
   for (const category of CATEGORIES_MOCK) {
     const record = await prisma.categories.upsert({
       where: { slug: category.slug },
-      update: { name: category.name },
+      update: {
+        name: category.name,
+        image_url: category.image_url,
+      },
       create: {
         name: category.name,
         slug: category.slug,
+        image_url: category.image_url,
       },
     });
     categoriesMap.set(category.slug, record.id);
