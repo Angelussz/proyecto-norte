@@ -6,6 +6,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { ProductGrid } from "@/features/store/components/product-grid";
 import type { ProductCatalogParams } from "@/features/product/types/product-catalog.interface";
 import { getProductCatalog } from "@/features/product/services/product-catalog.service";
+import { useCategories } from "@/features/category/hooks/useCategories";
 
 function mapCategory(value: string): string | undefined {
   const trimmed = value.trim();
@@ -35,6 +36,7 @@ function mapSortBy(value: string): ProductCatalogParams["sortBy"] {
 }
 
 export default function ProductsPage() {
+  const { data: categoriesData } = useCategories();
   const [category, setCategory] = useState("Todas");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -83,8 +85,7 @@ export default function ProductsPage() {
   const refreshing = isFetching && isPlaceholderData;
 
   const handleFilterChange =
-    (setter: (value: string) => void) =>
-    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (setter: (value: string) => void) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setter(e.target.value);
       setCurrentPage(1);
     };
@@ -102,8 +103,11 @@ export default function ProductsPage() {
           className="rounded-md border px-4 py-2 text-sm"
         >
           <option value="Todas">Todas</option>
-          <option value="Camisas">Camisas</option>
-          <option value="Pantalones">Pantalones</option>
+          {(categoriesData ?? []).map((cat) => (
+            <option key={cat.id} value={cat.name}>
+              {cat.name}
+            </option>
+          ))}
         </select>
         <input
           type="number"
@@ -154,9 +158,7 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div className="py-12 text-center">
-          <p className="text-lg font-medium">
-            No se encontraron productos.
-          </p>
+          <p className="text-lg font-medium">No se encontraron productos.</p>
 
           <p className="mt-2 text-sm text-muted-foreground">
             Probá cambiando los filtros seleccionados.
@@ -174,19 +176,17 @@ export default function ProductsPage() {
             Anterior
           </button>
 
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-            (page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`rounded-md border px-4 py-2 text-sm ${
-                  currentPage === page ? "font-bold" : ""
-                }`}
-              >
-                {page}
-              </button>
-            )
-          )}
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`rounded-md border px-4 py-2 text-sm ${
+                currentPage === page ? "font-bold" : ""
+              }`}
+            >
+              {page}
+            </button>
+          ))}
 
           <button
             onClick={() => setCurrentPage((page) => page + 1)}

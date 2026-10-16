@@ -114,6 +114,27 @@ export const PRODUCTS_MOCK = [
 // ─── Seed mocks: Usuarios ────────────────────────────────────────────
 export const USERS_MOCK = [
   {
+    name: "Admin",
+    last_name: "NORTE",
+    email: "admin@admin.com",
+    phone: "+51 900 000 001",
+    role: "ADMIN" as const,
+  },
+  {
+    name: "Cliente",
+    last_name: "Prueba",
+    email: "cliente@cliente.com",
+    phone: "+51 900 000 002",
+    role: "CUSTOMER" as const,
+  },
+  {
+    name: "Claudio",
+    last_name: "Dev",
+    email: "claudio.fullstack.dev@gmail.com",
+    phone: "+51 900 000 003",
+    role: "ADMIN" as const,
+  },
+  {
     name: "Carlos",
     last_name: "Mendoza",
     email: "carlos.mendoza@example.com",
@@ -372,14 +393,30 @@ export const CATEGORIES_MOCK = [
     id: "3441408a-6408-4259-9dc1-76035bf2d6a3",
     name: "Camisas",
     slug: "camisas",
-    image_url: null,
+    image_url:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDWdSprNGTgxBlN1l9XC3OYy2Oh9D7yMcVUDeG7098zFWsDT3HpL2B92bDQuAR6zwyXjt6uehYRC3mOqaYa9tm-gwm52bUyUhBunu7Jv3yL1MEMgCao2LskNiehlHjnxJ5kYSLOKg23F5F-G_azHETjahQZybCEz2y-14GEJY_w7yGO3KhJ6t1zyuxXnyaeOiilK2ALXNmKq4q20ze7q4J2eBVvwTrEyBWf74wAWzfkZidYNSWIFGPp",
     image_url_id: null,
   },
   {
     id: "66f4eeba-cf72-491b-b088-017644c436cd",
     name: "Pantalones",
     slug: "pantalones",
-    image_url: null,
+    image_url:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuB7PzReJ2qcvlMj8hQMGCxwKDhPVVgSu9EJ6JfuycbYYJ4X1AoAy6X5n6M3Nc5vrh7LVk_BLkvidPtryUopotyrDCV-MzrBfqA6Fcbq0G94S0mgTVtkzfEy6Di3-sZI3YnV7ClVFuQ9rCXB-KP2sduxQqtEQ90jhiFgEh2UPSBIU5dzuEz9rzYStMvl-fvY0sUVskrUXSF8rhFUWMVYdBMsfYSwh5aOJdXOo3fzFWJx8-38d9ypcDBc",
+    image_url_id: null,
+  },
+  {
+    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    name: "Accesorios",
+    slug: "accesorios",
+    image_url: "/category-accessories.jpg",
+    image_url_id: null,
+  },
+  {
+    id: "b2c3d4e5-f6a7-8901-bcde-f01234567891",
+    name: "Calzados",
+    slug: "calzados",
+    image_url: "/category-footwear.jpg",
     image_url_id: null,
   },
 ];

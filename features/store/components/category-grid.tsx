@@ -24,9 +24,7 @@ export function CategoryGrid() {
   } else if (isError) {
     content = (
       <div className="py-12 text-center">
-        <p className="text-[14px] uppercase tracking-wider">
-          No pudimos cargar las categorías.
-        </p>
+        <p className="text-[14px] uppercase tracking-wider">No pudimos cargar las categorías.</p>
         <button
           onClick={() => refetch()}
           className="mt-4 inline-flex items-center gap-2 text-[14px] font-semibold uppercase tracking-wider text-[#fff9ed] hover:text-[#C77D2E] transition-colors"
@@ -38,31 +36,55 @@ export function CategoryGrid() {
   } else if (!categories?.length) {
     content = (
       <div className="py-12 text-center">
-        <p className="text-[14px] uppercase tracking-wider">
-          No hay categorías disponibles.
-        </p>
+        <p className="text-[14px] uppercase tracking-wider">No hay categorías disponibles.</p>
       </div>
     );
   } else {
+    const CATEGORY_ORDER = ["camisas", "pantalones", "accesorios", "calzados"];
+    const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
+      camisas:
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuDWdSprNGTgxBlN1l9XC3OYy2Oh9D7yMcVUDeG7098zFWsDT3HpL2B92bDQuAR6zwyXjt6uehYRC3mOqaYa9tm-gwm52bUyUhBunu7Jv3yL1MEMgCao2LskNiehlHjnxJ5kYSLOKg23F5F-G_azHETjahQZybCEz2y-14GEJY_w7yGO3KhJ6t1zyuxXnyaeOiilK2ALXNmKq4q20ze7q4J2eBVvwTrEyBWf74wAWzfkZidYNSWIFGPp",
+      pantalones:
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuB7PzReJ2qcvlMj8hQMGCxwKDhPVVgSu9EJ6JfuycbYYJ4X1AoAy6X5n6M3Nc5vrh7LVk_BLkvidPtryUopotyrDCV-MzrBfqA6Fcbq0G94S0mgTVtkzfEy6Di3-sZI3YnV7ClVFuQ9rCXB-KP2sduxQqtEQ90jhiFgEh2UPSBIU5dzuEz9rzYStMvl-fvY0sUVskrUXSF8rhFUWMVYdBMsfYSwh5aOJdXOo3fzFWJx8-38d9ypcDBc",
+      accesorios: "/category-accessories.jpg",
+      calzados: "/category-footwear.jpg",
+    };
+
+    const sortedCategories = [...categories].sort((a, b) => {
+      const idxA = CATEGORY_ORDER.indexOf(a.slug.toLowerCase());
+      const idxB = CATEGORY_ORDER.indexOf(b.slug.toLowerCase());
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
     content = (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {categories.map((category) => (
-          <Link key={category.id} href="/products" className="group block text-center">
-            <div className="relative aspect-3/4 mb-4 overflow-hidden rounded-none bg-[#f4eddf]">
-              <Image
-                alt={`Categoría de ${category.name}`}
-                className="object-cover absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
-                src={category.image_url ?? "/category-accessories.jpg"}
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-              />
-            </div>
-            <h3 className="text-[14px] font-semibold uppercase tracking-wider">
-              {category.slug}
-            </h3>
-            <p className="text-[12px] font-medium text-[#fff9ed]/70">Colección</p>
-          </Link>
-        ))}
+        {sortedCategories.map((category) => {
+          const imageSrc =
+            category.image_url ||
+            DEFAULT_CATEGORY_IMAGES[category.slug.toLowerCase()] ||
+            "/category-accessories.jpg";
+
+          return (
+            <Link key={category.id} href="/products" className="group block text-center">
+              <div className="relative aspect-3/4 mb-4 overflow-hidden rounded-none bg-[#f4eddf]">
+                <Image
+                  alt={`Categoría de ${category.name}`}
+                  className="object-cover absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
+                  src={imageSrc}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+              <h3 className="text-[14px] font-semibold uppercase tracking-wider">
+                {category.name}
+              </h3>
+              <p className="text-[12px] font-medium text-[#fff9ed]/70">Colección</p>
+            </Link>
+          );
+        })}
       </div>
     );
   }
