@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ProductDetail } from "@/features/product/types/product.interface";
@@ -18,8 +19,8 @@ export async function GET(
       include: {
         category: {
           select: {
-            name: true
-          }
+            name: true,
+          },
         },
         variants: true,
       },
@@ -36,38 +37,43 @@ export async function GET(
       .map((v) => v.image_url)
       .filter((url): url is string => !!url);
 
-
-    // Galería plana: la principal va primera y también cuenta como thumbnail.
+    // La imagen principal va primero, seguida de las imágenes de las variantes.
     const images = [product.image_url, ...variantImages]
       .filter((url): url is string => !!url)
       .filter((url, index, self) => self.indexOf(url) === index)
       .slice(0, 3);
 
-    const stockBySize = new Map<string, number>();
-    for (const v of product.variants) {
-      stockBySize.set(v.size, (stockBySize.get(v.size) ?? 0) + v.stock);
-    }
-
     const colors = Array.from(
       new Set(
         product.variants
-          .map((v) => v.color?.trim())
-          .filter((c): c is string => !!c),
+          .filter((variant) => variant.active)
+          .map((variant) => variant.color.trim())
+          .filter((color) => !!color),
       ),
     );
 
+    // Conservamos el ID real de cada variante para el carrito y Stripe.
     const detail: ProductDetail = {
       id: product.id,
       name: product.name,
       description: product.description ?? "",
       price: Number(product.base_price),
       category_name: product.category.name,
-      colors: colors.map((name) => ({ name, hex: COLOR_HEX_FALLBACK })),
-      variants: Array.from(stockBySize, ([size, stock]) => ({ size, stock })),
+      colors: colors.map((name) => ({
+        name,
+        hex: COLOR_HEX_FALLBACK,
+      })),
+      variants: product.variants.map((variant) => ({
+        id: variant.id,
+        size: variant.size,
+        color: variant.color.trim(),
+        stock: variant.active ? variant.stock : 0,
+        price: Number(variant.price),
+      })),
       images,
     };
 
-    // ── Sugerencias: misma categoría, excluyendo el actual ──────────────
+    // Sugerencias: misma categoría, excluyendo el producto actual.
     const suggestions = (
       await prisma.products.findMany({
         where: {
@@ -84,7 +90,10 @@ export async function GET(
           image_url: true,
         },
       })
-    ).map((p) => ({ ...p, base_price: Number(p.base_price) }));
+    ).map((p) => ({
+      ...p,
+      base_price: Number(p.base_price),
+    }));
 
     return NextResponse.json({ product: detail, suggestions });
   } catch (error) {

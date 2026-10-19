@@ -4,9 +4,13 @@ import type { OrderSummary } from '@/features/cart/types/cart.interface'
 
 interface OrderSummaryProps {
   summary: OrderSummary
+  isLoading: boolean
 }
 
-export default function OrderSummaryComponent({ summary }: OrderSummaryProps) {
+export default function OrderSummaryComponent({
+  summary,
+  isLoading,
+}: OrderSummaryProps) {
   return (
     <div className="w-full lg:w-1/3">
       <div className="sticky p-6 border sm:p-8 border-border top-24 sm:top-25">
@@ -17,8 +21,10 @@ export default function OrderSummaryComponent({ summary }: OrderSummaryProps) {
         <div className="mb-6 space-y-3 sm:mb-8 sm:space-y-4">
           <div className="flex justify-between pt-4 font-headline text-xl text-foreground border-t border-border sm:pt-6 sm:text-[32px]">
             <span>Subtotal</span>
-            <span>${summary.subtotal.toFixed(2)}</span>
-          </div>
+              <span>
+                {isLoading ? "Cargando..." : `$${summary.subtotal.toFixed(2)}`}
+              </span>
+           </div>
           <p className="text-sm text-muted-foreground">
             Impuestos y costo de envío se calculan en el checkout.
           </p>

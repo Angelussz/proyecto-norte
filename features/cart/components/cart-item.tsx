@@ -10,11 +10,7 @@ interface CartItemProps {
   onRemove: (id: string) => void;
 }
 
-export default function CartItemRow({
-  item,
-  onUpdateQuantity,
-  onRemove,
-}: CartItemProps) {
+export default function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemProps) {
   return (
     <div className="flex flex-col gap-4 pb-6 border-b border-border sm:flex-row sm:gap-6 sm:pb-8">
       {/* Imagen del producto */}
@@ -36,12 +32,8 @@ export default function CartItemRow({
               <h2 className="font-headline text-2xl uppercase text-foreground sm:text-[32px]">
                 {item.name}
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-                Color: {item.color}
-              </p>
-              <p className="text-sm text-muted-foreground sm:text-base">
-                Talla: {item.size}
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base">Color: {item.color}</p>
+              <p className="text-sm text-muted-foreground sm:text-base">Talla: {item.size}</p>
             </div>
             <p className="text-base font-semibold text-foreground sm:text-lg whitespace-nowrap">
               ${item.price.toFixed(2)}
@@ -54,21 +46,17 @@ export default function CartItemRow({
           <div className="flex items-center border border-border">
             <button
               className="px-3 py-2 transition-colors hover:bg-muted sm:px-4"
-              onClick={() =>
-                onUpdateQuantity(item.id, item.quantity - 1)
-              }
+              onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+              disabled={item.quantity <= 1}
               aria-label="Disminuir cantidad"
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="px-3 py-2 text-sm sm:px-4 sm:text-base">
-              {item.quantity}
-            </span>
+            <span className="px-3 py-2 text-sm sm:px-4 sm:text-base">{item.quantity}</span>
             <button
               className="px-3 py-2 transition-colors hover:bg-muted sm:px-4"
-              onClick={() =>
-                onUpdateQuantity(item.id, item.quantity + 1)
-              }
+              onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+              disabled={item.quantity >= 10}
               aria-label="Aumentar cantidad"
             >
               <Plus className="w-4 h-4" />

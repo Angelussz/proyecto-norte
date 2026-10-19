@@ -60,6 +60,7 @@ export function BestSellersSection() {
                   className="object-cover mix-blend-multiply"
                   src={product.image}
                   fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
                 />
               </div>
               <div className="flex justify-between items-start">
