@@ -53,6 +53,7 @@ export function StoreHeader() {
                 <Link
                   key={item.item}
                   href={item.link}
+                  suppressHydrationWarning
                   className={`text-xs font-semibold uppercase tracking-widest transition-colors hover:text-primary ${isActive
                       ? "border-b-2 border-primary pb-1 text-primary"
                       : "text-muted-foreground"
