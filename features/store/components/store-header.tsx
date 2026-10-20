@@ -15,9 +15,10 @@ import { Menu, Search, X, ShoppingBag } from "lucide-react";
 import { UserMenu } from "@/features/store/components/user-menu";
 
 const NAV = [
+  { item: "Inicio", link: "/" },
   { item: "Tienda", link: "/products" },
-  { item: "Nosotros", link: "#" },
-  { item: "Contacto", link: "#" },
+  { item: "Nosotros", link: "/nosotros" },
+  { item: "Contacto", link: "/contacto" },
 ];
 
 export function StoreHeader() {
@@ -35,31 +36,34 @@ export function StoreHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
       <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-5 md:px-16">
-        {/* ── Logo pegado a la izquierda ─────────────────────────────────── */}
-        <Link
-          href="/"
-          className="flex-none text-3xl tracking-wider text-foreground select-none"
-          style={{ fontFamily: "var(--font-display), sans-serif" }}
-        >
-          NORTE
-        </Link>
+        {/* ── Logo + Navegación agrupados a la izquierda ───────────────── */}
+        <div className="flex items-center gap-8 lg:gap-10">
+          <Link
+            href="/"
+            className="flex-none text-3xl tracking-wider text-foreground select-none"
+            style={{ fontFamily: "var(--font-display), sans-serif" }}
+          >
+            NORTE
+          </Link>
 
-        {/* ── Nav central ──────────────────────────────────────────────────── */}
-        <nav className="hidden items-center gap-7 md:flex" aria-label="Navegación principal">
-          {NAV.map((item) => {
-            const isActive = item.link !== "#" && pathname === item.link;
-            return (
-              <Link
-                key={item.item}
-                href={item.link}
-                className={`text-xs font-semibold uppercase tracking-widest transition-colors hover:text-primary ${isActive ? "border-b-2 border-primary pb-1 text-primary" : "text-muted-foreground"
+          <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Navegación principal">
+            {NAV.map((item) => {
+              const isActive = item.link !== "#" && pathname === item.link;
+              return (
+                <Link
+                  key={item.item}
+                  href={item.link}
+                  className={`text-xs font-semibold uppercase tracking-widest transition-colors hover:text-primary ${isActive
+                      ? "border-b-2 border-primary pb-1 text-primary"
+                      : "text-muted-foreground"
                     }`}
-              >
-                {item.item}
-              </Link>
-            );
-          })}
-        </nav>
+                >
+                  {item.item}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
         {/* ── Acciones a la derecha: Buscador + Iconos ──────────────────── */}
         <div className="flex items-center gap-3 sm:gap-4 text-foreground">
@@ -75,6 +79,8 @@ export function StoreHeader() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar productos…"
+                autoComplete="off"
+                suppressHydrationWarning
                 className="h-9 w-36 sm:w-48 md:w-56 lg:w-64 bg-white pl-3.5 pr-8 text-xs font-body text-foreground placeholder:text-muted-foreground rounded-full border border-white focus:outline-none shadow-sm transition-all"
               />
               {searchQuery && (

@@ -11,9 +11,9 @@ import { useCategories } from "@/features/category/hooks/useCategories";
 import { Search, X } from "lucide-react";
 
 function mapCategory(value: string): string | undefined {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "Todas" || trimmed === "todas") return undefined;
-  return trimmed.toLowerCase();
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed || trimmed === "todas" || trimmed === "all") return undefined;
+  return trimmed;
 }
 
 function parsePrice(value: string): number | undefined {
@@ -42,10 +42,10 @@ function ProductsPageInner() {
   const searchParams = useSearchParams();
   const { data: categoriesData } = useCategories();
 
-  // Inicializar search desde URL (?q=...)
+  // Inicializar search y category desde URL (?q=... & ?category=...)
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState("Todas");
+  const [category, setCategory] = useState(searchParams.get("category")?.toLowerCase() ?? "todas");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [debouncedMin, setDebouncedMin] = useState("");
@@ -53,7 +53,18 @@ function ProductsPageInner() {
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Debounce para búsqueda por texto
+  // ── Sincronizar state cuando cambia la URL externamente (ej: navbar o click en categoría) ──
+  useEffect(() => {
+    const urlQ = searchParams.get("q") ?? "";
+    const urlCat = searchParams.get("category")?.toLowerCase() ?? "todas";
+    setSearch(urlQ);
+    setDebouncedSearch(urlQ);
+    setCategory(urlCat);
+    setCurrentPage(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Debounce para búsqueda por texto (cuando el usuario escribe en el input de la página)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -72,13 +83,19 @@ function ProductsPageInner() {
     return () => clearTimeout(timer);
   }, [maxPrice]);
 
-  // Sincronizar URL con el estado de búsqueda
+  // Sincronizar URL con búsqueda y categoría
   useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("q", debouncedSearch);
+    if (category && category !== "todas") params.set("category", category);
     const qs = params.toString();
-    router.replace(`/products${qs ? `?${qs}` : ""}`, { scroll: false });
-  }, [debouncedSearch, router]);
+    const nextUrl = `/products${qs ? `?${qs}` : ""}`;
+    const currentQs = searchParams.toString();
+    const currentUrl = `/products${currentQs ? `?${currentQs}` : ""}`;
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [debouncedSearch, category, router, searchParams]);
 
   const params: ProductCatalogParams = {
     category: mapCategory(category),
@@ -131,6 +148,8 @@ function ProductsPageInner() {
             placeholder="Buscar productos…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            autoComplete="off"
+            suppressHydrationWarning
             className="rounded-md border pl-9 pr-8 py-2 text-sm w-52"
           />
           {search && (
@@ -147,11 +166,12 @@ function ProductsPageInner() {
         <select
           value={category}
           onChange={handleFilterChange(setCategory)}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         >
-          <option value="Todas">Todas</option>
+          <option value="todas">Todas</option>
           {(categoriesData ?? []).map((cat) => (
-            <option key={cat.id} value={cat.name}>
+            <option key={cat.id} value={cat.slug.toLowerCase()}>
               {cat.name}
             </option>
           ))}
@@ -161,6 +181,7 @@ function ProductsPageInner() {
           placeholder="Precio mínimo"
           value={minPrice}
           onChange={handleFilterChange(setMinPrice)}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         />
 
@@ -169,11 +190,13 @@ function ProductsPageInner() {
           placeholder="Precio máximo"
           value={maxPrice}
           onChange={handleFilterChange(setMaxPrice)}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         />
         <select
           value={sortBy}
           onChange={handleFilterChange(setSortBy)}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         >
           <option value="default">Ordenar por</option>
