@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ChangeEvent } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ProductGrid } from "@/features/store/components/product-grid";
 import type { ProductCatalogParams } from "@/features/product/types/product-catalog.interface";
 import { getProductCatalog } from "@/features/product/services/product-catalog.service";
 import { useCategories } from "@/features/category/hooks/useCategories";
+import { Search, X } from "lucide-react";
 
 function mapCategory(value: string): string | undefined {
   const trimmed = value.trim();
@@ -35,8 +37,14 @@ function mapSortBy(value: string): ProductCatalogParams["sortBy"] {
   }
 }
 
-export default function ProductsPage() {
+function ProductsPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: categoriesData } = useCategories();
+
+  // Inicializar search desde URL (?q=...)
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") ?? "");
   const [category, setCategory] = useState("Todas");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
@@ -44,6 +52,15 @@ export default function ProductsPage() {
   const [debouncedMax, setDebouncedMax] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Debounce para búsqueda por texto
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedMin(minPrice), 300);
@@ -55,12 +72,21 @@ export default function ProductsPage() {
     return () => clearTimeout(timer);
   }, [maxPrice]);
 
+  // Sincronizar URL con el estado de búsqueda
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    const qs = params.toString();
+    router.replace(`/products${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [debouncedSearch, router]);
+
   const params: ProductCatalogParams = {
     category: mapCategory(category),
     minPrice: parsePrice(debouncedMin),
     maxPrice: parsePrice(debouncedMax),
     sortBy: mapSortBy(sortBy),
     page: currentPage,
+    search: debouncedSearch || undefined,
   };
 
   const { data, isLoading, isError, isPlaceholderData, isFetching } = useQuery({
@@ -97,6 +123,27 @@ export default function ProductsPage() {
       </h1>
 
       <div className="mb-8 flex flex-wrap gap-3 justify-start">
+        {/* Campo de búsqueda por texto */}
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 size-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Buscar productos…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-md border pl-9 pr-8 py-2 text-sm w-52"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 text-muted-foreground hover:text-foreground"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
         <select
           value={category}
           onChange={handleFilterChange(setCategory)}
@@ -198,5 +245,13 @@ export default function ProductsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense>
+      <ProductsPageInner />
+    </Suspense>
   );
 }

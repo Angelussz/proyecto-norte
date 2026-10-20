@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const limit = Math.min(48, Math.max(1, Number(searchParams.get("limit") ?? "12")));
   const skip = (page - 1) * limit;
+  const searchQuery = searchParams.get("q")?.trim() ?? undefined;
 
   try {
     // ── Filtros de Prisma ─────────────────────────────────────────────────
@@ -42,10 +43,16 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.ProductsWhereInput = {
       active: true,
+      ...(searchQuery && {
+        name: {
+          contains: searchQuery,
+          mode: "insensitive" as Prisma.QueryMode,
+        },
+      }),
       ...(isCategoryFilter && {
         category: {
           slug: {
-            equals: categorySlug.toLowerCase(),
+            equals: categorySlug!.toLowerCase(),
             mode: "insensitive" as Prisma.QueryMode,
           },
         },
