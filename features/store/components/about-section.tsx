@@ -12,6 +12,7 @@ export function AboutSection() {
             className="absolute inset-0 w-full h-full object-cover"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6fPTgVz1zFjKQq9owVVF2C8BoMIBVefzG9f6VxxkrnCiv_zKxOLVs6kboOSKcmmVwwRS5Gqai2vvbNCXYAu1SqtlUB-1xxEAFT30wMyGCu7P9KlfyKZDzYd8XYXFsKA50gt9rFLYmIg9KgNtC8NCD90G_EyHycDGLIPKpEZea52_wtduWD1-Rz8mNam4T2Pzj9QJbqyEqhjawBMSXtklckPXw5PKqE-cm_ORuGXIUeRF3P2Hdom6y"
             fill
+            sizes="(max-width: 768px) 100vw, 50vw"
           />
         </div>
         <div className="flex flex-col items-start">

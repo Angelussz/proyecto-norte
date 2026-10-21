@@ -1,7 +1,11 @@
+
 export type ProductVariant = {
+  id: string;
   size: string;
+  color: string;
   stock: number;
-}
+  price: number;
+};
 
 export type ProductDetail = {
   id: string;
