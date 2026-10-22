@@ -9,9 +9,7 @@ import {
   CheckCircle2,
   Clock,
   Headphones,
-  Mail,
   MapPin,
-  Phone,
   RotateCcw,
   Ruler,
   ShieldCheck,
@@ -34,7 +32,13 @@ export function ContactView() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.reason || !formData.message || !formData.privacy) {
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.reason ||
+      !formData.message ||
+      !formData.privacy
+    ) {
       return;
     }
     // Simular envío exitoso
@@ -113,7 +117,8 @@ export function ContactView() {
                   Mensaje Recibido
                 </h3>
                 <p className="text-sm max-w-md">
-                  Tu mensaje ha sido recibido con éxito. Un miembro de nuestro equipo te responderá a la brevedad a tu correo electrónico.
+                  Tu mensaje ha sido recibido con éxito. Un miembro de nuestro equipo te responderá
+                  a la brevedad a tu correo electrónico.
                 </p>
                 <button
                   type="button"
@@ -220,7 +225,9 @@ export function ContactView() {
                       htmlFor="contact-order-num"
                     >
                       <span>Número de Pedido</span>
-                      <span className="text-[10px] text-muted-foreground font-normal">Opcional</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        Opcional
+                      </span>
                     </label>
                     <input
                       className="bg-white px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[#894d00] rounded-none border border-border/50"
@@ -323,14 +330,20 @@ export function ContactView() {
                   <MapPin className="size-4.5 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
                     <p className="font-semibold text-foreground">Calle Mayor del Mar 24</p>
-                    <p className="text-xs text-muted-foreground">Barrio Histórico, 28004 Madrid, España</p>
+                    <p className="text-xs text-muted-foreground">
+                      Barrio Histórico, 28004 Madrid, España
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Clock className="size-4.5 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-semibold text-foreground">Lunes a Viernes: 10:00 — 19:30 h</p>
-                    <p className="text-xs text-muted-foreground">Sábados: Con cita previa exclusiva</p>
+                    <p className="font-semibold text-foreground">
+                      Lunes a Viernes: 10:00 — 19:30 h
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Sábados: Con cita previa exclusiva
+                    </p>
                   </div>
                 </div>
               </div>
@@ -494,9 +507,10 @@ export function ContactView() {
                 Una relación cercana basada en la calma y el detalle
               </h3>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6">
-                Cada prenda NORTE se concibe para habitar tu día a día con comodidad reflexiva. Si deseas
-                consultar composiciones de lino puro, cuidados específicos de hilado o coordinar un pedido
-                especial para ceremonias, nuestro equipo de diseño te atenderá con dedicación artesanal.
+                Cada prenda NORTE se concibe para habitar tu día a día con comodidad reflexiva. Si
+                deseas consultar composiciones de lino puro, cuidados específicos de hilado o
+                coordinar un pedido especial para ceremonias, nuestro equipo de diseño te atenderá
+                con dedicación artesanal.
               </p>
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                 <div>

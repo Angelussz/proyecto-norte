@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -42,10 +42,20 @@ function ProductsPageInner() {
   const searchParams = useSearchParams();
   const { data: categoriesData } = useCategories();
 
-  // Inicializar search y category desde URL (?q=... & ?category=...)
-  const [search, setSearch] = useState(searchParams.get("q") ?? "");
-  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") ?? "");
-  const [category, setCategory] = useState(searchParams.get("category")?.toLowerCase() ?? "todas");
+  // Fuente de verdad: la URL. q y category se leen directamente de searchParams.
+  const urlQ = searchParams.get("q") ?? "";
+  const urlCat = searchParams.get("category")?.toLowerCase() ?? "todas";
+
+  // inputSearch: estado local SOLO para el <input> mientras el usuario escribe.
+  // Cuando la URL cambia externamente (header, click en categoria), sincronizamos
+  // el input usando la tecnica de "derived state with previous value" - sin useEffect.
+  const [inputSearch, setInputSearch] = useState(urlQ);
+  const [prevUrlQ, setPrevUrlQ] = useState(urlQ);
+  if (urlQ !== prevUrlQ) {
+    setPrevUrlQ(urlQ);
+    setInputSearch(urlQ);
+  }
+
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [debouncedMin, setDebouncedMin] = useState("");
@@ -53,26 +63,28 @@ function ProductsPageInner() {
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ── Sincronizar state cuando cambia la URL externamente (ej: navbar o click en categoría) ──
-  useEffect(() => {
-    const urlQ = searchParams.get("q") ?? "";
-    const urlCat = searchParams.get("category")?.toLowerCase() ?? "todas";
-    setSearch(urlQ);
-    setDebouncedSearch(urlQ);
-    setCategory(urlCat);
-    setCurrentPage(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-
-  // Debounce para búsqueda por texto (cuando el usuario escribe en el input de la página)
+  // Debounce del input de texto -> actualiza la URL directamente.
+  // No hay estado intermedio: la URL es la fuente de verdad.
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setCurrentPage(1);
+      const params = new URLSearchParams();
+      if (inputSearch) params.set("q", inputSearch);
+      if (urlCat && urlCat !== "todas") params.set("category", urlCat);
+      const qs = params.toString();
+      const nextUrl = `/products${qs ? `?${qs}` : ""}`;
+      const currentQs = searchParams.toString();
+      const currentUrl = `/products${currentQs ? `?${currentQs}` : ""}`;
+      if (nextUrl !== currentUrl) {
+        router.replace(nextUrl, { scroll: false });
+        setCurrentPage(1);
+      }
     }, 350);
     return () => clearTimeout(timer);
-  }, [search]);
+    // inputSearch es el unico trigger de este efecto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputSearch]);
 
+  // Debounces de precio
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedMin(minPrice), 300);
     return () => clearTimeout(timer);
@@ -83,27 +95,24 @@ function ProductsPageInner() {
     return () => clearTimeout(timer);
   }, [maxPrice]);
 
-  // Sincronizar URL con búsqueda y categoría
-  useEffect(() => {
+  // Cambio de categoria -> actualiza la URL directamente (sin effect)
+  function handleCategoryChange(e: ChangeEvent<HTMLSelectElement>) {
+    const newCat = e.target.value;
     const params = new URLSearchParams();
-    if (debouncedSearch) params.set("q", debouncedSearch);
-    if (category && category !== "todas") params.set("category", category);
+    if (inputSearch) params.set("q", inputSearch);
+    if (newCat && newCat !== "todas") params.set("category", newCat);
     const qs = params.toString();
-    const nextUrl = `/products${qs ? `?${qs}` : ""}`;
-    const currentQs = searchParams.toString();
-    const currentUrl = `/products${currentQs ? `?${currentQs}` : ""}`;
-    if (nextUrl !== currentUrl) {
-      router.replace(nextUrl, { scroll: false });
-    }
-  }, [debouncedSearch, category, router, searchParams]);
+    router.replace(`/products${qs ? `?${qs}` : ""}`, { scroll: false });
+    setCurrentPage(1);
+  }
 
   const params: ProductCatalogParams = {
-    category: mapCategory(category),
+    category: mapCategory(urlCat),
     minPrice: parsePrice(debouncedMin),
     maxPrice: parsePrice(debouncedMax),
     sortBy: mapSortBy(sortBy),
     page: currentPage,
-    search: debouncedSearch || undefined,
+    search: urlQ || undefined,
   };
 
   const { data, isLoading, isError, isPlaceholderData, isFetching } = useQuery({
@@ -121,7 +130,7 @@ function ProductsPageInner() {
         !query.isActive() &&
         query.state.fetchStatus === "fetching",
     });
-  }, [category, debouncedMin, debouncedMax, sortBy, currentPage, queryClient]);
+  }, [urlCat, debouncedMin, debouncedMax, sortBy, currentPage, queryClient]);
 
   const totalPages = data?.pagination.totalPages ?? 0;
   const hasProducts = (data?.data.length ?? 0) > 0;
@@ -140,32 +149,32 @@ function ProductsPageInner() {
       </h1>
 
       <div className="mb-8 flex flex-wrap gap-3 justify-start">
-        {/* Campo de búsqueda por texto */}
+        {/* Campo de busqueda por texto */}
         <div className="relative flex items-center">
           <Search className="absolute left-3 size-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"
-            placeholder="Buscar productos…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar productos..."
+            value={inputSearch}
+            onChange={(e) => setInputSearch(e.target.value)}
             autoComplete="off"
             suppressHydrationWarning
             className="rounded-md border pl-9 pr-8 py-2 text-sm w-52"
           />
-          {search && (
+          {inputSearch && (
             <button
               type="button"
-              onClick={() => setSearch("")}
+              onClick={() => setInputSearch("")}
               className="absolute right-2 text-muted-foreground hover:text-foreground"
-              aria-label="Limpiar búsqueda"
+              aria-label="Limpiar busqueda"
             >
               <X className="size-3.5" />
             </button>
           )}
         </div>
         <select
-          value={category}
-          onChange={handleFilterChange(setCategory)}
+          value={urlCat}
+          onChange={handleCategoryChange}
           suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         >
@@ -178,7 +187,7 @@ function ProductsPageInner() {
         </select>
         <input
           type="number"
-          placeholder="Precio mínimo"
+          placeholder="Precio minimo"
           value={minPrice}
           onChange={handleFilterChange(setMinPrice)}
           suppressHydrationWarning
@@ -187,7 +196,7 @@ function ProductsPageInner() {
 
         <input
           type="number"
-          placeholder="Precio máximo"
+          placeholder="Precio maximo"
           value={maxPrice}
           onChange={handleFilterChange(setMaxPrice)}
           suppressHydrationWarning
@@ -203,25 +212,25 @@ function ProductsPageInner() {
           <option value="price-asc">Precio: menor a mayor</option>
           <option value="price-desc">Precio: mayor a menor</option>
           <option value="name">Nombre</option>
-          <option value="recent">Más recientes</option>
+          <option value="recent">Mas recientes</option>
         </select>
       </div>
 
       {isError ? (
         <div className="py-12 text-center">
           <p className="text-lg font-medium">
-            No pudimos cargar los productos. Intentá de nuevo más tarde.
+            No pudimos cargar los productos. Intenta de nuevo mas tarde.
           </p>
         </div>
       ) : isLoading ? (
         <div className="py-12 text-center">
-          <p className="text-lg font-medium">Cargando productos…</p>
+          <p className="text-lg font-medium">Cargando productos...</p>
         </div>
       ) : hasProducts ? (
         <div>
           {refreshing && (
             <p className="mb-3 text-center text-sm text-muted-foreground">
-              Actualizando resultados…
+              Actualizando resultados...
             </p>
           )}
           <ProductGrid items={data!.data} />
@@ -231,7 +240,7 @@ function ProductsPageInner() {
           <p className="text-lg font-medium">No se encontraron productos.</p>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Probá cambiando los filtros seleccionados.
+            Proba cambiando los filtros seleccionados.
           </p>
         </div>
       )}
