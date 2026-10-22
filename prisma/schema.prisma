@@ -146,6 +146,8 @@ model Orders {
   shipping_cost Decimal     @db.Decimal(10, 2)
   total         Decimal     @db.Decimal(10, 2)
   status        OrderStatus @default(PENDING_PAYMENT)
+  cancel_reason String?     @db.Text
+  status_notes  String?     @db.Text
   created_at    DateTime    @default(now())
   updated_at    DateTime    @updatedAt
 
