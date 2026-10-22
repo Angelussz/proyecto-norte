@@ -32,6 +32,8 @@ export type ProductCatalogParams = {
   page?: number;
   /** Cantidad de productos por página */
   limit?: number;
+  /** Texto libre para buscar por nombre de producto */
+  search?: string;
 };
 
 /** Respuesta del endpoint GET /api/products */

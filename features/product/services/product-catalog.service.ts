@@ -28,6 +28,7 @@ export async function getProductCatalog(
   if (params.sortBy)                 query.set("sortBy", params.sortBy);
   if (params.page !== undefined)     query.set("page", String(params.page));
   if (params.limit !== undefined)    query.set("limit", String(params.limit));
+  if (params.search)                 query.set("q", params.search);
 
   const queryString = query.toString();
   const url = `${getBaseUrl()}/api/products${queryString ? `?${queryString}` : ""}`;

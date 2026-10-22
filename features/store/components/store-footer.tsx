@@ -3,8 +3,17 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const COL_1 = ["Envíos", "Devoluciones", "Guía de Tallas"];
-const COL_2 = ["Sustentabilidad", "Política de Privacidad", "Términos y Condiciones"];
+const COL_1 = [
+  { label: "Envíos", href: "#" },
+  { label: "Devoluciones", href: "#" },
+  { label: "Guía de Tallas", href: "#" },
+];
+const COL_2 = [
+  { label: "Nosotros", href: "/nosotros" },
+  { label: "Contacto", href: "/contacto" },
+  { label: "Sustentabilidad", href: "#" },
+  { label: "Términos y Condiciones", href: "#" },
+];
 
 export function StoreFooter() {
   return (
@@ -24,22 +33,22 @@ export function StoreFooter() {
         <div className="flex flex-col gap-3">
           {COL_1.map((item) => (
             <Link
-              key={item}
-              href="#"
+              key={item.label}
+              href={item.href}
               className="text-sm font-semibold uppercase text-muted-foreground underline decoration-1 opacity-80 transition-opacity hover:text-primary hover:opacity-100"
             >
-              {item}
+              {item.label}
             </Link>
           ))}
         </div>
         <div className="flex flex-col gap-3">
           {COL_2.map((item) => (
             <Link
-              key={item}
-              href="#"
+              key={item.label}
+              href={item.href}
               className="text-sm font-semibold uppercase text-muted-foreground underline decoration-1 opacity-80 transition-opacity hover:text-primary hover:opacity-100"
             >
-              {item}
+              {item.label}
             </Link>
           ))}
         </div>

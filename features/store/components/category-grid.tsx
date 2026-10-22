@@ -68,7 +68,11 @@ export function CategoryGrid() {
             "/category-accessories.jpg";
 
           return (
-            <Link key={category.id} href="/products" className="group block text-center">
+            <Link
+              key={category.id}
+              href={`/products?category=${encodeURIComponent(category.slug.toLowerCase())}`}
+              className="group block text-center"
+            >
               <div className="relative aspect-3/4 mb-4 overflow-hidden rounded-none bg-[#f4eddf]">
                 <Image
                   alt={`Categoría de ${category.name}`}

@@ -1,17 +1,19 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ChangeEvent } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ProductGrid } from "@/features/store/components/product-grid";
 import type { ProductCatalogParams } from "@/features/product/types/product-catalog.interface";
 import { getProductCatalog } from "@/features/product/services/product-catalog.service";
 import { useCategories } from "@/features/category/hooks/useCategories";
+import { Search, X } from "lucide-react";
 
 function mapCategory(value: string): string | undefined {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === "Todas" || trimmed === "todas") return undefined;
-  return trimmed.toLowerCase();
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed || trimmed === "todas" || trimmed === "all") return undefined;
+  return trimmed;
 }
 
 function parsePrice(value: string): number | undefined {
@@ -35,9 +37,25 @@ function mapSortBy(value: string): ProductCatalogParams["sortBy"] {
   }
 }
 
-export default function ProductsPage() {
+function ProductsPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: categoriesData } = useCategories();
-  const [category, setCategory] = useState("Todas");
+
+  // Fuente de verdad: la URL. q y category se leen directamente de searchParams.
+  const urlQ = searchParams.get("q") ?? "";
+  const urlCat = searchParams.get("category")?.toLowerCase() ?? "todas";
+
+  // inputSearch: estado local SOLO para el <input> mientras el usuario escribe.
+  // Cuando la URL cambia externamente (header, click en categoria), sincronizamos
+  // el input usando la tecnica de "derived state with previous value" - sin useEffect.
+  const [inputSearch, setInputSearch] = useState(urlQ);
+  const [prevUrlQ, setPrevUrlQ] = useState(urlQ);
+  if (urlQ !== prevUrlQ) {
+    setPrevUrlQ(urlQ);
+    setInputSearch(urlQ);
+  }
+
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [debouncedMin, setDebouncedMin] = useState("");
@@ -45,6 +63,28 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Debounce del input de texto -> actualiza la URL directamente.
+  // No hay estado intermedio: la URL es la fuente de verdad.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (inputSearch) params.set("q", inputSearch);
+      if (urlCat && urlCat !== "todas") params.set("category", urlCat);
+      const qs = params.toString();
+      const nextUrl = `/products${qs ? `?${qs}` : ""}`;
+      const currentQs = searchParams.toString();
+      const currentUrl = `/products${currentQs ? `?${currentQs}` : ""}`;
+      if (nextUrl !== currentUrl) {
+        router.replace(nextUrl, { scroll: false });
+        setCurrentPage(1);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+    // inputSearch es el unico trigger de este efecto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputSearch]);
+
+  // Debounces de precio
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedMin(minPrice), 300);
     return () => clearTimeout(timer);
@@ -55,12 +95,24 @@ export default function ProductsPage() {
     return () => clearTimeout(timer);
   }, [maxPrice]);
 
+  // Cambio de categoria -> actualiza la URL directamente (sin effect)
+  function handleCategoryChange(e: ChangeEvent<HTMLSelectElement>) {
+    const newCat = e.target.value;
+    const params = new URLSearchParams();
+    if (inputSearch) params.set("q", inputSearch);
+    if (newCat && newCat !== "todas") params.set("category", newCat);
+    const qs = params.toString();
+    router.replace(`/products${qs ? `?${qs}` : ""}`, { scroll: false });
+    setCurrentPage(1);
+  }
+
   const params: ProductCatalogParams = {
-    category: mapCategory(category),
+    category: mapCategory(urlCat),
     minPrice: parsePrice(debouncedMin),
     maxPrice: parsePrice(debouncedMax),
     sortBy: mapSortBy(sortBy),
     page: currentPage,
+    search: urlQ || undefined,
   };
 
   const { data, isLoading, isError, isPlaceholderData, isFetching } = useQuery({
@@ -78,7 +130,7 @@ export default function ProductsPage() {
         !query.isActive() &&
         query.state.fetchStatus === "fetching",
     });
-  }, [category, debouncedMin, debouncedMax, sortBy, currentPage, queryClient]);
+  }, [urlCat, debouncedMin, debouncedMax, sortBy, currentPage, queryClient]);
 
   const totalPages = data?.pagination.totalPages ?? 0;
   const hasProducts = (data?.data.length ?? 0) > 0;
@@ -97,61 +149,88 @@ export default function ProductsPage() {
       </h1>
 
       <div className="mb-8 flex flex-wrap gap-3 justify-start">
+        {/* Campo de busqueda por texto */}
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 size-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            value={inputSearch}
+            onChange={(e) => setInputSearch(e.target.value)}
+            autoComplete="off"
+            suppressHydrationWarning
+            className="rounded-md border pl-9 pr-8 py-2 text-sm w-52"
+          />
+          {inputSearch && (
+            <button
+              type="button"
+              onClick={() => setInputSearch("")}
+              className="absolute right-2 text-muted-foreground hover:text-foreground"
+              aria-label="Limpiar busqueda"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
         <select
-          value={category}
-          onChange={handleFilterChange(setCategory)}
+          value={urlCat}
+          onChange={handleCategoryChange}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         >
-          <option value="Todas">Todas</option>
+          <option value="todas">Todas</option>
           {(categoriesData ?? []).map((cat) => (
-            <option key={cat.id} value={cat.name}>
+            <option key={cat.id} value={cat.slug.toLowerCase()}>
               {cat.name}
             </option>
           ))}
         </select>
         <input
           type="number"
-          placeholder="Precio mínimo"
+          placeholder="Precio minimo"
           value={minPrice}
           onChange={handleFilterChange(setMinPrice)}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         />
 
         <input
           type="number"
-          placeholder="Precio máximo"
+          placeholder="Precio maximo"
           value={maxPrice}
           onChange={handleFilterChange(setMaxPrice)}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         />
         <select
           value={sortBy}
           onChange={handleFilterChange(setSortBy)}
+          suppressHydrationWarning
           className="rounded-md border px-4 py-2 text-sm"
         >
           <option value="default">Ordenar por</option>
           <option value="price-asc">Precio: menor a mayor</option>
           <option value="price-desc">Precio: mayor a menor</option>
           <option value="name">Nombre</option>
-          <option value="recent">Más recientes</option>
+          <option value="recent">Mas recientes</option>
         </select>
       </div>
 
       {isError ? (
         <div className="py-12 text-center">
           <p className="text-lg font-medium">
-            No pudimos cargar los productos. Intentá de nuevo más tarde.
+            No pudimos cargar los productos. Intenta de nuevo mas tarde.
           </p>
         </div>
       ) : isLoading ? (
         <div className="py-12 text-center">
-          <p className="text-lg font-medium">Cargando productos…</p>
+          <p className="text-lg font-medium">Cargando productos...</p>
         </div>
       ) : hasProducts ? (
         <div>
           {refreshing && (
             <p className="mb-3 text-center text-sm text-muted-foreground">
-              Actualizando resultados…
+              Actualizando resultados...
             </p>
           )}
           <ProductGrid items={data!.data} />
@@ -161,7 +240,7 @@ export default function ProductsPage() {
           <p className="text-lg font-medium">No se encontraron productos.</p>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Probá cambiando los filtros seleccionados.
+            Proba cambiando los filtros seleccionados.
           </p>
         </div>
       )}
@@ -198,5 +277,13 @@ export default function ProductsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense>
+      <ProductsPageInner />
+    </Suspense>
   );
 }
