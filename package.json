@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky && git config blame.ignoreRevsFile .git-blame-ignore-revs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -45,6 +46,8 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
@@ -55,5 +58,10 @@
   "volta": {
     "node": "24.20.0",
     "pnpm": "11.26.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md}": [
+      "prettier --write"
+    ]
   }
 }
