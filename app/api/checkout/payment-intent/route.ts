@@ -26,15 +26,13 @@ const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
 function isSameCart(
   details: { variant_id: string; quantity: number }[],
-  cleaned: CleanedQuoteItem[]
+  cleaned: CleanedQuoteItem[],
 ): boolean {
   if (details.length !== cleaned.length) return false;
   return cleaned.every((item) =>
     details.some(
-      (detail) =>
-        detail.variant_id === item.variantId &&
-        detail.quantity === item.quantity
-    )
+      (detail) => detail.variant_id === item.variantId && detail.quantity === item.quantity,
+    ),
   );
 }
 
@@ -52,10 +50,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json(
-      { error: "Cuerpo JSON inválido" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Cuerpo JSON inválido" }, { status: 400 });
   }
 
   try {
@@ -68,7 +63,7 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "Usuario de prueba no encontrado en la base de datos" },
-        { status: 422 }
+        { status: 422 },
       );
     }
     const address = await prisma.address.findFirst({
@@ -77,7 +72,7 @@ export async function POST(req: NextRequest) {
     if (!address) {
       return NextResponse.json(
         { error: "Dirección de prueba no encontrada en la base de datos" },
-        { status: 422 }
+        { status: 422 },
       );
     }
 
@@ -96,9 +91,7 @@ export async function POST(req: NextRequest) {
       },
       orderBy: { created_at: "desc" },
     });
-    const existing = pendingOrders.find((order) =>
-      isSameCart(order.items, cleaned)
-    );
+    const existing = pendingOrders.find((order) => isSameCart(order.items, cleaned));
 
     const lineItems = validated.map((item) => ({
       variant_id: item.variantId,
@@ -175,24 +168,18 @@ export async function POST(req: NextRequest) {
           currency: CURRENCY,
           metadata: { orderId: order.id },
         },
-        { idempotencyKey: order.id }
+        { idempotencyKey: order.id },
       );
     } catch (stripeError) {
       console.error(
         "[POST /api/checkout/payment-intent] Stripe no disponible:",
-        stripeError instanceof Error ? stripeError.message : stripeError
+        stripeError instanceof Error ? stripeError.message : stripeError,
       );
-      return NextResponse.json(
-        { error: "No se pudo iniciar el pago con Stripe" },
-        { status: 502 }
-      );
+      return NextResponse.json({ error: "No se pudo iniciar el pago con Stripe" }, { status: 502 });
     }
 
     if (!paymentIntent.client_secret) {
-      return NextResponse.json(
-        { error: "Stripe no devolvió clientSecret" },
-        { status: 502 }
-      );
+      return NextResponse.json({ error: "Stripe no devolvió clientSecret" }, { status: 502 });
     }
 
     await prisma.payments.update({
@@ -214,18 +201,15 @@ export async function POST(req: NextRequest) {
           error: error.message,
           ...(error.problems ? { problems: error.problems } : {}),
         },
-        { status: error.status }
+        { status: error.status },
       );
     }
 
     console.error(
       "[POST /api/checkout/payment-intent] Error inesperado:",
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
     );
 
-    return NextResponse.json(
-      { error: "No se pudo iniciar el pago" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "No se pudo iniciar el pago" }, { status: 500 });
   }
 }

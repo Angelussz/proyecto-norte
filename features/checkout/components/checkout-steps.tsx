@@ -15,22 +15,17 @@ export function CheckoutSteps() {
         {STEPS.map((step, i) => {
           const last = i === STEPS.length - 1;
           return (
-            <li
-              key={step.label}
-              className={cn("flex items-start", !last && "flex-1")}
-            >
+            <li key={step.label} className={cn("flex items-start", !last && "flex-1")}>
               <div className="flex flex-col items-center gap-2">
                 <Link
                   href="#"
                   aria-current={step.state === "current" ? "step" : undefined}
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-none border-2 transition-colors",
-                    step.state === "done" &&
-                      "border-foreground bg-foreground text-background",
-                    step.state === "current" &&
-                      "border-foreground bg-background text-foreground",
+                    step.state === "done" && "border-foreground bg-foreground text-background",
+                    step.state === "current" && "border-foreground bg-background text-foreground",
                     step.state === "upcoming" &&
-                      "border-border bg-background text-muted-foreground"
+                      "border-border bg-background text-muted-foreground",
                   )}
                 >
                   {step.state === "done" ? (
@@ -42,9 +37,7 @@ export function CheckoutSteps() {
                 <span
                   className={cn(
                     "whitespace-nowrap text-xs font-semibold uppercase tracking-widest",
-                    step.state === "upcoming"
-                      ? "text-muted-foreground"
-                      : "text-foreground"
+                    step.state === "upcoming" ? "text-muted-foreground" : "text-foreground",
                   )}
                 >
                   {step.label}
@@ -55,7 +48,7 @@ export function CheckoutSteps() {
                   aria-hidden
                   className={cn(
                     "mx-2 mt-4 h-0.5 flex-1 sm:mx-4",
-                    step.state === "done" ? "bg-foreground" : "bg-border"
+                    step.state === "done" ? "bg-foreground" : "bg-border",
                   )}
                 />
               )}

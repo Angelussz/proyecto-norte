@@ -45,13 +45,10 @@ export default function CartPage() {
         <h1 className="font-headline text-5xl uppercase leading-none text-foreground sm:text-[80px]">
           Tu Carrito
         </h1>
-        <p
-        className="mt-4 text-base text-muted-foreground sm:text-lg"
-        aria-live="polite"
-        >
-        {isLoading
-          ? "Cargando carrito..."
-          : `${totalItems} ${totalItems === 1 ? "producto" : "productos"} en tu carrito.`}
+        <p className="mt-4 text-base text-muted-foreground sm:text-lg" aria-live="polite">
+          {isLoading
+            ? "Cargando carrito..."
+            : `${totalItems} ${totalItems === 1 ? "producto" : "productos"} en tu carrito.`}
         </p>
       </header>
 
@@ -61,10 +58,7 @@ export default function CartPage() {
         <div className="flex flex-col gap-6 w-full lg:w-2/3 sm:gap-8">{listContent}</div>
 
         {/* Resumen del pedido */}
-        <OrderSummaryComponent
-          summary={summary}
-          isLoading={isLoading}
-        />
+        <OrderSummaryComponent summary={summary} isLoading={isLoading} />
       </div>
     </main>
   );

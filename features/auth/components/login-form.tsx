@@ -7,12 +7,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 // ─── Google SVG Icon ────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
-    <svg
-      aria-hidden="true"
-      className="size-4 shrink-0"
-      viewBox="0 0 24 24"
-      focusable="false"
-    >
+    <svg aria-hidden="true" className="size-4 shrink-0" viewBox="0 0 24 24" focusable="false">
       <path
         d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"
         fill="#4285F4"
@@ -107,12 +102,7 @@ export function LoginForm() {
   return (
     <div className="space-y-6">
       {/* ── Formulario de credenciales ── */}
-      <form
-        id="login-credentials-form"
-        onSubmit={handleSubmit}
-        className="space-y-4"
-        noValidate
-      >
+      <form id="login-credentials-form" onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Campo email */}
         <div className="space-y-1.5">
           <label

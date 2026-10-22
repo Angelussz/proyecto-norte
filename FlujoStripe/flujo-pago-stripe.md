@@ -73,11 +73,11 @@ y solo si la tarjeta está completa (ver paso previo).
 3. Transacción: reutiliza una orden `PENDING_PAYMENT` con el mismo carrito
    o crea `Orders` + `OrderDetails` + `Payments`. Si es reintento, el pago vuelve a `PENDING`.
 4. `stripe.paymentIntents.create(
-     { amount, currency, metadata: { orderId } },
-     { idempotencyKey: order.id }
-   )` y guarda `gateway_transaction_id`.
+  { amount, currency, metadata: { orderId } },
+  { idempotencyKey: order.id }
+)` y guarda `gateway_transaction_id`.
 5. Responde `{ orderId, clientSecret, total }`.
-**No mueve dinero ni descuenta stock.**
+   **No mueve dinero ni descuenta stock.**
 
 ### 3. Confirmar tarjeta (el cobro) — frontend
 

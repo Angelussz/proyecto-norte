@@ -13,11 +13,7 @@ const body = Inter({
   variable: "--font-shop-body",
 });
 
-export default function ShopLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={`${display.variable} ${body.variable} flex min-h-screen flex-col bg-background text-foreground`}

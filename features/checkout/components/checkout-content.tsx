@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { Elements } from '@stripe/react-stripe-js';
-import { stripePromise } from '@/lib/stripe-client';
-import { CardElementProvider } from '@/features/checkout/components/card-element-context';
-import { CHECKOUT_SHIPPING_MOCK } from '@/lib/mocks';
-import { CheckoutSteps } from '@/features/checkout/components/checkout-steps';
-import { ShippingSummary } from '@/features/checkout/components/shipping-summary';
-import { PaymentMethodForm } from '@/features/checkout/components/payment-method-form';
-import { CheckoutSummary } from '@/features/checkout/components/checkout-summary';
+import { Elements } from "@stripe/react-stripe-js";
+import { stripePromise } from "@/lib/stripe-client";
+import { CardElementProvider } from "@/features/checkout/components/card-element-context";
+import { CHECKOUT_SHIPPING_MOCK } from "@/lib/mocks";
+import { CheckoutSteps } from "@/features/checkout/components/checkout-steps";
+import { ShippingSummary } from "@/features/checkout/components/shipping-summary";
+import { PaymentMethodForm } from "@/features/checkout/components/payment-method-form";
+import { CheckoutSummary } from "@/features/checkout/components/checkout-summary";
 
 /**
  * Contenido del checkout envuelto en el contexto Elements de Stripe,
@@ -44,7 +44,7 @@ export function CheckoutContent() {
   }
 
   return (
-    <Elements stripe={stripePromise} options={{ locale: 'es' }}>
+    <Elements stripe={stripePromise} options={{ locale: "es" }}>
       <CardElementProvider>{content}</CardElementProvider>
     </Elements>
   );

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
           "X-RateLimit-Limit": "10",
           "X-RateLimit-Remaining": "0",
         },
-      }
+      },
     );
   }
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json(
       { error: "Body inválido. Se esperaba JSON con email y password." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -59,10 +59,7 @@ export async function POST(req: NextRequest) {
 
   // ── Validación básica de campos requeridos ──────────────────────────────────
   if (!email || typeof email !== "string" || !password || typeof password !== "string") {
-    return NextResponse.json(
-      { error: "email y password son obligatorios." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "email y password son obligatorios." }, { status: 400 });
   }
 
   // ── 3 + 4. Verificar credenciales y firmar token ────────────────────────────
@@ -105,9 +102,6 @@ export async function POST(req: NextRequest) {
 
     // Error inesperado → 500 (nunca exponemos el error real al cliente)
     console.error("[POST /api/auth/login]", error);
-    return NextResponse.json(
-      { error: "Error interno del servidor." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error interno del servidor." }, { status: 500 });
   }
 }

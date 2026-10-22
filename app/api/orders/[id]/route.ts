@@ -16,10 +16,7 @@ const VALID_STATUSES: OrderStatus[] = [
  * GET /api/orders/[id]
  * Obtiene una orden por su ID.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const order = await prisma.orders.findUnique({
@@ -28,10 +25,7 @@ export async function GET(
   });
 
   if (!order) {
-    return NextResponse.json(
-      { error: "Orden no encontrada" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
   }
 
   return NextResponse.json(serializeOrder(order));
@@ -45,10 +39,7 @@ export async function GET(
  *   status           - nuevo status (requerido)
  *   expectedUpdatedAt - timestamp que el cliente tiene (requerido)
  */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   let body: { status?: string; expectedUpdatedAt?: string };
@@ -61,7 +52,7 @@ export async function PATCH(
   if (!body.status || !body.expectedUpdatedAt) {
     return NextResponse.json(
       { error: "Faltan campos requeridos: status, expectedUpdatedAt" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -81,14 +72,11 @@ export async function PATCH(
   if (result.count === 0) {
     const exists = await prisma.orders.findUnique({ where: { id } });
     if (!exists) {
-      return NextResponse.json(
-        { error: "Orden no encontrada" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
     }
     return NextResponse.json(
       { error: "Conflicto: la orden fue modificada por otro usuario" },
-      { status: 409 }
+      { status: 409 },
     );
   }
 

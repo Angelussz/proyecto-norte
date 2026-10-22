@@ -23,10 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="es"
-      className={`${bebasNeue.variable} ${inter.variable} h-full antialiased`}
-    >
+    <html lang="es" className={`${bebasNeue.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-body bg-background text-on-background">
         <QueryProvider>{children}</QueryProvider>
       </body>

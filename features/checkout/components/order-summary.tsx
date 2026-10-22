@@ -1,23 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPrice } from "@/lib/products";
 import type { CheckoutQuote } from "@/features/checkout/types/checkout.interface";
 
-export function OrderSummary({
-  summary,
-  action,
-}: {
-  summary: CheckoutQuote;
-  action?: ReactNode;
-}) {
+export function OrderSummary({ summary, action }: { summary: CheckoutQuote; action?: ReactNode }) {
   return (
     <Card className="rounded-none bg-muted py-6 md:py-8">
       <CardHeader className="px-6 md:px-8">
@@ -30,10 +18,7 @@ export function OrderSummary({
       </CardHeader>
 
       <CardContent className="px-6 md:px-8">
-        <ul
-          role="list"
-          className="mb-6 divide-y divide-border border-b border-border"
-        >
+        <ul role="list" className="mb-6 divide-y divide-border border-b border-border">
           {summary.items.map((item) => (
             <li key={item.id} className="flex py-4">
               <div className="h-24 w-24 shrink-0 overflow-hidden border border-border bg-card">
@@ -56,12 +41,8 @@ export function OrderSummary({
                   </h4>
                   <p className="ml-4 font-semibold">{formatPrice(item.price)}</p>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {item.variantLabel}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Qty {item.quantity}
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{item.variantLabel}</p>
+                <p className="mt-2 text-sm text-muted-foreground">Qty {item.quantity}</p>
               </div>
             </li>
           ))}
@@ -81,15 +62,10 @@ export function OrderSummary({
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Impuestos</dt>
             <dd className="font-semibold">{formatPrice(summary.taxes)}</dd>
-
           </div>
           <div className="flex justify-between border-t border-border pt-4">
-            <dt className="text-base font-bold uppercase tracking-wider">
-              Total
-            </dt>
-            <dd className="text-base font-bold">
-              {formatPrice(summary.total)}
-            </dd>
+            <dt className="text-base font-bold uppercase tracking-wider">Total</dt>
+            <dd className="text-base font-bold">{formatPrice(summary.total)}</dd>
           </div>
         </dl>
       </CardContent>

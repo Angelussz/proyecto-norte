@@ -27,14 +27,11 @@ export function CheckoutSummary() {
         variantId: item.id,
         quantity: item.quantity,
       })),
-    [items]
+    [items],
   );
   const quoteKey = useMemo(
-    () =>
-      quoteInput
-        .map((item) => `${item.variantId}:${item.quantity}`)
-        .join(","),
-    [quoteInput]
+    () => quoteInput.map((item) => `${item.variantId}:${item.quantity}`).join(","),
+    [quoteInput],
   );
 
   const quoteQuery = useQuery({
@@ -60,20 +57,12 @@ export function CheckoutSummary() {
   }
 
   if (quoteQuery.data) {
-    return (
-      <OrderSummary
-        summary={quoteQuery.data}
-        action={<PlaceOrderButton />}
-      />
-    );
+    return <OrderSummary summary={quoteQuery.data} action={<PlaceOrderButton />} />;
   }
 
   if (quoteQuery.isPending || quoteQuery.isFetching) {
     return (
-      <Card
-        className="rounded-none bg-muted py-6 md:py-8"
-        aria-busy="true"
-      >
+      <Card className="rounded-none bg-muted py-6 md:py-8" aria-busy="true">
         <CardHeader className="px-6 md:px-8">
           <div className="h-7 w-48 animate-pulse bg-muted-foreground/20" />
         </CardHeader>
@@ -92,8 +81,7 @@ export function CheckoutSummary() {
 
   if (quoteQuery.isError) {
     const isUnavailable =
-      quoteQuery.error instanceof CheckoutQuoteError &&
-      quoteQuery.error.status === 422;
+      quoteQuery.error instanceof CheckoutQuoteError && quoteQuery.error.status === 422;
 
     return (
       <div className="py-12 text-center">

@@ -19,14 +19,20 @@ export function AboutSection() {
           <span className="text-sm font-semibold uppercase text-[#534438] tracking-wider mb-4">
             Sobre Nosotros
           </span>
-          <h2 
+          <h2
             className="text-[32px] md:text-[48px] leading-tight md:leading-12 tracking-wider text-[#1e1c13] mb-8 uppercase"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
-            Un estilo que se siente<br />tan bien<br />como se ve.
+            Un estilo que se siente
+            <br />
+            tan bien
+            <br />
+            como se ve.
           </h2>
           <p className="text-lg leading-7 text-[#534438] mb-8 max-w-md">
-            Creemos que un gran estilo debe ser simple, sostenible y pensado para acompañarte en cada movimiento. Nuestras colecciones están diseñadas para la persona moderna que valora tanto la forma como la función.
+            Creemos que un gran estilo debe ser simple, sostenible y pensado para acompañarte en
+            cada movimiento. Nuestras colecciones están diseñadas para la persona moderna que valora
+            tanto la forma como la función.
           </p>
           <Link
             href="/products"

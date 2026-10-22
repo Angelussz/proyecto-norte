@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  CardElement,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js";
+import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useMutation } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,9 +23,7 @@ const POLL_DELAY_MS = 1500;
  * El éxito de confirmCardPayment solo dice que Stripe cobró; la verdad
  * para vaciar el carrito es GET /api/orders/[id] -> status PAID.
  */
-async function waitForOrderPaid(
-  orderId: string
-): Promise<"PAID" | "CANCELLED" | "TIMEOUT"> {
+async function waitForOrderPaid(orderId: string): Promise<"PAID" | "CANCELLED" | "TIMEOUT"> {
   for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -64,20 +58,12 @@ export function PlaceOrderButton() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const intentMutation = useMutation({
-    mutationFn: (input: CreatePaymentIntentInput[]) =>
-      createPaymentIntent(input),
+    mutationFn: (input: CreatePaymentIntentInput[]) => createPaymentIntent(input),
   });
 
   const isProcessing =
-    intentMutation.isPending ||
-    status === "confirming" ||
-    status === "processing";
-  const disabled =
-    !stripe ||
-    !elements ||
-    items.length === 0 ||
-    !cardComplete ||
-    isProcessing;
+    intentMutation.isPending || status === "confirming" || status === "processing";
+  const disabled = !stripe || !elements || items.length === 0 || !cardComplete || isProcessing;
 
   const handleClick = () => {
     if (!stripe || !elements || intentMutation.isPending) return;
@@ -108,10 +94,9 @@ export function PlaceOrderButton() {
 
           setStatus("confirming");
 
-          const { error, paymentIntent } =
-            await stripe.confirmCardPayment(clientSecret, {
-              payment_method: { card },
-            });
+          const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: { card },
+          });
 
           if (error) {
             setStatus("error");
@@ -128,35 +113,27 @@ export function PlaceOrderButton() {
               clearCart();
             } else if (result === "CANCELLED") {
               setStatus("error");
-              setErrorMessage(
-                "El pago no pudo completarse. Revisa tu carrito."
-              );
+              setErrorMessage("El pago no pudo completarse. Revisa tu carrito.");
             } else {
               setStatus("error");
               setErrorMessage(
-                "Pago recibido, la confirmación está tardando. Revisa tus pedidos en unos minutos."
+                "Pago recibido, la confirmación está tardando. Revisa tus pedidos en unos minutos.",
               );
             }
           } else {
             setStatus("error");
-            setErrorMessage(
-              `Pago no completado (${paymentIntent?.status ?? "desconocido"})`
-            );
+            setErrorMessage(`Pago no completado (${paymentIntent?.status ?? "desconocido"})`);
           }
         },
         onError: (err) => {
           setStatus("error");
           if (err instanceof CheckoutQuoteError && err.status === 422) {
-            setErrorMessage(
-              "Uno o más productos ya no están disponibles. Revisa tu carrito."
-            );
+            setErrorMessage("Uno o más productos ya no están disponibles. Revisa tu carrito.");
           } else {
-            setErrorMessage(
-              "No pudimos procesar tu pago. Inténtalo de nuevo."
-            );
+            setErrorMessage("No pudimos procesar tu pago. Inténtalo de nuevo.");
           }
         },
-      }
+      },
     );
   };
 

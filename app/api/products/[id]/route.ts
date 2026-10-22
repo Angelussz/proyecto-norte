@@ -1,14 +1,10 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { ProductDetail } from "@/features/product/types/product.interface";
 
 const COLOR_HEX_FALLBACK = "#808080";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   try {
@@ -27,10 +23,7 @@ export async function GET(
     });
 
     if (!product || !product.active) {
-      return NextResponse.json(
-        { message: "Producto no encontrado" },
-        { status: 404 },
-      );
+      return NextResponse.json({ message: "Producto no encontrado" }, { status: 404 });
     }
 
     const variantImages = product.variants
@@ -102,9 +95,6 @@ export async function GET(
       error instanceof Error ? error.message : error,
     );
 
-    return NextResponse.json(
-      { error: "No se pudo cargar el producto" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "No se pudo cargar el producto" }, { status: 500 });
   }
 }

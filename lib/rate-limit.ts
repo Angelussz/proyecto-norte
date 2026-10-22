@@ -25,8 +25,8 @@ const store = new Map<string, WindowEntry>();
 
 export interface RateLimitResult {
   allowed: boolean;
-  remaining: number;     // intentos restantes en la ventana actual
-  retryAfterMs: number;  // ms hasta que se resetea (0 si allowed)
+  remaining: number; // intentos restantes en la ventana actual
+  retryAfterMs: number; // ms hasta que se resetea (0 si allowed)
 }
 
 /**
@@ -39,7 +39,7 @@ export interface RateLimitResult {
 export function checkRateLimit(
   key: string,
   maxRequests: number,
-  windowMs: number
+  windowMs: number,
 ): RateLimitResult {
   const now = Date.now();
 

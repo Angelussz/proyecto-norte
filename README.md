@@ -75,16 +75,16 @@ Participación en el desarrollo frontend del proyecto, trabajando en el listado 
 
 Tareas realizadas:
 
-* Implementación de filtros por categoría.
-* Implementación de filtro por rango de precio.
-* Implementación de ordenamiento por precio.
-* Implementación de ordenamiento por nombre.
-* Desarrollo e integración del grid de productos.
-* Desarrollo e integración de las cards de productos.
-* Implementación del estado vacío cuando no se encuentran productos.
-* Implementación de paginación.
-* Integración de los filtros con la paginación.
-* Trabajo con Git y GitHub mediante ramas para la colaboración del equipo.
+- Implementación de filtros por categoría.
+- Implementación de filtro por rango de precio.
+- Implementación de ordenamiento por precio.
+- Implementación de ordenamiento por nombre.
+- Desarrollo e integración del grid de productos.
+- Desarrollo e integración de las cards de productos.
+- Implementación del estado vacío cuando no se encuentran productos.
+- Implementación de paginación.
+- Integración de los filtros con la paginación.
+- Trabajo con Git y GitHub mediante ramas para la colaboración del equipo.
 
 ### Cómo ver la página de productos
 
@@ -109,12 +109,12 @@ Participación en el desarrollo del endpoint de catálogo público de productos 
 
 Tareas realizadas:
 
-* Creación del endpoint público `GET /api/products`.
-* Conexión a la base de datos PostgreSQL mediante Prisma ORM (Docker + Prisma 7).
-* Filtros por categoría (`category`), rango de precio (`minPrice`, `maxPrice`) y ordenamiento (`price_asc`, `price_desc`, `name_asc`, `newest`).
-* Paginación dinámica (`page`, `limit`).
-* Sistema de fallback automático con MOCK: Si la base de datos PostgreSQL no está disponible (Docker apagado) o si la tabla de productos está vacía (sin seeds), el endpoint y la capa de servicio responden automáticamente con los datos mock, evitando caídas o bloqueos para el equipo de desarrollo.
-* Implementación de la capa de servicio `getProductCatalog` (`features/product/services/product-catalog.service.ts`) con soporte tanto en client-side como en server-side.
+- Creación del endpoint público `GET /api/products`.
+- Conexión a la base de datos PostgreSQL mediante Prisma ORM (Docker + Prisma 7).
+- Filtros por categoría (`category`), rango de precio (`minPrice`, `maxPrice`) y ordenamiento (`price_asc`, `price_desc`, `name_asc`, `newest`).
+- Paginación dinámica (`page`, `limit`).
+- Sistema de fallback automático con MOCK: Si la base de datos PostgreSQL no está disponible (Docker apagado) o si la tabla de productos está vacía (sin seeds), el endpoint y la capa de servicio responden automáticamente con los datos mock, evitando caídas o bloqueos para el equipo de desarrollo.
+- Implementación de la capa de servicio `getProductCatalog` (`features/product/services/product-catalog.service.ts`) con soporte tanto en client-side como en server-side.
 
 ### Cómo probar el endpoint de productos
 
@@ -125,7 +125,6 @@ http://localhost:3000/api/products
 
 3. Ejemplos de filtros soportados:
 
-* Por categoría: `http://localhost:3000/api/products?category=Camisas`
-* Por precio y ordenamiento: `http://localhost:3000/api/products?minPrice=100&maxPrice=150&sortBy=price_asc`
-* Paginación: `http://localhost:3000/api/products?page=1&limit=6`
-
+- Por categoría: `http://localhost:3000/api/products?category=Camisas`
+- Por precio y ordenamiento: `http://localhost:3000/api/products?minPrice=100&maxPrice=150&sortBy=price_asc`
+- Paginación: `http://localhost:3000/api/products?page=1&limit=6`

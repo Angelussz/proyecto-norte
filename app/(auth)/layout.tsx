@@ -18,11 +18,7 @@ export const metadata: Metadata = {
  * - El panel NUNCA se desmonta al navegar entre rutas de auth,
  *   eliminando cualquier layout shift.
  */
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="flex min-h-screen flex-col justify-between bg-background text-foreground selection:bg-primary selection:text-primary-foreground"
@@ -32,11 +28,7 @@ export default function AuthLayout({
       <header className="mx-auto w-full max-w-[1440px] px-8 pt-8 pb-4 sm:px-12 lg:px-16">
         <div className="flex items-center justify-between">
           {/* Wordmark */}
-          <Link
-            href="/"
-            aria-label="NORTE — Ir a la tienda"
-            className="group focus:outline-none"
-          >
+          <Link href="/" aria-label="NORTE — Ir a la tienda" className="group focus:outline-none">
             <span
               className="text-3xl tracking-[0.18em] text-foreground transition-opacity duration-200 group-hover:opacity-75"
               style={{ fontFamily: "var(--font-bebas), sans-serif" }}

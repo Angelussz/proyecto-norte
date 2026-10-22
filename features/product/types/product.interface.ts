@@ -1,4 +1,3 @@
-
 export type ProductVariant = {
   id: string;
   size: string;

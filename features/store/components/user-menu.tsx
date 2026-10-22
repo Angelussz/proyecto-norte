@@ -20,13 +20,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  User,
-  ShoppingBag,
-  LayoutDashboard,
-  LogOut,
-  ChevronDown,
-} from "lucide-react";
+import { User, ShoppingBag, LayoutDashboard, LogOut, ChevronDown } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,9 +41,7 @@ function getInitials(name: string | null | undefined): string {
 // ─── Skeleton (mientras carga la sesión) ────────────────────────────────────
 
 function AvatarSkeleton() {
-  return (
-    <div className="size-9 animate-pulse rounded-full bg-muted" />
-  );
+  return <div className="size-9 animate-pulse rounded-full bg-muted" />;
 }
 
 // ─── Avatar (foto de Google o iniciales) ────────────────────────────────────
@@ -90,8 +82,7 @@ function MenuItem({
   danger?: boolean;
   onClick?: () => void;
 }) {
-  const base =
-    "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors w-full text-left";
+  const base = "flex items-center gap-3 px-4 py-2.5 text-sm transition-colors w-full text-left";
   const color = danger
     ? "text-destructive hover:bg-destructive/10"
     : "text-foreground hover:bg-muted";
@@ -208,12 +199,8 @@ export function UserMenu() {
         >
           {/* Cabecera con info del usuario */}
           <div className="border-b border-border px-4 py-3">
-            <p className="truncate text-sm font-semibold text-foreground">
-              {user.name}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {user.email}
-            </p>
+            <p className="truncate text-sm font-semibold text-foreground">{user.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             {isAdmin && (
               <span className="mt-1.5 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
                 Admin
@@ -232,11 +219,7 @@ export function UserMenu() {
 
             {/* Opción admin — solo visible si el usuario tiene rol ADMIN */}
             {isAdmin && (
-              <MenuItem
-                href="/admin"
-                icon={LayoutDashboard}
-                onClick={() => setOpen(false)}
-              >
+              <MenuItem href="/admin" icon={LayoutDashboard} onClick={() => setOpen(false)}>
                 Panel admin
               </MenuItem>
             )}

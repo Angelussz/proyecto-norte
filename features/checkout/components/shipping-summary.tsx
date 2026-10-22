@@ -1,11 +1,5 @@
 import type { CheckoutShipping } from "@/features/checkout/types/checkout.interface";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export function ShippingSummary({ shipping }: { shipping: CheckoutShipping }) {

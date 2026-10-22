@@ -33,7 +33,7 @@ export class CheckoutQuoteError extends Error {
  */
 export async function getCheckoutQuote(
   items: CheckoutQuoteInput[],
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal },
 ): Promise<CheckoutQuote> {
   const res = await fetch(`${getBaseUrl()}/api/checkout/quote`, {
     method: "POST",
@@ -58,7 +58,7 @@ export async function getCheckoutQuote(
  */
 export async function createPaymentIntent(
   items: CreatePaymentIntentInput[],
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal },
 ): Promise<CreatePaymentIntentResult> {
   const res = await fetch(`${getBaseUrl()}/api/checkout/payment-intent`, {
     method: "POST",

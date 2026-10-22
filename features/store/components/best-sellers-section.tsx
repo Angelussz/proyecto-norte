@@ -7,33 +7,37 @@ const BEST_SELLERS = [
     id: "1",
     title: "Lentes de Sol Clásicos",
     price: 49.0,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuB0WXa1rD04hSq4_xI8kc__3MeZTxwGlhgE1q5NYei4EcxiknkYNjbviHoavZ23Fuhe5Ui_2HcE5MlHG54SK5L1TeEKNyzOyj9a7zoLAZId0Y0jC2F_b7RkyMYu-yizNCebnm-V5THA1u8SYM5e9UmO8BY6SjC9r5PYqknhHykxS4GzM3iAxHPnGZPNPSTMMa91inkoMy8s_9GgEFp3qRHGZKE-ntAEdPKEp4VVDo9eHAg4gbh0xVsp"
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuB0WXa1rD04hSq4_xI8kc__3MeZTxwGlhgE1q5NYei4EcxiknkYNjbviHoavZ23Fuhe5Ui_2HcE5MlHG54SK5L1TeEKNyzOyj9a7zoLAZId0Y0jC2F_b7RkyMYu-yizNCebnm-V5THA1u8SYM5e9UmO8BY6SjC9r5PYqknhHykxS4GzM3iAxHPnGZPNPSTMMa91inkoMy8s_9GgEFp3qRHGZKE-ntAEdPKEp4VVDo9eHAg4gbh0xVsp",
   },
   {
     id: "2",
     title: "Camisa de Lino",
     price: 69.0,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBbulJAIWPb5vlGpWiLNAbF8qT4B7MScIsu2omEmtLW-Fbb_yT3lawPftxhGHPDo4obA999BNfn_o_NDacN0goYIYfo2pqHNDSEKnZZeuY-DYomuQXK3R4zXEUkXBKEiVyQA8fC_9slE1ELuLWEmbyeQD23ezMvq53mr3UZDh4rSovUaBs7-DJgvNgXm9HSs0sERdC5WaxBHVALFo3u6YhZ3uOdGKLY4QwIsY6MJYRbKXgM0hjyyEvA"
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBbulJAIWPb5vlGpWiLNAbF8qT4B7MScIsu2omEmtLW-Fbb_yT3lawPftxhGHPDo4obA999BNfn_o_NDacN0goYIYfo2pqHNDSEKnZZeuY-DYomuQXK3R4zXEUkXBKEiVyQA8fC_9slE1ELuLWEmbyeQD23ezMvq53mr3UZDh4rSovUaBs7-DJgvNgXm9HSs0sERdC5WaxBHVALFo3u6YhZ3uOdGKLY4QwIsY6MJYRbKXgM0hjyyEvA",
   },
   {
     id: "3",
     title: "Reloj Minimalista",
     price: 129.0,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFT0hAmKPMvfrYI5zzN16aHeQ2jnHP6Gw3p7nib_PwYN5BPtIGjey0bl7t-HPWAEZkLe6PIFJXC0KtTXFAYuUewYX0NOsnqT4A-glj_PzVySYoXRqgxUop4vH3aYtnstjFF4AqELfyKmdGoTdKE1QMsMGatkqUEJ_PlTfJK6Pp2ZNk2uWRoWeQtfrDsvLI63AXjwRn6eR93eE0VUT_9lmK8EaodHoZDnSCldxC_foXSWYqIzT3g8Ex"
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBFT0hAmKPMvfrYI5zzN16aHeQ2jnHP6Gw3p7nib_PwYN5BPtIGjey0bl7t-HPWAEZkLe6PIFJXC0KtTXFAYuUewYX0NOsnqT4A-glj_PzVySYoXRqgxUop4vH3aYtnstjFF4AqELfyKmdGoTdKE1QMsMGatkqUEJ_PlTfJK6Pp2ZNk2uWRoWeQtfrDsvLI63AXjwRn6eR93eE0VUT_9lmK8EaodHoZDnSCldxC_foXSWYqIzT3g8Ex",
   },
   {
     id: "4",
     title: "Zapatillas Esenciales",
     price: 89.0,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD96fOGUad-h1Yw0NbUi4OCoC_cpTuHgxG8spokCxu85p5quDpVJaOEoPL24fpH51Agkx4oQiiz9rmQgjUGdvYzQPrczubblEIQdkb1o2Ju5ALVcelujxQUMbTBdnInnK8UPScsjFgrgldNgyjN3jnv-TOmrLBnE6uznr9Lm7qfnEkxv6QQWXIrhB2-C9-_8J86yB1aTfZ7hwnynpF7bhQtDPE4YFUEfRHa7EfA3D20QM5b8jKHTvKG"
-  }
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuD96fOGUad-h1Yw0NbUi4OCoC_cpTuHgxG8spokCxu85p5quDpVJaOEoPL24fpH51Agkx4oQiiz9rmQgjUGdvYzQPrczubblEIQdkb1o2Ju5ALVcelujxQUMbTBdnInnK8UPScsjFgrgldNgyjN3jnv-TOmrLBnE6uznr9Lm7qfnEkxv6QQWXIrhB2-C9-_8J86yB1aTfZ7hwnynpF7bhQtDPE4YFUEfRHa7EfA3D20QM5b8jKHTvKG",
+  },
 ];
 
 export function BestSellersSection() {
   return (
     <section className="py-16 px-5 md:px-16 max-w-7xl mx-auto">
       <div className="flex justify-between items-end mb-8 border-b border-[#D8D2C4] pb-4">
-        <h2 
+        <h2
           className="text-[32px] leading-9 tracking-[0.02em] text-[#1e1c13] uppercase"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
@@ -46,7 +50,7 @@ export function BestSellersSection() {
           Ver todo <ArrowRight className="ml-1 size-4.5" />
         </Link>
       </div>
-      
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 gap-y-8">
         {BEST_SELLERS.map((product) => (
           <div key={product.id} className="group relative">
@@ -66,7 +70,9 @@ export function BestSellersSection() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-sm font-semibold text-[#1e1c13]">{product.title}</h3>
-                  <p className="text-xs font-medium text-[#534438] mt-1">${product.price.toFixed(2)}</p>
+                  <p className="text-xs font-medium text-[#534438] mt-1">
+                    ${product.price.toFixed(2)}
+                  </p>
                 </div>
               </div>
             </Link>

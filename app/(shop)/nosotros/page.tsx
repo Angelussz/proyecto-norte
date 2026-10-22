@@ -39,8 +39,8 @@ export default function NosotrosPage() {
             </div>
             <div className="lg:col-span-4 lg:pb-2">
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-                Concebimos piezas diseñadas para convivir en sosiego con el entorno. Prendas nacidas del
-                lino vivo, el algodón puro y la serenidad de una vida al aire libre.
+                Concebimos piezas diseñadas para convivir en sosiego con el entorno. Prendas nacidas
+                del lino vivo, el algodón puro y la serenidad de una vida al aire libre.
               </p>
             </div>
           </div>
@@ -84,8 +84,8 @@ export default function NosotrosPage() {
               </h2>
             </div>
             <div className="md:max-w-xs text-[#bccbb4] text-sm leading-relaxed">
-              Cada costura, cada fibra y cada botón responde a un pacto ético inquebrantable: honestidad
-              textil y respeto por el tiempo artesanal.
+              Cada costura, cada fibra y cada botón responde a un pacto ético inquebrantable:
+              honestidad textil y respeto por el tiempo artesanal.
             </div>
           </div>
         </div>
@@ -125,8 +125,8 @@ export default function NosotrosPage() {
                 ORIGEN Y MATERIA
               </h4>
               <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                Lino europeo de cultivo bajo en agua, lana merina regenerativa y algodón orgánico con
-                certificación GOTS. Nuestras telas maduran con el uso en lugar de desgastarse.
+                Lino europeo de cultivo bajo en agua, lana merina regenerativa y algodón orgánico
+                con certificación GOTS. Nuestras telas maduran con el uso en lugar de desgastarse.
               </p>
             </div>
             <div className="pt-6 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground uppercase tracking-wider font-semibold">
@@ -154,8 +154,8 @@ export default function NosotrosPage() {
                 OFICIO CURATORIAL
               </h4>
               <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                Tiradas controladas bajo demanda calculada. Trabajamos con maestros patronistas y talleres
-                familiares de Galicia, Oporto y Castilla, protegiendo técnicas en riesgo.
+                Tiradas controladas bajo demanda calculada. Trabajamos con maestros patronistas y
+                talleres familiares de Galicia, Oporto y Castilla, protegiendo técnicas en riesgo.
               </p>
             </div>
             <div className="pt-6 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground uppercase tracking-wider font-semibold">
@@ -237,14 +237,15 @@ export default function NosotrosPage() {
               </h3>
               <div className="space-y-4 text-muted-foreground text-base leading-relaxed">
                 <p>
-                  NORTE nació en una vieja mesa de corte de roble frente al mar Cantábrico. Nos inspiraba la
-                  indumentaria de campo y la sastrería costera de mediados del siglo XX: prendas robustas
-                  pero ingrávidas, resistentes al salitre y el viento, pero amables con la piel.
+                  NORTE nació en una vieja mesa de corte de roble frente al mar Cantábrico. Nos
+                  inspiraba la indumentaria de campo y la sastrería costera de mediados del siglo
+                  XX: prendas robustas pero ingrávidas, resistentes al salitre y el viento, pero
+                  amables con la piel.
                 </p>
                 <p>
-                  No aspiramos a vestir a millones. Diseñamos para quienes entienden que el verdadero lujo
-                  reside en no tener prisa. Cada patrón pasa por un proceso de pruebas que se extiende hasta 8
-                  meses antes de su corte final.
+                  No aspiramos a vestir a millones. Diseñamos para quienes entienden que el
+                  verdadero lujo reside en no tener prisa. Cada patrón pasa por un proceso de
+                  pruebas que se extiende hasta 8 meses antes de su corte final.
                 </p>
               </div>
 
@@ -285,7 +286,9 @@ export default function NosotrosPage() {
             <span className="text-xs uppercase tracking-widest text-foreground font-semibold mt-2">
               Fibras Naturales
             </span>
-            <span className="text-xs text-muted-foreground mt-1">Cero derivados plásticos sintéticos</span>
+            <span className="text-xs text-muted-foreground mt-1">
+              Cero derivados plásticos sintéticos
+            </span>
           </div>
           <div className="p-4 flex flex-col items-center md:items-start">
             <span
@@ -297,7 +300,9 @@ export default function NosotrosPage() {
             <span className="text-xs uppercase tracking-widest text-foreground font-semibold mt-2">
               Excedente Textil
             </span>
-            <span className="text-xs text-muted-foreground mt-1">Mermas recicladas en accesorios</span>
+            <span className="text-xs text-muted-foreground mt-1">
+              Mermas recicladas en accesorios
+            </span>
           </div>
           <div className="p-4 flex flex-col items-center md:items-start">
             <span
@@ -309,7 +314,9 @@ export default function NosotrosPage() {
             <span className="text-xs uppercase tracking-widest text-foreground font-semibold mt-2">
               Garantía de Costura
             </span>
-            <span className="text-xs text-muted-foreground mt-1">Servicio de remiendo y reparación</span>
+            <span className="text-xs text-muted-foreground mt-1">
+              Servicio de remiendo y reparación
+            </span>
           </div>
           <div className="p-4 flex flex-col items-center md:items-start">
             <span
@@ -321,7 +328,9 @@ export default function NosotrosPage() {
             <span className="text-xs uppercase tracking-widest text-foreground font-semibold mt-2">
               Talleres Locales
             </span>
-            <span className="text-xs text-muted-foreground mt-1">Economía circular de cercanía</span>
+            <span className="text-xs text-muted-foreground mt-1">
+              Economía circular de cercanía
+            </span>
           </div>
         </div>
       </section>
@@ -334,8 +343,8 @@ export default function NosotrosPage() {
             className="text-2xl sm:text-3xl md:text-4xl text-foreground tracking-wide uppercase leading-tight mb-8 max-w-2xl"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
-            &ldquo;Crear ropa no es acelerar el mundo, sino ofrecer una pausa tangible. Algo que te acompañe
-            en los días buenos y en los silenciosos.&rdquo;
+            &ldquo;Crear ropa no es acelerar el mundo, sino ofrecer una pausa tangible. Algo que te
+            acompañe en los días buenos y en los silenciosos.&rdquo;
           </blockquote>
           <div className="flex flex-col items-center mb-10">
             <div className="h-0.5 w-12 bg-[#C77D2E] mb-3"></div>

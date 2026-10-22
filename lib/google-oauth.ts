@@ -33,7 +33,7 @@ export interface GoogleTokenResponse {
 }
 
 export interface GoogleUserInfo {
-  sub: string;        // ID único de Google
+  sub: string; // ID único de Google
   email: string;
   email_verified: boolean;
   name: string;
@@ -55,10 +55,10 @@ export function buildGoogleAuthUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
-    response_type: "code",       // Authorization Code Flow
+    response_type: "code", // Authorization Code Flow
     scope: "openid email profile", // datos que pedimos al usuario
-    state,                        // anti-CSRF
-    access_type: "online",        // no necesitamos refresh token por ahora
+    state, // anti-CSRF
+    access_type: "online", // no necesitamos refresh token por ahora
   });
 
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
@@ -68,9 +68,7 @@ export function buildGoogleAuthUrl(state: string): string {
 /**
  * Google nos da un `code` de un solo uso. Lo intercambiamos por el token real.
  */
-export async function exchangeCodeForToken(
-  code: string
-): Promise<GoogleTokenResponse> {
+export async function exchangeCodeForToken(code: string): Promise<GoogleTokenResponse> {
   const clientId = env.GOOGLE_CLIENT_ID;
   const clientSecret = env.GOOGLE_CLIENT_SECRET;
   const redirectUri = env.GOOGLE_REDIRECT_URI;
@@ -96,9 +94,7 @@ export async function exchangeCodeForToken(
 }
 
 // ─── 3. Obtener el perfil del usuario desde Google ───────────────────────────
-export async function getGoogleUserInfo(
-  accessToken: string
-): Promise<GoogleUserInfo> {
+export async function getGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo> {
   const res = await fetch(GOOGLE_USERINFO_URL, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });

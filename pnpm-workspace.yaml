@@ -1,5 +1,5 @@
 allowBuilds:
-  '@prisma/engines': true
+  "@prisma/engines": true
   prisma: true
   esbuild: true
 fetchRetries: 5

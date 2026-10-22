@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 type CardElementContextValue = {
   /** True cuando el CardElement reporta datos completos (event.complete). */
@@ -18,8 +11,7 @@ type CardElementContextValue = {
   reportCardChange: (complete: boolean, error: string | null) => void;
 };
 
-const CardElementContext =
-  createContext<CardElementContextValue | null>(null);
+const CardElementContext = createContext<CardElementContextValue | null>(null);
 
 /**
  * Comparte el estado del CardElement entre el formulario de tarjeta y el
@@ -31,32 +23,23 @@ export function CardElementProvider({ children }: { children: ReactNode }) {
   const [cardComplete, setCardComplete] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
 
-  const reportCardChange = useCallback(
-    (complete: boolean, error: string | null) => {
-      setCardComplete(complete);
-      setCardError(error);
-    },
-    []
-  );
+  const reportCardChange = useCallback((complete: boolean, error: string | null) => {
+    setCardComplete(complete);
+    setCardError(error);
+  }, []);
 
   const value = useMemo(
     () => ({ cardComplete, cardError, reportCardChange }),
-    [cardComplete, cardError, reportCardChange]
+    [cardComplete, cardError, reportCardChange],
   );
 
-  return (
-    <CardElementContext.Provider value={value}>
-      {children}
-    </CardElementContext.Provider>
-  );
+  return <CardElementContext.Provider value={value}>{children}</CardElementContext.Provider>;
 }
 
 export function useCardElementState(): CardElementContextValue {
   const ctx = useContext(CardElementContext);
   if (!ctx) {
-    throw new Error(
-      "useCardElementState debe usarse dentro de CardElementProvider"
-    );
+    throw new Error("useCardElementState debe usarse dentro de CardElementProvider");
   }
   return ctx;
 }

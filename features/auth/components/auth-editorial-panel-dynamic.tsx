@@ -34,9 +34,7 @@ type PanelRoute = keyof typeof PANELS;
  */
 export function AuthEditorialPanelDynamic() {
   const pathname = usePathname();
-  const activeRoute = (
-    Object.keys(PANELS).includes(pathname) ? pathname : "/login"
-  ) as PanelRoute;
+  const activeRoute = (Object.keys(PANELS).includes(pathname) ? pathname : "/login") as PanelRoute;
 
   return (
     <section
@@ -44,7 +42,6 @@ export function AuthEditorialPanelDynamic() {
       className="hidden lg:flex lg:col-span-6 xl:col-span-7 items-center justify-center xl:justify-end"
     >
       <div className="group relative w-full max-w-[580px] aspect-[4/5] overflow-hidden rounded-3xl border border-border/70 bg-muted shadow-2xl">
-
         {/* Renderizamos ambas imágenes apiladas; solo una visible a la vez */}
         {(Object.entries(PANELS) as [PanelRoute, (typeof PANELS)[PanelRoute]][]).map(
           ([route, panel]) => {
@@ -67,7 +64,7 @@ export function AuthEditorialPanelDynamic() {
                 />
               </div>
             );
-          }
+          },
         )}
 
         {/* Badge — cambia con fade */}
@@ -85,7 +82,7 @@ export function AuthEditorialPanelDynamic() {
                 {panel.badge}
               </div>
             );
-          }
+          },
         )}
 
         {/* Overlay gradiente fijo */}
@@ -117,7 +114,7 @@ export function AuthEditorialPanelDynamic() {
                 </p>
               </div>
             );
-          }
+          },
         )}
       </div>
     </section>

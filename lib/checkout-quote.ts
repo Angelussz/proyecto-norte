@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type {
-  CheckoutItem,
-  CheckoutQuote,
-} from "@/features/checkout/types/checkout.interface";
+import type { CheckoutItem, CheckoutQuote } from "@/features/checkout/types/checkout.interface";
 
 // ── Reglas de negocio (constantes temporales) ─────────────────────────────
 // TODO(futuro sprint): el envío variará por zona/peso/promociones y los
@@ -65,10 +62,7 @@ export function parseQuoteItems(body: unknown): CleanedQuoteItem[] {
     throw new QuoteHttpError(400, "items debe ser un arreglo no vacío");
   }
   if (rawItems.length > MAX_ITEMS) {
-    throw new QuoteHttpError(
-      400,
-      `items no puede tener más de ${MAX_ITEMS} elementos`
-    );
+    throw new QuoteHttpError(400, `items no puede tener más de ${MAX_ITEMS} elementos`);
   }
 
   const cleaned: CleanedQuoteItem[] = [];
@@ -77,8 +71,7 @@ export function parseQuoteItems(body: unknown): CleanedQuoteItem[] {
       variantId?: unknown;
       quantity?: unknown;
     };
-    const variantId =
-      typeof raw?.variantId === "string" ? raw.variantId.trim() : "";
+    const variantId = typeof raw?.variantId === "string" ? raw.variantId.trim() : "";
     const quantity = raw?.quantity;
 
     if (variantId.length === 0) {
@@ -91,7 +84,7 @@ export function parseQuoteItems(body: unknown): CleanedQuoteItem[] {
     ) {
       throw new QuoteHttpError(
         400,
-        `items[${index}].quantity debe ser un entero entre 1 y ${MAX_QUANTITY_PER_ITEM}`
+        `items[${index}].quantity debe ser un entero entre 1 y ${MAX_QUANTITY_PER_ITEM}`,
       );
     }
 
@@ -107,7 +100,7 @@ export function parseQuoteItems(body: unknown): CleanedQuoteItem[] {
  * o no tiene stock suficiente.
  */
 export async function validateQuoteItems(
-  cleaned: CleanedQuoteItem[]
+  cleaned: CleanedQuoteItem[],
 ): Promise<ValidatedQuoteItem[]> {
   const variants = await prisma.productVariants.findMany({
     where: { id: { in: cleaned.map((item) => item.variantId) } },
@@ -154,25 +147,18 @@ export async function validateQuoteItems(
       size: variant.size,
       unitPrice: Number(variant.price),
       quantity,
-      imageUrl:
-        variant.image_url ?? variant.product.image_url ?? FALLBACK_IMAGE,
+      imageUrl: variant.image_url ?? variant.product.image_url ?? FALLBACK_IMAGE,
     });
   }
 
   if (problems.length > 0) {
-    throw new QuoteHttpError(
-      422,
-      "Uno o más productos ya no están disponibles",
-      problems
-    );
+    throw new QuoteHttpError(422, "Uno o más productos ya no están disponibles", problems);
   }
 
   return validated;
 }
 
-export function toCheckoutItems(
-  validated: ValidatedQuoteItem[]
-): CheckoutItem[] {
+export function toCheckoutItems(validated: ValidatedQuoteItem[]): CheckoutItem[] {
   return validated.map((item) => ({
     id: item.variantId,
     name: item.productName,
@@ -193,9 +179,7 @@ export function calculateQuoteTotals(items: CheckoutItem[]): {
   taxes: number;
   total: number;
 } {
-  const subtotal = round2(
-    items.reduce((acc, item) => acc + item.price * item.quantity, 0)
-  );
+  const subtotal = round2(items.reduce((acc, item) => acc + item.price * item.quantity, 0));
   const shippingCost = SHIPPING_FLAT_RATE;
   const taxes = round2(subtotal * TAX_RATE);
   const total = round2(subtotal + shippingCost + taxes);
@@ -213,9 +197,7 @@ export function calculateQuoteTotals(items: CheckoutItem[]): {
  * Cotización completa: valida, resuelve y calcula.
  * Misma lógica para POST /api/checkout/quote y payment-intent.
  */
-export async function buildCheckoutQuote(
-  body: unknown
-): Promise<CheckoutQuote> {
+export async function buildCheckoutQuote(body: unknown): Promise<CheckoutQuote> {
   const cleaned = parseQuoteItems(body);
   const validated = await validateQuoteItems(cleaned);
   const items = toCheckoutItems(validated);

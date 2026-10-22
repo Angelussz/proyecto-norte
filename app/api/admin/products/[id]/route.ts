@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminToken } from "@/lib/admin-auth";
 import { handleAdminError } from "@/lib/admin-api";
-import {
-  deleteProduct,
-  updateProduct,
-} from "@/services/product-admin.service";
+import { deleteProduct, updateProduct } from "@/services/product-admin.service";
 
 /**
  * PATCH /api/admin/products/[id]
@@ -12,10 +9,7 @@ import {
  * Si se envía `image` (File), se reemplaza usando el mismo public_id.
  * Header: x-admin-token.
  */
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAdminToken(req);
     const { id } = await params;
@@ -39,10 +33,7 @@ export async function PATCH(
  * Cloudinary. 409 IN_USE si tiene ventas asociadas.
  * Header: x-admin-token.
  */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAdminToken(req);
     const { id } = await params;

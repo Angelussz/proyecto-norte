@@ -6,9 +6,7 @@ import { getProductDetail } from "@/features/product/services/product.service";
 import { ProductInfo } from "@/features/store/components/product-info";
 import { ProductSuggestions } from "@/features/store/components/product-suggestions";
 
-export async function generateMetadata({ params }: {
-  params: Promise<{ id: string }>;
-}) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await getProductDetail(id);
 
@@ -20,9 +18,7 @@ export async function generateMetadata({ params }: {
   };
 }
 
-export default async function ProductPage({ params }: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await getProductDetail(id);
 
@@ -32,8 +28,8 @@ export default async function ProductPage({ params }: {
 
   const crumbs = [
     { label: "Tienda", href: "/" },
-    { label: product.category_name ?? "Productos", href: '/products' },
-    { label: product.name ?? 'N/A', href: '' },
+    { label: product.category_name ?? "Productos", href: "/products" },
+    { label: product.name ?? "N/A", href: "" },
   ];
 
   return (

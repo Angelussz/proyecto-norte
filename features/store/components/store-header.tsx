@@ -46,7 +46,10 @@ export function StoreHeader() {
             NORTE
           </Link>
 
-          <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Navegación principal">
+          <nav
+            className="hidden items-center gap-6 lg:gap-8 md:flex"
+            aria-label="Navegación principal"
+          >
             {NAV.map((item) => {
               const isActive = item.link !== "#" && pathname === item.link;
               return (
@@ -54,10 +57,11 @@ export function StoreHeader() {
                   key={item.item}
                   href={item.link}
                   suppressHydrationWarning
-                  className={`text-xs font-semibold uppercase tracking-widest transition-colors hover:text-primary ${isActive
+                  className={`text-xs font-semibold uppercase tracking-widest transition-colors hover:text-primary ${
+                    isActive
                       ? "border-b-2 border-primary pb-1 text-primary"
                       : "text-muted-foreground"
-                    }`}
+                  }`}
                 >
                   {item.item}
                 </Link>
@@ -69,11 +73,7 @@ export function StoreHeader() {
         {/* ── Acciones a la derecha: Buscador + Iconos ──────────────────── */}
         <div className="flex items-center gap-3 sm:gap-4 text-foreground">
           {/* Buscador: parte blanca visible a la izquierda con esquinas redondeadas y borde blanco, al lado de la lupa */}
-          <form
-            onSubmit={handleSearchSubmit}
-            className="flex items-center gap-2"
-            role="search"
-          >
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2" role="search">
             <div className="relative flex items-center">
               <input
                 type="text"
@@ -107,7 +107,11 @@ export function StoreHeader() {
           {/* UserMenu maneja los 3 estados: loading, sin sesión (ícono User -> /login), con sesión */}
           <UserMenu />
 
-          <Link href="/cart" aria-label="Carrito" className="transition-colors hover:text-primary p-1">
+          <Link
+            href="/cart"
+            aria-label="Carrito"
+            className="transition-colors hover:text-primary p-1"
+          >
             <ShoppingBag className="size-6" />
           </Link>
 

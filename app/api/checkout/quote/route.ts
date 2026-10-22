@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  buildCheckoutQuote,
-  QuoteHttpError,
-} from "@/lib/checkout-quote";
+import { buildCheckoutQuote, QuoteHttpError } from "@/lib/checkout-quote";
 
 /**
  * POST /api/checkout/quote
@@ -17,10 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json(
-      { error: "Cuerpo JSON inválido" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Cuerpo JSON inválido" }, { status: 400 });
   }
 
   try {
@@ -33,18 +27,18 @@ export async function POST(req: NextRequest) {
           error: error.message,
           ...(error.problems ? { problems: error.problems } : {}),
         },
-        { status: error.status }
+        { status: error.status },
       );
     }
 
     console.error(
       "[POST /api/checkout/quote] Base de datos no disponible:",
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
     );
 
     return NextResponse.json(
       { error: "No se pudo calcular el resumen del pedido" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

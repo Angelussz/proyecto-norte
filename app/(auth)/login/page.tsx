@@ -25,8 +25,7 @@ export default function LoginPage() {
           Iniciar Sesión
         </h1>
         <p className="mt-2 text-xs font-light text-muted-foreground">
-          Bienvenido al archivo privado de NORTE. Accedé a tus pedidos y piezas
-          reservadas.
+          Bienvenido al archivo privado de NORTE. Accedé a tus pedidos y piezas reservadas.
         </p>
       </div>
 

@@ -13,10 +13,7 @@ import {
  * Body: multipart/form-data con campo "image".
  * Header: x-admin-token.
  */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAdminToken(req);
     const { id } = await params;
@@ -27,10 +24,7 @@ export async function POST(
 
     const file = form.get("image");
     if (!(file instanceof File)) {
-      throw new ProductAdminError(
-        "MISSING_FILE",
-        'Campo "image" (File) requerido en form-data',
-      );
+      throw new ProductAdminError("MISSING_FILE", 'Campo "image" (File) requerido en form-data');
     }
 
     const image = await replaceProductImage(id, file);
@@ -44,10 +38,7 @@ export async function POST(
  * DELETE /api/admin/products/[id]/image
  * Elimina la imagen principal de Cloudinary y pone a null las columnas.
  */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     requireAdminToken(req);
     const { id } = await params;

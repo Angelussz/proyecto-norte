@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type {
-  ProductCatalogResponse,
-} from "@/features/product/types/product-catalog.interface";
+import type { ProductCatalogResponse } from "@/features/product/types/product-catalog.interface";
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
@@ -34,9 +32,7 @@ export async function GET(req: NextRequest) {
   try {
     // ── Filtros de Prisma ─────────────────────────────────────────────────
     const isCategoryFilter =
-      categorySlug &&
-      categorySlug.toLowerCase() !== "todas" &&
-      categorySlug.trim() !== "";
+      categorySlug && categorySlug.toLowerCase() !== "todas" && categorySlug.trim() !== "";
 
     const parsedMin = minPrice ? Number(minPrice) : null;
     const parsedMax = maxPrice ? Number(maxPrice) : null;
@@ -135,7 +131,7 @@ export async function GET(req: NextRequest) {
     // Si la conexión a la base de datos falla (por ejemplo si Docker aún no está corriendo)
     console.warn(
       "[GET /api/products] Base de datos no disponible:",
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
     );
 
     return NextResponse.json({ error: "INTERNAL" }, { status: 500 });

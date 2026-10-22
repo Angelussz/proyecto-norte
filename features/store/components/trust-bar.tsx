@@ -8,7 +8,9 @@ export function TrustBar() {
           <div className="flex flex-col md:flex-row items-center justify-center md:justify-start space-y-2 md:space-y-0 md:space-x-4 px-4 py-4 md:py-0">
             <ShieldCheck className="text-[#C77D2E] size-8" />
             <div className="text-center md:text-left">
-              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">Calidad Premium</h4>
+              <h4 className="text-sm font-semibold text-[#1e1c13] tracking-wider">
+                Calidad Premium
+              </h4>
               <p className="text-xs font-medium text-[#534438]">en Materiales</p>
             </div>
           </div>

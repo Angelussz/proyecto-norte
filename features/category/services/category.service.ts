@@ -1,8 +1,5 @@
 import { getBaseUrl } from "@/features/product/services/product-catalog.service";
-import type {
-  CategoriesResponse,
-  Category,
-} from "@/features/category/types/category.interface";
+import type { CategoriesResponse, Category } from "@/features/category/types/category.interface";
 
 export async function getCategories(): Promise<Category[]> {
   const res = await fetch(`${getBaseUrl()}/api/categories`, {

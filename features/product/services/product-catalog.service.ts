@@ -3,7 +3,6 @@ import type {
   ProductCatalogResponse,
 } from "@/features/product/types/product-catalog.interface";
 
-
 export function getBaseUrl(): string {
   if (typeof window !== "undefined") return "";
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
@@ -18,17 +17,17 @@ export function getBaseUrl(): string {
  */
 export async function getProductCatalog(
   params: ProductCatalogParams = {},
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal },
 ): Promise<ProductCatalogResponse> {
   const query = new URLSearchParams();
 
-  if (params.category)               query.set("category", params.category);
+  if (params.category) query.set("category", params.category);
   if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
   if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
-  if (params.sortBy)                 query.set("sortBy", params.sortBy);
-  if (params.page !== undefined)     query.set("page", String(params.page));
-  if (params.limit !== undefined)    query.set("limit", String(params.limit));
-  if (params.search)                 query.set("q", params.search);
+  if (params.sortBy) query.set("sortBy", params.sortBy);
+  if (params.page !== undefined) query.set("page", String(params.page));
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.search) query.set("q", params.search);
 
   const queryString = query.toString();
   const url = `${getBaseUrl()}/api/products${queryString ? `?${queryString}` : ""}`;

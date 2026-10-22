@@ -46,5 +46,4 @@ export type UpdateOrderStatusParams = {
 };
 
 export type UpdateOrderStatusResult =
-  | { success: true; order: Order }
-  | { success: false; error: string };
+  { success: true; order: Order } | { success: false; error: string };

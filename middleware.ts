@@ -41,9 +41,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
 
   // Ruta protegida + no autenticado → redirigir a login

@@ -14,7 +14,7 @@ import type { JwtPayload } from "@/features/auth/types/auth.interface";
 export class AuthError extends Error {
   constructor(
     public readonly code: "INVALID_CREDENTIALS" | "USER_NOT_FOUND",
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = "AuthError";
@@ -33,10 +33,7 @@ export class AuthError extends Error {
  * @returns Payload listo para embeber en el JWT si las credenciales son válidas.
  * @throws  AuthError si el usuario no existe o la contraseña no coincide.
  */
-export async function verifyCredentials(
-  email: string,
-  password: string
-): Promise<JwtPayload> {
+export async function verifyCredentials(email: string, password: string): Promise<JwtPayload> {
   // 1. Buscar al usuario en la DB por email
   const user = await prisma.users.findUnique({
     where: { email: email.toLowerCase().trim() },

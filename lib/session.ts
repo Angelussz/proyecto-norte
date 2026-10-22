@@ -19,7 +19,7 @@ import type { JwtPayload } from "@/features/auth/types/auth.interface";
 
 const SESSION_COOKIE = "norte_session";
 const ONE_DAY_S = 60 * 60 * 24; // 24 h en segundos (para max-age de la cookie)
-const EXPIRY = "7d";             // el token expira en 7 días
+const EXPIRY = "7d"; // el token expira en 7 días
 
 // ─── Clave secreta ────────────────────────────────────────────────────────────
 // TextEncoder convierte el string del .env en un Uint8Array
@@ -34,9 +34,9 @@ function getSecretKey(): Uint8Array {
 export async function signToken(payload: JwtPayload): Promise<string> {
   // jose requiere un objeto indexable por string → doble cast necesario
   return new SignJWT(payload as unknown as Record<string, unknown>)
-    .setProtectedHeader({ alg: "HS256" })  // algoritmo HMAC-SHA256
-    .setIssuedAt()                          // campo `iat` = ahora
-    .setExpirationTime(EXPIRY)             // campo `exp` = ahora + 7 días
+    .setProtectedHeader({ alg: "HS256" }) // algoritmo HMAC-SHA256
+    .setIssuedAt() // campo `iat` = ahora
+    .setExpirationTime(EXPIRY) // campo `exp` = ahora + 7 días
     .sign(getSecretKey());
 }
 
@@ -57,7 +57,7 @@ export function getSessionCookieOptions(maxAgeSeconds = ONE_DAY_S * 7) {
   return {
     name: SESSION_COOKIE,
     maxAge: maxAgeSeconds,
-    httpOnly: true,          // ← el JS del browser NO puede leer esta cookie
+    httpOnly: true, // ← el JS del browser NO puede leer esta cookie
     secure: process.env.NODE_ENV === "production", // HTTPS solo en prod
     sameSite: "lax" as const, // protección básica contra CSRF
     path: "/",

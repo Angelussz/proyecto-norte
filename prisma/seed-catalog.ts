@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
@@ -39,13 +38,10 @@ async function main() {
     const categoryId = categoryIds.get(categorySlug);
 
     if (!categoryId) {
-      throw new Error(
-        `No existe la categoría "${item.category}" para "${item.name}".`
-      );
+      throw new Error(`No existe la categoría "${item.category}" para "${item.name}".`);
     }
 
-    const productSlug =
-      `${item.name.toLowerCase().replace(/\s+/g, "-")}-${index + 1}`;
+    const productSlug = `${item.name.toLowerCase().replace(/\s+/g, "-")}-${index + 1}`;
 
     const product = await prisma.products.upsert({
       where: { slug: productSlug },

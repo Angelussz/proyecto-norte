@@ -28,13 +28,9 @@ export function ProductCard({ product }: ProductCardProps) {
             {product.category.name}
           </p>
 
-          <h2 className="mt-1 text-sm font-medium">
-            {product.name}
-          </h2>
+          <h2 className="mt-1 text-sm font-medium">{product.name}</h2>
 
-          <p className="mt-1 text-sm">
-            {formatPrice(product.base_price)}
-          </p>
+          <p className="mt-1 text-sm">{formatPrice(product.base_price)}</p>
 
           <button
             type="button"

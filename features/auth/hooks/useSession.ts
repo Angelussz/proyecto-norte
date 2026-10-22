@@ -33,7 +33,7 @@ export function useSession() {
   const { data: user, isLoading } = useQuery<SessionUser | null>({
     queryKey: ["session"],
     queryFn: fetchMe,
-    staleTime: 60_000,          // no refresca si tiene menos de 1 min
+    staleTime: 60_000, // no refresca si tiene menos de 1 min
     refetchOnWindowFocus: false, // en e-commerce no queremos perder el foco
   });
 

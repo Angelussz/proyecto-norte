@@ -21,8 +21,7 @@ export default function RegisterPage() {
           Crear Cuenta
         </h1>
         <p className="mt-2 text-xs font-normal tracking-wide text-muted-foreground sm:text-sm">
-          Únete al universo NORTE. Acceso exclusivo a piezas atemporales y
-          lanzamientos anticipados.
+          Únete al universo NORTE. Acceso exclusivo a piezas atemporales y lanzamientos anticipados.
         </p>
       </div>
 

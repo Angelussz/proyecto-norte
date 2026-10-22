@@ -1,11 +1,11 @@
 export interface CartItem {
-  id: string
-  name: string
-  color: string
-  size: string
-  price: number
-  imageUrl: string
-  quantity: number
+  id: string;
+  name: string;
+  color: string;
+  size: string;
+  price: number;
+  imageUrl: string;
+  quantity: number;
 }
 
 /**
@@ -13,5 +13,5 @@ export interface CartItem {
  * Envío e impuestos los calcula el backend en el checkout (GET /api/checkout).
  */
 export interface OrderSummary {
-  subtotal: number
+  subtotal: number;
 }

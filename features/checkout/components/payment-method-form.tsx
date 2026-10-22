@@ -2,20 +2,11 @@
 
 import { useState } from "react";
 import { CreditCard, Lock, Wallet } from "lucide-react";
-import type {
-  StripeCardElementChangeEvent,
-  StripeCardElementOptions,
-} from "@stripe/stripe-js";
+import type { StripeCardElementChangeEvent, StripeCardElementOptions } from "@stripe/stripe-js";
 import { CardElement } from "@stripe/react-stripe-js";
 import { useCardElementState } from "@/features/checkout/components/card-element-context";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type Method = "credit_card" | "paypal";
@@ -26,7 +17,7 @@ function RadioDot({ checked }: { checked: boolean }) {
       aria-hidden
       className={cn(
         "flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors",
-        checked ? "border-foreground" : "border-border"
+        checked ? "border-foreground" : "border-border",
       )}
     >
       {checked && <span className="size-2 rounded-full bg-foreground" />}
@@ -102,9 +93,7 @@ function CardDetailsField() {
         <CardElement
           options={options}
           onChange={(event: StripeCardElementChangeEvent) => {
-            const message = event.error
-              ? (event.error.message ?? "Invalid card details")
-              : null;
+            const message = event.error ? (event.error.message ?? "Invalid card details") : null;
             setError(message);
             // Única fuente de `complete`: CardElement no lo expone
             // de forma imperativa, solo vía onChange.
@@ -113,7 +102,10 @@ function CardDetailsField() {
         />
       </div>
       {error ? (
-        <p role="alert" className="text-xs font-semibold uppercase tracking-widest text-destructive">
+        <p
+          role="alert"
+          className="text-xs font-semibold uppercase tracking-widest text-destructive"
+        >
           {error}
         </p>
       ) : (
@@ -144,72 +136,66 @@ export function PaymentMethodForm() {
       </CardHeader>
       <CardContent className="px-6 md:px-8">
         <div className="flex flex-col gap-4">
-        <label
-          className={cn(
-            "relative flex cursor-pointer rounded-none border p-4 transition-colors focus:outline-none",
-            method === "credit_card"
-              ? "border-foreground"
-              : "border-border hover:border-foreground"
+          <label
+            className={cn(
+              "relative flex cursor-pointer rounded-none border p-4 transition-colors focus:outline-none",
+              method === "credit_card"
+                ? "border-foreground"
+                : "border-border hover:border-foreground",
+            )}
+          >
+            <input
+              type="radio"
+              name="payment_method"
+              value="credit_card"
+              checked={method === "credit_card"}
+              onChange={() => setMethod("credit_card")}
+              className="sr-only"
+            />
+            <span className="flex w-full items-center justify-between">
+              <span className="flex items-center gap-4">
+                <RadioDot checked={method === "credit_card"} />
+                <span className="text-sm font-semibold uppercase tracking-widest text-foreground">
+                  Tarjeta de Crédito
+                </span>
+              </span>
+              <CreditCard className="size-6 text-muted-foreground" aria-hidden />
+            </span>
+          </label>
+
+          {method === "credit_card" && (
+            <div className="ml-2 border-l border-border py-4 pl-4">
+              {/* El contexto Elements lo provee el wrapper del checkout. */}
+              <CardDetailsField />
+            </div>
           )}
-        >
-          <input
-            type="radio"
-            name="payment_method"
-            value="credit_card"
-            checked={method === "credit_card"}
-            onChange={() => setMethod("credit_card")}
-            className="sr-only"
-          />
-          <span className="flex w-full items-center justify-between">
-            <span className="flex items-center gap-4">
-              <RadioDot checked={method === "credit_card"} />
-              <span className="text-sm font-semibold uppercase tracking-widest text-foreground">
-                Tarjeta de Crédito
-              </span>
-            </span>
-            <CreditCard
-              className="size-6 text-muted-foreground"
-              aria-hidden
-            />
-          </span>
-        </label>
 
-        {method === "credit_card" && (
-          <div className="ml-2 border-l border-border py-4 pl-4">
-            {/* El contexto Elements lo provee el wrapper del checkout. */}
-            <CardDetailsField />
-          </div>
-        )}
-
-        {/* PayPal deshabilitado temporalmente (próximo sprint). */}
-        <label
-          className="relative flex rounded-none border p-4 border-border opacity-50"
-          aria-disabled="true"
-        >
-          <input
-            type="radio"
-            name="payment_method"
-            value="paypal"
-            checked={false}
-            disabled
-            className="sr-only"
-          />
-          <span className="flex w-full items-center justify-between">
-            <span className="flex items-center gap-4">
-              <RadioDot checked={false} />
-              <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                PayPal
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1">
-                Próximamente
-              </span>
-            </span>
-            <Wallet
-              className="size-6 text-muted-foreground"
-              aria-hidden
+          {/* PayPal deshabilitado temporalmente (próximo sprint). */}
+          <label
+            className="relative flex rounded-none border p-4 border-border opacity-50"
+            aria-disabled="true"
+          >
+            <input
+              type="radio"
+              name="payment_method"
+              value="paypal"
+              checked={false}
+              disabled
+              className="sr-only"
             />
-          </span>
-        </label>
+            <span className="flex w-full items-center justify-between">
+              <span className="flex items-center gap-4">
+                <RadioDot checked={false} />
+                <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                  PayPal
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1">
+                  Próximamente
+                </span>
+              </span>
+              <Wallet className="size-6 text-muted-foreground" aria-hidden />
+            </span>
+          </label>
         </div>
       </CardContent>
     </Card>

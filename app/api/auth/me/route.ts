@@ -23,10 +23,13 @@ export async function GET(req: NextRequest) {
 
   // Sin cookie → sin sesión
   if (!token) {
-    return NextResponse.json({ user: null }, {
-      status: 200,
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      { user: null },
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   }
 
   try {
@@ -40,15 +43,21 @@ export async function GET(req: NextRequest) {
       role: payload.role,
     };
 
-    return NextResponse.json({ user }, {
-      status: 200,
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      { user },
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   } catch {
     // Token inválido o expirado → tratamos como sin sesión
-    return NextResponse.json({ user: null }, {
-      status: 200,
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      { user: null },
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   }
 }

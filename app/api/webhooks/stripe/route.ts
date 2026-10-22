@@ -27,34 +27,21 @@ export async function POST(req: NextRequest) {
   const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
     console.error("[POST /api/webhooks/stripe] Falta STRIPE_WEBHOOK_SECRET");
-    return NextResponse.json(
-      { error: "Webhook de Stripe no configurado" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Webhook de Stripe no configurado" }, { status: 500 });
   }
 
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
-    return NextResponse.json(
-      { error: "Falta la firma de Stripe" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Falta la firma de Stripe" }, { status: 400 });
   }
 
   let event: Stripe.Event;
   try {
     // El body debe leerse crudo: la firma se verifica sobre los bytes originales.
     const rawBody = await req.text();
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      webhookSecret
-    );
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch {
-    return NextResponse.json(
-      { error: "Firma de Stripe inválida" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Firma de Stripe inválida" }, { status: 400 });
   }
 
   try {
@@ -72,12 +59,9 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error(
       "[POST /api/webhooks/stripe] Error procesando evento:",
-      error instanceof Error ? error.message : error
+      error instanceof Error ? error.message : error,
     );
-    return NextResponse.json(
-      { error: "No se pudo procesar el evento" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "No se pudo procesar el evento" }, { status: 500 });
   }
 }
 
@@ -90,7 +74,7 @@ async function handleSucceeded(paymentIntent: Stripe.PaymentIntent) {
   if (!orderId) {
     console.warn(
       "[webhook/stripe] payment_intent.succeeded sin metadata.orderId:",
-      paymentIntent.id
+      paymentIntent.id,
     );
     return;
   }
@@ -113,7 +97,7 @@ async function handleSucceeded(paymentIntent: Stripe.PaymentIntent) {
   if (receivedCents !== expectedCents) {
     console.error(
       `[webhook/stripe] Monto inconsistente orden ${order.id}: ` +
-        `esperado ${expectedCents}, recibido ${receivedCents}`
+        `esperado ${expectedCents}, recibido ${receivedCents}`,
     );
     await prisma.$transaction([
       prisma.payments.update({
@@ -159,10 +143,7 @@ async function handleSucceeded(paymentIntent: Stripe.PaymentIntent) {
     });
   } catch (error) {
     if (error instanceof InsufficientStockError) {
-      console.error(
-        `[webhook/stripe] Stock insuficiente orden ${order.id}:`,
-        error.variantId
-      );
+      console.error(`[webhook/stripe] Stock insuficiente orden ${order.id}:`, error.variantId);
       await prisma.payments.update({
         where: { order_id: order.id },
         data: {
@@ -193,7 +174,7 @@ async function handleFailed(paymentIntent: Stripe.PaymentIntent) {
   if (!orderId) {
     console.warn(
       "[webhook/stripe] payment_intent.payment_failed sin metadata.orderId:",
-      paymentIntent.id
+      paymentIntent.id,
     );
     return;
   }
@@ -209,9 +190,7 @@ async function handleFailed(paymentIntent: Stripe.PaymentIntent) {
     return;
   }
 
-  const reason =
-    paymentIntent.last_payment_error?.message ??
-    "Pago rechazado por Stripe";
+  const reason = paymentIntent.last_payment_error?.message ?? "Pago rechazado por Stripe";
 
   await prisma.payments.update({
     where: { order_id: orderId },

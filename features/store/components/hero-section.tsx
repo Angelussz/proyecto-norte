@@ -20,11 +20,15 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative z-20 w-full px-5 md:px-16 max-w-7xl mx-auto flex flex-col justify-center py-12 md:py-16">
         <div className="max-w-md md:max-w-lg lg:max-w-xl md:mt-8">
-          <h1 
+          <h1
             className="text-[44px] md:text-[64px] lg:text-[76px] leading-[0.95] tracking-[0.02em] text-[#fff9ed] mb-4 uppercase"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
-            Estilo sin<br />Esfuerzo, Confianza<br />Cada Día.
+            Estilo sin
+            <br />
+            Esfuerzo, Confianza
+            <br />
+            Cada Día.
           </h1>
           <p className="text-[16px] md:text-[18px] leading-6.5 md:leading-7 text-[#e8e2d4] mb-8 max-w-sm md:max-w-md">
             Diseños atemporales con comodidad moderna, hechos para tu día a día.

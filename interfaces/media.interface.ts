@@ -2,19 +2,19 @@
 // No importar SDK ni lógica de aquí en clientes.
 
 export interface StoredImage {
-  secureUrl: string
-  publicId: string
+  secureUrl: string;
+  publicId: string;
 }
 
 export type MediaErrorCode =
-  | 'MISSING_FILE'
-  | 'INVALID_FORMAT'
-  | 'FILE_TOO_LARGE'
-  | 'NOT_CONFIGURED'
-  | 'UPLOAD_FAILED'
-  | 'DELETE_FAILED'
+  | "MISSING_FILE"
+  | "INVALID_FORMAT"
+  | "FILE_TOO_LARGE"
+  | "NOT_CONFIGURED"
+  | "UPLOAD_FAILED"
+  | "DELETE_FAILED";
 
 export interface ProductImageResponse {
-  image_url: string | null
-  image_url_id: string | null
+  image_url: string | null;
+  image_url_id: string | null;
 }

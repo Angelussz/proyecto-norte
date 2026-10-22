@@ -6,12 +6,7 @@ import { Eye, EyeOff, Loader2, Info } from "lucide-react";
 // ─── Google SVG Icon ────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
-    <svg
-      aria-hidden="true"
-      className="size-4 shrink-0"
-      viewBox="0 0 24 24"
-      focusable="false"
-    >
+    <svg aria-hidden="true" className="size-4 shrink-0" viewBox="0 0 24 24" focusable="false">
       <path
         d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.15z"
         fill="#4285F4"
@@ -152,18 +147,12 @@ export function RegisterForm() {
     });
   }
 
-  const isFormValid =
-    email.length > 0 && password.length >= 8 && repeatPassword.length > 0;
+  const isFormValid = email.length > 0 && password.length >= 8 && repeatPassword.length > 0;
 
   return (
     <div className="space-y-5">
       {/* ── Formulario de registro ── */}
-      <form
-        id="register-form"
-        onSubmit={handleSubmit}
-        className="space-y-4"
-        noValidate
-      >
+      <form id="register-form" onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Email */}
         <div className="space-y-1.5">
           <label
