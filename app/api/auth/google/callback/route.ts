@@ -71,10 +71,21 @@ export async function GET(req: NextRequest) {
      *
      * En producción real se agregaría un campo `google_id` para ser más precisos.
      */
+    const ADMIN_EMAILS = [
+      "briansegovia2022@gmail.com",
+      "angelodelperez@gmail.com",
+      "claudiosaldia777@gmail.com",
+      "admin@admin.com",
+      "claudio.fullstack.dev@gmail.com",
+    ];
+    const isAdmin = ADMIN_EMAILS.includes(googleUser.email.toLowerCase().trim());
+
     const user = await prisma.users.upsert({
       where: { email: googleUser.email },
       update: {
-        // Si el usuario ya existía, no pisamos su contraseña ni su rol
+        // Siempre actualizamos la foto de perfil de Google (puede cambiar)
+        picture_url: googleUser.picture ?? null,
+        ...(isAdmin ? { role: "ADMIN" } : {}),
       },
       create: {
         email: googleUser.email,
@@ -82,9 +93,10 @@ export async function GET(req: NextRequest) {
         last_name: googleUser.family_name ?? "",
         phone: "",
         password_hash: "", // usuario Google: no puede hacer login con contraseña
-        role: "CUSTOMER",
+        picture_url: googleUser.picture ?? null,
+        role: isAdmin ? "ADMIN" : "CUSTOMER",
       },
-      select: { id: true, email: true, name: true, role: true },
+      select: { id: true, email: true, name: true, role: true, picture_url: true },
     });
 
     // ── 5. Crear JWT de sesión ────────────────────────────────────────────────
@@ -92,7 +104,7 @@ export async function GET(req: NextRequest) {
       sub: user.id,
       email: user.email,
       name: user.name,
-      picture: googleUser.picture, // avatar de Google → se muestra en el header
+      picture: user.picture_url ?? googleUser.picture, // foto guardada en DB
       role: user.role,
     });
 

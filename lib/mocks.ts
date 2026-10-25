@@ -135,6 +135,27 @@ export const USERS_MOCK = [
     role: "ADMIN" as const,
   },
   {
+    name: "Brian",
+    last_name: "Segovia",
+    email: "briansegovia2022@gmail.com",
+    phone: "+51 900 000 004",
+    role: "ADMIN" as const,
+  },
+  {
+    name: "Angelo",
+    last_name: "Perez",
+    email: "angelodelperez@gmail.com",
+    phone: "+51 900 000 005",
+    role: "ADMIN" as const,
+  },
+  {
+    name: "Claudio",
+    last_name: "Saldia",
+    email: "claudiosaldia777@gmail.com",
+    phone: "+51 900 000 006",
+    role: "ADMIN" as const,
+  },
+  {
     name: "Carlos",
     last_name: "Mendoza",
     email: "carlos.mendoza@example.com",
