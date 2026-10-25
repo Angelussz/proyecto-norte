@@ -65,6 +65,7 @@ model Users {
   password_hash       String
   phone               String
   role                Role      @default(CUSTOMER)
+  picture_url         String?   // Avatar de Google (o null si no usó OAuth)
   // Verificación de correo — implementar el flujo de email en producción.
   // En dev todos los usuarios del seed se crean con email_verified = true.
   // TODO: bloquear login si !email_verified cuando se implemente el envío real.

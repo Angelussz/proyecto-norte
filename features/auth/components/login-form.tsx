@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 // ─── Google SVG Icon ────────────────────────────────────────────────────────
 function GoogleIcon() {
@@ -46,6 +47,7 @@ function AppleIcon() {
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   // Si el middleware redirigió aquí desde una ruta protegida,
   // `redirectTo` contiene la ruta original para volver después del login.
   const redirectTo = searchParams.get("redirectTo") ?? "/";
@@ -79,11 +81,13 @@ export function LoginForm() {
 
         if (res.ok) {
           // Login exitoso: el JWT ya está en la cookie.
-          // router.refresh() le dice a Next.js que re-ejecute los
-          // Server Components para que lean la nueva cookie.
-          await res.json();
+          // 1. Invalidar la caché de React Query para que useSession
+          //    refetche /api/auth/me y el navbar muestre al usuario de inmediato.
+          await queryClient.invalidateQueries({ queryKey: ["session"] });
+          // 2. router.refresh() le dice a Next.js que re-ejecute los
+          //    Server Components (layouts, pages) para que lean la nueva cookie.
           router.refresh();
-          // Redirigir a la ruta original (o a la tienda si no hay ninguna).
+          // 3. Redirigir a la ruta original (o a la tienda si no hay ninguna).
           router.push(redirectTo);
         } else if (res.status === 401) {
           setError("Correo o contraseña incorrectos.");
