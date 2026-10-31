@@ -19,7 +19,7 @@ import type { NextRequest } from "next/server";
 import { verifyToken, SESSION_COOKIE_NAME } from "@/lib/session";
 
 // Rutas que REQUIEREN estar autenticado
-const PROTECTED_ROUTES = ["/account", "/orders", "/checkout"];
+const PROTECTED_ROUTES = ["/account", "/orders", "/checkout", "/admin"];
 
 // Rutas que solo se muestran a usuarios NO autenticados
 const AUTH_ROUTES = ["/login", "/register"];
