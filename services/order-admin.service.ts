@@ -360,7 +360,12 @@ export async function updateAdminOrderStatus(
     where: { id },
     data: {
       status: dto.status,
-      ...(dto.reason?.trim() ? { status_notes: dto.reason.trim() } : {}),
+      // Limpiar status_notes al cerrar el ciclo (DELIVERED); escribir solo si hay motivo (rollbacks)
+      ...(dto.status === "DELIVERED"
+        ? { status_notes: null }
+        : dto.reason?.trim()
+          ? { status_notes: dto.reason.trim() }
+          : {}),
     },
     include: {
       user: true,
