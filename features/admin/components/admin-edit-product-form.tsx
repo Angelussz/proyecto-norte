@@ -26,24 +26,6 @@ const MOCK_PRODUCT = {
   lastEditedBy: "Elena Vázquez",
 };
 
-const CHANGELOG = [
-  {
-    date: "5 nov 2026, 09:15",
-    user: "Elena Vázquez",
-    action: "Actualizó precio de venta → $165.00",
-  },
-  {
-    date: "12 oct 2026, 14:30",
-    user: "Carlos Méndez",
-    action: "Añadió colorway Terracota en talla 40",
-  },
-  {
-    date: "24 may 2024, 11:42",
-    user: "Elena Vázquez",
-    action: "Producto creado y publicado",
-  },
-];
-
 type ColorVariant = { name: string; hex: string; stock: number };
 type SizeVariant = {
   size: string;
@@ -747,40 +729,6 @@ export function AdminEditProductForm() {
                     );
                   })}
                 </div>
-              </div>
-            </section>
-
-            {/* ── CARD 3: HISTORIAL DE CAMBIOS ── */}
-            <section className="bg-white p-8 shadow-sm flex flex-col gap-5">
-              <div className="flex items-center justify-between pb-4 border-b border-[#eee8d9]">
-                <div className="flex items-center gap-3">
-                  <span className="w-2 h-2 bg-[#857466]" />
-                  <h2 className="font-headline text-[24px] uppercase tracking-wide text-[#1e1c13]">
-                    HISTORIAL DE CAMBIOS
-                  </h2>
-                </div>
-                <span className="material-symbols-outlined text-[#857466] text-[20px]">
-                  history
-                </span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {CHANGELOG.map((entry, i) => (
-                  <div key={i} className="flex gap-3 items-start">
-                    <div className="w-1.5 h-1.5 bg-[#c77d2e] mt-1.5 shrink-0" />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-inter text-[12px] text-[#1e1c13]">{entry.action}</span>
-                      <span className="font-inter text-[10px] text-[#857466]">
-                        {entry.user} · {entry.date}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="pt-2 border-t border-[#eee8d9]">
-                <p className="font-inter text-[10px] text-[#857466]">
-                  Creado por <strong className="text-[#524438]">Elena Vázquez</strong> el{" "}
-                  {p.createdAt}
-                </p>
               </div>
             </section>
           </aside>
