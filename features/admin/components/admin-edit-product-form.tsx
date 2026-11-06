@@ -132,7 +132,7 @@ export function AdminEditProductForm() {
               </span>
             </div>
             <h1 className="font-headline text-[48px] leading-none text-[#1e1c13] uppercase tracking-tight mt-1">
-              EDITAR PRODUCTO
+              EDITAR PRODUCTO: {p.name}
             </h1>
             <p className="font-inter text-[12px] text-[#524438] mt-1">
               Última edición por <strong className="text-[#1e1c13]">{p.lastEditedBy}</strong> el{" "}
