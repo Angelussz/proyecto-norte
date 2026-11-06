@@ -121,12 +121,12 @@ const INITIAL_CATEGORIES: SizeCategory[] = [
   },
   {
     id: "accesorios",
-    title: "5. ACCESORIOS Y COMPLEMENTOS",
+    title: "5. Accesorios y Complementos",
     description: "Sombreros, marroquinería, joyería y accesorios de atelier.",
     options: [
       {
         id: "sombreros",
-        label: "1. SOMBREROS, GORRAS Y BOINAS",
+        label: "1. Sombreros, Gorras y Boinas",
         badge: "ACTIVO",
         badgeVariant: "active",
         description:
@@ -145,7 +145,7 @@ const INITIAL_CATEGORIES: SizeCategory[] = [
       },
       {
         id: "cinturones-marroquineria",
-        label: "2. CINTURONES Y MARROQUINERÍA",
+        label: "2. Cinturones y Marroquinería",
         badge: "ACTIVO",
         badgeVariant: "active",
         description:
