@@ -26,7 +26,7 @@ const INITIAL_CATEGORIES: SizeCategory[] = [
     id: "ropa-general",
     title: "1. Ropa General (Poleras, Camisetas, Chaquetas, Ropa Deportiva)",
     description:
-      "Prendas de parte superior, prendas de punto y sobrecamisas con patronaje unisex y calce desestructurado. También para cinturones y guantes.",
+      "Prendas de parte superior, prendas de punto y sobrecamisas con patronaje unisex y calce desestructurado.",
     options: [
       {
         id: "alfa-estandar",
@@ -121,12 +121,12 @@ const INITIAL_CATEGORIES: SizeCategory[] = [
   },
   {
     id: "accesorios",
-    title: "5. Accesorios y Complementos",
+    title: "5. ACCESORIOS Y COMPLEMENTOS",
     description: "Sombreros, marroquinería, joyería y accesorios de atelier.",
     options: [
       {
         id: "sombreros",
-        label: "Sombreros, Gorras y Boinas",
+        label: "1. SOMBREROS, GORRAS Y BOINAS",
         badge: "ACTIVO",
         badgeVariant: "active",
         description:
@@ -144,13 +144,13 @@ const INITIAL_CATEGORIES: SizeCategory[] = [
         active: true,
       },
       {
-        id: "contorno-cabeza",
-        label: "Por Contorno de Cabeza",
+        id: "cinturones-marroquineria",
+        label: "2. CINTURONES Y MARROQUINERÍA",
         badge: "ACTIVO",
         badgeVariant: "active",
         description:
-          "Medida perimetral precisa para sombrerería artesanal, gorras y complementos de cabeza.",
-        sizes: ["54 cm", "56 cm", "58 cm", "60 cm"],
+          "Longitud en centímetros desde hebilla al agujero central para correas y cinturones de piel artesanal.",
+        sizes: ["80 cm", "85 cm", "90 cm", "95 cm", "100 cm", "105 cm", "110 cm"],
         active: true,
       },
     ],
