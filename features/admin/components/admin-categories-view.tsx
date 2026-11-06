@@ -9,12 +9,10 @@ type CategoryItem = {
   slug: string;
   active: boolean;
   description: string;
-  activeItemsCount: number;
-  sizes: string[];
-  systemPresets: {
-    systemName: string;
-    sizes: string[];
-  };
+  systemName: string;
+  systemSizes: string[];
+  uniqueSizes: string[];
+  addedSizes: string[];
 };
 
 const INITIAL_CATEGORIES: CategoryItem[] = [
@@ -26,12 +24,10 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Prendas de media estación y lino crudo estructurado. 14 prendas activas en tienda.",
-    activeItemsCount: 14,
-    sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL", "Talle Único", "Talle Ajustable"],
-    systemPresets: {
-      systemName: "Sistema Alfa",
-      sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
-    },
+    systemName: "SISTEMA ALFA",
+    systemSizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
+    uniqueSizes: ["Talle Único", "Talle Ajustable"],
+    addedSizes: [],
   },
   {
     id: "cat-2",
@@ -41,12 +37,10 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Pantalón ancho, pinzas artesanales y cortes rectos sartoriales. 10 prendas activas.",
-    activeItemsCount: 10,
-    sizes: ["36", "38", "40", "42", "44", "46", "48", "Talle Único", "Talle Ajustable"],
-    systemPresets: {
-      systemName: "Sistema Numérico EU",
-      sizes: ["36", "38", "40", "42", "44", "46", "48"],
-    },
+    systemName: "SISTEMA NUMÉRICO EU",
+    systemSizes: ["36", "38", "40", "42", "44", "46", "48"],
+    uniqueSizes: ["Talle Único", "Talle Ajustable"],
+    addedSizes: [],
   },
   {
     id: "cat-3",
@@ -56,12 +50,10 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Alpargatas, mocasines y calzado de confección artesana en suela vegetal. 6 modelos.",
-    activeItemsCount: 6,
-    sizes: ["38", "39", "40", "41", "42", "43", "44", "45", "Talle Único", "Talle Ajustable"],
-    systemPresets: {
-      systemName: "Numeración Calzado",
-      sizes: ["38", "39", "40", "41", "42", "43", "44", "45"],
-    },
+    systemName: "NUMERACIÓN CALZADO",
+    systemSizes: ["38", "39", "40", "41", "42", "43", "44", "45"],
+    uniqueSizes: ["Talle Único", "Talle Ajustable"],
+    addedSizes: [],
   },
   {
     id: "cat-4",
@@ -71,12 +63,10 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Gabardinas de algodón encerado, saharianas y abrigos desestructurados. 4 referencias.",
-    activeItemsCount: 4,
-    sizes: ["S", "M", "L", "XL", "XXL", "3XL", "Talle Único", "Talle Ajustable"],
-    systemPresets: {
-      systemName: "Sistema Alfa",
-      sizes: ["S", "M", "L", "XL", "XXL", "3XL"],
-    },
+    systemName: "SISTEMA ALFA",
+    systemSizes: ["S", "M", "L", "XL", "XXL", "3XL"],
+    uniqueSizes: ["Talle Único", "Talle Ajustable"],
+    addedSizes: [],
   },
   {
     id: "cat-5",
@@ -86,16 +76,12 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Bolsos tote de lona encerada, cinturones de piel vegetal y bufandas de telar. 4 referencias.",
-    activeItemsCount: 4,
-    sizes: ["S", "M", "L", "XL", "Talle Único", "Talle Ajustable"],
-    systemPresets: {
-      systemName: "Sistema Alfa",
-      sizes: ["S", "M", "L", "XL"],
-    },
+    systemName: "SISTEMA ALFA",
+    systemSizes: ["S", "M", "L", "XL"],
+    uniqueSizes: ["Talle Único", "Talle Ajustable"],
+    addedSizes: [],
   },
 ];
-
-const UNIQUE_SIZES_PRESET = ["Talle Único", "Talle Ajustable"];
 
 const SIZE_SYSTEM_OPTIONS = [
   "Sistema Alfa (XS, S, M, L, XL, XXL)",
@@ -111,719 +97,459 @@ const SIZE_SYSTEM_OPTIONS = [
 export function AdminCategoriesView() {
   const [categories, setCategories] = useState<CategoryItem[]>(INITIAL_CATEGORIES);
   const [selectedSystem, setSelectedSystem] = useState<Record<string, string>>({});
-  const [customInputSize, setCustomInputSize] = useState<Record<string, string>>({});
 
-  // Modal para nueva categoría
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatSku, setNewCatSku] = useState("");
-  const [newCatSlug, setNewCatSlug] = useState("");
-  const [newCatDescription, setNewCatDescription] = useState("");
-
-  // Añadir un talle específico a una categoría
-  function addSizeToCategory(catId: string, sizeToAdd: string) {
-    const trimmed = sizeToAdd.trim();
-    if (!trimmed) return;
-
+  function addSize(catId: string, sizeName: string) {
     setCategories((prev) =>
       prev.map((cat) => {
         if (cat.id !== catId) return cat;
-        if (cat.sizes.includes(trimmed)) return cat;
-        return {
-          ...cat,
-          sizes: [...cat.sizes, trimmed],
-        };
+        if (cat.addedSizes.includes(sizeName)) return cat;
+        return { ...cat, addedSizes: [...cat.addedSizes, sizeName] };
       }),
     );
   }
 
-  // Quitar un talle de una categoría
-  function removeSizeFromCategory(catId: string, sizeToRemove: string) {
+  function removeSize(catId: string, sizeName: string) {
     setCategories((prev) =>
       prev.map((cat) => {
         if (cat.id !== catId) return cat;
-        return {
-          ...cat,
-          sizes: cat.sizes.filter((s) => s !== sizeToRemove),
-        };
+        return { ...cat, addedSizes: cat.addedSizes.filter((s) => s !== sizeName) };
       }),
     );
   }
 
-  // Toggle visibilidad / activo
-  function toggleCategoryActive(catId: string) {
+  function handleAddSelectedSystem(catId: string) {
+    const val = selectedSystem[catId];
+    if (!val) return;
+    const label = val.split("(")[0].trim();
+    addSize(catId, label);
+    setSelectedSystem((prev) => ({ ...prev, [catId]: "" }));
+  }
+
+  function toggleVisibility(catId: string) {
     setCategories((prev) =>
       prev.map((cat) => (cat.id === catId ? { ...cat, active: !cat.active } : cat)),
     );
   }
 
-  // Eliminar categoría
   function deleteCategory(catId: string) {
     setCategories((prev) => prev.filter((cat) => cat.id !== catId));
   }
 
-  // Manejar creación de categoría desde el modal
-  function handleCreateCategory(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newCatName.trim()) return;
+  function handleNewCategory() {
+    const name = prompt("Nombre de la nueva categoría (ej: CAMISERÍA CLÁSICA):");
+    if (!name?.trim()) return;
+    const sku = prompt("Prefijo SKU (ej: NRT-CAM):") || `NRT-${name.slice(0, 3).toUpperCase()}`;
 
-    const formattedSku = newCatSku.trim() || `NRT-${newCatName.slice(0, 3).toUpperCase()}`;
-    const formattedSlug =
-      newCatSlug.trim() ||
-      `/${newCatName
+    const newCat: CategoryItem = {
+      id: `cat-${Date.now()}`,
+      name: name.trim().toUpperCase(),
+      sku: sku.trim().toUpperCase(),
+      slug: `/${name
+        .trim()
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)+/g, "")}`;
-
-    const newCategory: CategoryItem = {
-      id: `cat-${Date.now()}`,
-      name: newCatName.trim().toUpperCase(),
-      sku: formattedSku.toUpperCase(),
-      slug: formattedSlug,
+        .replace(/[^a-z0-9]+/g, "-")}`,
       active: true,
-      description:
-        newCatDescription.trim() ||
-        "Nueva categoría registrada en el catálogo artesanal del atelier.",
-      activeItemsCount: 0,
-      sizes: ["S", "M", "L", "Talle Único"],
-      systemPresets: {
-        systemName: "Sistema Alfa",
-        sizes: ["XS", "S", "M", "L", "XL"],
-      },
+      description: "Nueva categoría registrada en el catálogo textil de NORTE Atelier.",
+      systemName: "SISTEMA ALFA",
+      systemSizes: ["XS", "S", "M", "L", "XL"],
+      uniqueSizes: ["Talle Único", "Talle Ajustable"],
+      addedSizes: [],
     };
 
-    setCategories((prev) => [newCategory, ...prev]);
-    setNewCatName("");
-    setNewCatSku("");
-    setNewCatSlug("");
-    setNewCatDescription("");
-    setIsModalOpen(false);
+    setCategories((prev) => [...prev, newCat]);
   }
-
-  // Exportar JSON mock
-  function handleExportJSON() {
-    const dataStr =
-      "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(categories, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", "norte_categorias_catalogo.json");
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  }
-
-  const activeCategoriesCount = categories.filter((c) => c.active).length;
-  const totalItemsCount = categories.reduce((acc, c) => acc + c.activeItemsCount, 0);
 
   return (
-    <div className="relative w-full overflow-hidden px-4 lg:px-16 py-8 lg:py-12 bg-surface min-h-screen">
-      {/* Auras decorativas de fondo */}
-      <div className="absolute -top-32 right-12 w-96 h-96 bg-[#ffb875]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-80 -left-20 w-80 h-80 bg-[#d8e7cf]/30 rounded-full blur-3xl pointer-events-none" />
+    <div className="w-full bg-[#fff9ed] min-h-screen px-6 lg:px-16 py-10 font-inter text-[#1e1c13]">
+      <div className="max-w-[1200px] mx-auto flex flex-col gap-8">
+        {/* ── 1. Encabezado principal ── */}
+        <header className="flex flex-col gap-2">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.15em] text-[#524438] uppercase">
+            <span className="text-[#673900]">ADMIN</span>
+            <span className="text-[#d8c3b2]">/</span>
+            <span>TIENDA</span>
+            <span className="text-[#d8c3b2]">/</span>
+            <span className="text-[#1e1c13]">CATEGORÍAS Y ATRIBUTOS</span>
+          </div>
 
-      {/* ── 1. Header de Sección ── */}
-      <header className="relative z-10 flex flex-col gap-4 max-w-[1280px] mx-auto pb-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1 font-inter text-[10px] text-[#524438] uppercase tracking-[0.2em]">
-              <span className="text-[#673900] font-semibold">ADMIN</span>
-              <span className="text-[#d8c3b2]">/</span>
-              <span className="text-[#524438]">TIENDA</span>
-              <span className="text-[#d8c3b2]">/</span>
-              <span className="text-[#1e1c13] font-semibold">CATEGORÍAS Y ATRIBUTOS</span>
-            </div>
-            <div className="inline-flex items-center gap-2 mt-1">
-              <span className="px-2 py-0.5 bg-[#d8e7cf] text-[#121f10] font-inter text-[10px] uppercase tracking-widest font-semibold">
-                ESTRUCTURA DE CATÁLOGO &amp; VALORES GLOBALES
-              </span>
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c77d2e] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#673900]" />
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pt-1">
-          <div className="max-w-3xl">
-            <h1 className="font-headline text-[48px] text-[#1e1c13] tracking-normal leading-none uppercase">
-              GESTIÓN DE CATEGORÍAS Y ATRIBUTOS
-            </h1>
-            <p className="font-inter text-[16px] text-[#524438] mt-2 leading-relaxed max-w-2xl">
-              Administración unificada del catálogo textil del atelier: jerarquías de categorías,
-              parametrización de talles individuales por prenda, cartas de color de tintura oficial
-              y firmas registradas.
-            </p>
-          </div>
-        </div>
-      </header>
-
-      {/* ── 2. Panel de Métricas / Resumen Superior (3 KPI Cards) ── */}
-      <section className="relative z-10 max-w-[1280px] mx-auto pb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Card 1: Categorías Activas */}
-        <div className="relative bg-[#faf3e4] p-6 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between overflow-hidden border border-[#d8c3b2]/30">
-          <div className="absolute -right-3 -bottom-3 text-[#e8e2d4]/60 pointer-events-none font-headline text-[80px] select-none leading-none">
-            01
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-inter text-[10px] uppercase tracking-[0.2em] text-[#524438] font-semibold">
-                CATEGORÍAS ACTIVAS
-              </span>
-              <span className="material-symbols-outlined text-[#673900] text-[20px]">category</span>
-            </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="font-headline text-[36px] text-[#1e1c13]">
-                {activeCategoriesCount}
-              </span>
-              <span className="font-inter text-[14px] text-[#524438] uppercase font-medium">
-                Principales
-              </span>
-            </div>
-          </div>
-          <div className="mt-4 pt-2 bg-[#f4eddf]/60 -mx-6 -mb-6 px-6 pb-2 flex items-center justify-between">
-            <span className="font-inter text-[12px] text-[#524438]">
-              {categories.length * 5} Subcategorías activas
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 mt-0.5">
+            <span className="px-2 py-0.5 bg-[#d8e7cf] text-[#121f10] text-[10px] font-semibold uppercase tracking-widest">
+              ESTRUCTURA DE CATÁLOGO &amp; VALORES GLOBALES
             </span>
-            <span className="inline-flex items-center text-[#673900] font-inter text-[10px] font-semibold uppercase">
-              100% VISIBLE
-            </span>
+            <span className="w-2 h-2 rounded-full bg-[#673900]" />
           </div>
-        </div>
 
-        {/* Card 2: Sistemas de Talle */}
-        <div className="relative bg-[#faf3e4] p-6 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between overflow-hidden border border-[#d8c3b2]/30">
-          <div className="absolute -right-3 -bottom-3 text-[#e8e2d4]/60 pointer-events-none font-headline text-[80px] select-none leading-none">
-            02
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-inter text-[10px] uppercase tracking-[0.2em] text-[#524438] font-semibold">
-                SISTEMAS DE TALLE
-              </span>
-              <span className="material-symbols-outlined text-[#c77d2e] text-[20px]">
-                straighten
-              </span>
-            </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="font-headline text-[36px] text-[#1e1c13]">5</span>
-              <span className="font-inter text-[14px] text-[#524438] uppercase font-medium">
-                Rangos Específicos
-              </span>
-            </div>
-          </div>
-          <div className="mt-4 pt-2 bg-[#f4eddf]/60 -mx-6 -mb-6 px-6 pb-2 flex items-center justify-between">
-            <span className="font-inter text-[12px] text-[#524438]">
-              Por tipología de confección
-            </span>
-            <span className="inline-flex items-center gap-1 text-[#33402f] font-inter text-[10px] font-semibold uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#33402f]" /> 100% COBERTURA
-            </span>
-          </div>
-        </div>
+          {/* Título y subtítulo */}
+          <h1 className="font-headline text-[48px] uppercase tracking-normal leading-none text-[#1e1c13] mt-2">
+            GESTIÓN DE CATEGORÍAS Y ATRIBUTOS
+          </h1>
+          <p className="text-[14px] text-[#524438] leading-relaxed max-w-3xl">
+            Administración unificada del catálogo textil del atelier: jerarquías de categorías,
+            parametrización de talles individuales por prenda, cartas de color de tintura oficial y
+            firmas registradas.
+          </p>
+        </header>
 
-        {/* Card 3: Prendas Asignadas */}
-        <div className="relative bg-[#faf3e4] p-6 shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between overflow-hidden border border-[#d8c3b2]/30">
-          <div className="absolute -right-3 -bottom-3 text-[#e8e2d4]/60 pointer-events-none font-headline text-[80px] select-none leading-none">
-            03
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-inter text-[10px] uppercase tracking-[0.2em] text-[#524438] font-semibold">
-                PRENDAS ASIGNADAS
-              </span>
-              <span className="material-symbols-outlined text-[#54624f] text-[20px]">styler</span>
+        {/* ── 2. Panel de Métricas / 3 KPI Cards ── */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1 */}
+          <div className="relative bg-[#faf3e4] p-6 border border-[#d8c3b2]/30 flex flex-col justify-between overflow-hidden">
+            <div className="absolute -right-2 -bottom-4 text-[#e8e2d4]/50 pointer-events-none font-headline text-[90px] select-none leading-none">
+              01
             </div>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="font-headline text-[36px] text-[#1e1c13]">{totalItemsCount}</span>
-              <span className="font-inter text-[14px] text-[#524438] uppercase font-medium">
-                Prendas Totales
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#524438] font-semibold">
+                  CATEGORÍAS ACTIVAS
+                </span>
+                <span className="material-symbols-outlined text-[#673900] text-[20px]">
+                  category
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="font-headline text-[38px] text-[#1e1c13] leading-none">
+                  {categories.filter((c) => c.active).length}
+                </span>
+                <span className="text-[12px] uppercase tracking-wider font-semibold text-[#524438]">
+                  PRINCIPALES
+                </span>
+              </div>
+            </div>
+            <div className="mt-6 pt-2 -mx-6 -mb-6 px-6 pb-2.5 bg-[#f4eddf]/70 flex items-center justify-between border-t border-[#d8c3b2]/20">
+              <span className="text-[11px] text-[#524438]">24 Subcategorías activas</span>
+              <span className="text-[#673900] text-[10px] font-bold uppercase tracking-wider">
+                100% VISIBLE
               </span>
             </div>
           </div>
-          <div className="mt-4 pt-2 bg-[#f4eddf]/60 -mx-6 -mb-6 px-6 pb-2 flex items-center justify-between">
-            <span className="font-inter text-[12px] text-[#524438]">Arquetipos normalizados</span>
-            <span className="inline-flex items-center text-[#673900] font-inter text-[10px] font-semibold uppercase">
-              CATÁLOGO ACTIVO
-            </span>
-          </div>
-        </div>
-      </section>
 
-      {/* ── UNIFIED MAIN CONTAINER ── */}
-      <div className="relative z-10 max-w-[1280px] mx-auto flex flex-col gap-10">
-        {/* ======================================================== */}
-        {/* SECCIÓN 1: GESTIÓN DE CATEGORÍAS & SUS TALLES ASIGNADOS */}
-        {/* ======================================================== */}
+          {/* Card 2 */}
+          <div className="relative bg-[#faf3e4] p-6 border border-[#d8c3b2]/30 flex flex-col justify-between overflow-hidden">
+            <div className="absolute -right-2 -bottom-4 text-[#e8e2d4]/50 pointer-events-none font-headline text-[90px] select-none leading-none">
+              02
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#524438] font-semibold">
+                  SISTEMAS DE TALLE
+                </span>
+                <span className="material-symbols-outlined text-[#c77d2e] text-[20px]">
+                  straighten
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="font-headline text-[38px] text-[#1e1c13] leading-none">5</span>
+                <span className="text-[12px] uppercase tracking-wider font-semibold text-[#524438]">
+                  RANGOS ESPECÍFICOS
+                </span>
+              </div>
+            </div>
+            <div className="mt-6 pt-2 -mx-6 -mb-6 px-6 pb-2.5 bg-[#f4eddf]/70 flex items-center justify-between border-t border-[#d8c3b2]/20">
+              <span className="text-[11px] text-[#524438]">Por tipología de confección</span>
+              <span className="inline-flex items-center gap-1.5 text-[#33402f] text-[10px] font-bold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#33402f]" /> 100% COBERTURA
+              </span>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="relative bg-[#faf3e4] p-6 border border-[#d8c3b2]/30 flex flex-col justify-between overflow-hidden">
+            <div className="absolute -right-2 -bottom-4 text-[#e8e2d4]/50 pointer-events-none font-headline text-[90px] select-none leading-none">
+              03
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#524438] font-semibold">
+                  PRENDAS ASIGNADAS
+                </span>
+                <span className="material-symbols-outlined text-[#54624f] text-[20px]">styler</span>
+              </div>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="font-headline text-[38px] text-[#1e1c13] leading-none">38</span>
+                <span className="text-[12px] uppercase tracking-wider font-semibold text-[#524438]">
+                  PRENDAS TOTALES
+                </span>
+              </div>
+            </div>
+            <div className="mt-6 pt-2 -mx-6 -mb-6 px-6 pb-2.5 bg-[#f4eddf]/70 flex items-center justify-between border-t border-[#d8c3b2]/20">
+              <span className="text-[11px] text-[#524438]">Arquetipos normalizados</span>
+              <span className="text-[#673900] text-[10px] font-bold uppercase tracking-wider">
+                CATÁLOGO ACTIVO
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 3. Barra de Sección: 1. GESTIÓN DE CATEGORÍAS & SUS TALLES ── */}
         <section className="flex flex-col gap-4">
-          {/* Header de la Sección 1 */}
-          <div className="bg-[#f4eddf] p-6 shadow-sm border border-[#d8c3b2]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-[#f4eddf] p-5 border border-[#d8c3b2]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#673900] flex items-center justify-center shrink-0 shadow-sm">
-                <span className="material-symbols-outlined text-white text-[26px]">
+              <div className="w-12 h-12 bg-[#673900] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-white text-[24px]">
                   account_tree
                 </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-headline text-[24px] uppercase tracking-wide text-[#1e1c13]">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h2 className="font-headline text-[22px] uppercase tracking-wide text-[#1e1c13] leading-none">
                     1. GESTIÓN DE CATEGORÍAS &amp; SUS TALLES
                   </h2>
-                  <span className="px-2 py-0.5 bg-[#33402f] text-[#fff9ed] font-inter text-[10px] font-semibold uppercase tracking-wider">
-                    {activeCategoriesCount} CATEGORÍAS ACTIVAS
+                  <span className="px-2 py-0.5 bg-[#33402f] text-[#fff9ed] text-[9px] font-semibold uppercase tracking-wider">
+                    {categories.filter((c) => c.active).length} CATEGORÍAS ACTIVAS
                   </span>
                 </div>
-                <p className="font-inter text-[12px] text-[#524438] mt-0.5">
+                <p className="text-[11px] text-[#524438] mt-1">
                   Arquetipos de prendas, prefijos normalizados de SKU y parametrización de talles
                   específicos habilitados para cada prenda.
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1.5 px-6 py-2.5 bg-[#673900] hover:bg-[#894d00] text-white transition-all duration-150 shadow-sm active:translate-y-px"
-              >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                <span className="font-headline text-[20px] uppercase tracking-wider">
-                  + NUEVA CATEGORÍA
-                </span>
-              </button>
-            </div>
+
+            <button
+              type="button"
+              onClick={handleNewCategory}
+              className="px-6 py-3 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[18px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors shrink-0"
+            >
+              + NUEVA CATEGORÍA
+            </button>
           </div>
 
-          {/* Editorial Callout Breve con foto en blanco y negro */}
-          <div className="bg-[#faf3e4] shadow-sm border border-[#d8c3b2]/30 p-4 flex flex-col sm:flex-row items-center gap-4 overflow-hidden">
-            {/* Foto de lino y tela */}
-            <div className="w-full sm:w-32 h-20 bg-[#e0dacb] shrink-0 border border-[#d8c3b2]/40 overflow-hidden relative">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu0yi7dQjI8sYST3K28n5KcUuE_IygkJkDol5DfuCHwx4Ls_ytOMc8iJeBN13LpEnNAbBOC1opD0FZM8myhO0hcMf4_nekDh6doXfCrJTF_CS1qIiOeV18utjgjyhgppQiAqF0ZEAuwYIYUNkfrGaAQ4YcTp-US_MvlwmqcpQ24Z5ZbPV-F6tViTxxcN2dda8IbdRtiIWDKAH-oPRB7HGQ2BuB-w0MBLw89kYbfK4"
-                alt="Rollos de lino y lana atelier"
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-300"
-              />
-            </div>
-            <div className="flex flex-col justify-between w-full">
-              <div className="flex items-center justify-between">
-                <span className="font-inter text-[10px] text-[#673900] uppercase font-bold tracking-widest">
-                  CRITERIO DEL ATELIER: MATRIZ DE TALLAJE INDIVIDUAL
-                </span>
-                <span className="font-mono text-[11px] text-[#524438]">Sincronización v2025.1</span>
-              </div>
-              <p className="font-inter text-[14px] text-[#1e1c13] mt-1 leading-snug">
-                Cada categoría gestiona sus propias tallas físicas. Las prendas asociadas a dicha
-                categoría sólo permitirán registrar variantes de stock dentro de las tallas aquí
-                habilitadas.
-              </p>
-            </div>
+          {/* Banner fotográfico horizontal panorámico de rollos de tela */}
+          <div className="w-full h-24 overflow-hidden border border-[#d8c3b2]/40 bg-[#e0dacb]">
+            <img
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu0yi7dQjI8sYST3K28n5KcUuE_IygkJkDol5DfuCHwx4Ls_ytOMc8iJeBN13LpEnNAbBOC1opD0FZM8myhO0hcMf4_nekDh6doXfCrJTF_CS1qIiOeV18utjgjyhgppQiAqF0ZEAuwYIYUNkfrGaAQ4YcTp-US_MvlwmqcpQ24Z5ZbPV-F6tViTxxcN2dda8IbdRtiIWDKAH-oPRB7HGQ2BuB-w0MBLw89kYbfK4"
+              alt="Rollos textiles artesanales"
+              className="w-full h-full object-cover grayscale"
+            />
           </div>
 
-          {/* Lista de Categorías */}
+          {/* ── 4. Lista de Categorías ── */}
           <div className="flex flex-col gap-4">
-            {categories.map((cat) => {
-              const currentSelectVal = selectedSystem[cat.id] || "";
-              const currentInputVal = customInputSize[cat.id] || "";
-
-              return (
-                <article
-                  key={cat.id}
-                  className="bg-[#faf3e4] p-6 shadow-sm hover:shadow-md transition-shadow border border-[#d8c3b2]/40 flex flex-col gap-4"
-                >
-                  {/* Encabezado de la categoría */}
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-2 border-b border-[#d8c3b2]/30">
-                    <div className="flex items-start gap-3">
-                      <button
-                        type="button"
-                        className="cursor-grab active:cursor-grabbing text-[#857466] hover:text-[#673900] mt-1"
-                        title="Arrastrar para reordenar"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">
-                          drag_indicator
-                        </span>
-                      </button>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <h3 className="font-headline text-[24px] uppercase text-[#1e1c13] tracking-wide">
-                            {cat.name}
-                          </h3>
-                          {cat.active ? (
-                            <span className="px-2 py-0.5 bg-[#33402f] text-[#fff9ed] font-inter text-[10px] uppercase tracking-wider font-semibold">
-                              ACTIVO
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 bg-[#857466] text-white font-inter text-[10px] uppercase tracking-wider font-semibold">
-                              INACTIVO
-                            </span>
-                          )}
-                          <span className="px-2 py-0.5 bg-[#f4eddf] font-mono text-[11px] text-[#673900] font-bold border border-[#d8c3b2]/40">
-                            SKU: {cat.sku}
+            {categories.map((cat) => (
+              <article
+                key={cat.id}
+                className="bg-[#faf3e4] p-5 border border-[#d8c3b2]/40 flex flex-col gap-3"
+              >
+                {/* Cabecera de la categoría */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <button
+                      type="button"
+                      className="text-[#857466] hover:text-[#673900] mt-0.5 cursor-grab active:cursor-grabbing"
+                      title="Arrastrar para reordenar"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">drag_indicator</span>
+                    </button>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h3 className="font-headline text-[22px] uppercase text-[#1e1c13] tracking-wide leading-none">
+                          {cat.name}
+                        </h3>
+                        {cat.active ? (
+                          <span className="px-2 py-0.5 bg-[#33402f] text-[#fff9ed] text-[9px] uppercase tracking-wider font-semibold">
+                            ACTIVO
                           </span>
-                          <span className="text-[#524438] text-[12px] font-mono">{cat.slug}</span>
-                        </div>
-                        <p className="font-inter text-[14px] text-[#524438] mt-1">
-                          {cat.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Acciones */}
-                    <div className="flex items-center gap-1 bg-[#f4eddf] p-1 self-end sm:self-start shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newDesc = prompt(
-                            `Editar descripción para ${cat.name}:`,
-                            cat.description,
-                          );
-                          if (newDesc !== null) {
-                            setCategories((prev) =>
-                              prev.map((c) =>
-                                c.id === cat.id ? { ...c, description: newDesc } : c,
-                              ),
-                            );
-                          }
-                        }}
-                        className="p-1.5 hover:bg-[#fff9ed] text-[#524438] hover:text-[#673900] transition-colors"
-                        title="Editar Categoría"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleCategoryActive(cat.id)}
-                        className={`p-1.5 hover:bg-[#fff9ed] transition-colors ${
-                          cat.active
-                            ? "text-[#524438] hover:text-[#c77d2e]"
-                            : "text-[#857466] hover:text-[#33402f]"
-                        }`}
-                        title={cat.active ? "Desactivar visibilidad" : "Activar visibilidad"}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          {cat.active ? "visibility" : "visibility_off"}
+                        ) : (
+                          <span className="px-2 py-0.5 bg-[#857466] text-white text-[9px] uppercase tracking-wider font-semibold">
+                            INACTIVO
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 bg-[#f4eddf] font-mono text-[10px] text-[#673900] font-bold border border-[#d8c3b2]/40">
+                          SKU: {cat.sku}
                         </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (confirm(`¿Eliminar la categoría ${cat.name}?`)) {
-                            deleteCategory(cat.id);
-                          }
-                        }}
-                        className="p-1.5 hover:bg-[#fff9ed] text-[#524438] hover:text-red-600 transition-colors"
-                        title="Eliminar Categoría"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
+                        <span className="text-[#524438] text-[11px] font-mono">{cat.slug}</span>
+                      </div>
+                      <p className="text-[12px] text-[#524438] mt-1">{cat.description}</p>
                     </div>
                   </div>
 
-                  {/* Componente Integrado de Talles para esta Categoría */}
-                  <div className="bg-[#fff9ed] px-4 py-3 border border-[#d8c3b2]/30 flex flex-col gap-2.5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[#673900] text-[16px]">
-                          straighten
-                        </span>
-                        <span className="font-inter text-[11px] uppercase font-semibold text-[#1e1c13] tracking-wider">
-                          Talles habilitados para esta categoría ({cat.sizes.length})
-                        </span>
-                      </div>
-                      <span className="font-mono text-[10px] text-[#857466] uppercase tracking-wider">
-                        Matriz de asignación
+                  {/* Acciones de categoría */}
+                  <div className="flex items-center gap-2 text-[#524438] self-end sm:self-start">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newDesc = prompt("Editar descripción:", cat.description);
+                        if (newDesc !== null) {
+                          setCategories((prev) =>
+                            prev.map((c) => (c.id === cat.id ? { ...c, description: newDesc } : c)),
+                          );
+                        }
+                      }}
+                      className="hover:text-[#673900] transition-colors p-1"
+                      title="Editar"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">sort</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibility(cat.id)}
+                      className="hover:text-[#c77d2e] transition-colors p-1"
+                      title="Visibilidad"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        {cat.active ? "visibility" : "visibility_off"}
                       </span>
-                    </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`¿Eliminar la categoría ${cat.name}?`)) {
+                          deleteCategory(cat.id);
+                        }
+                      }}
+                      className="hover:text-red-600 transition-colors p-1"
+                      title="Eliminar"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                </div>
 
-                    {/* Chips de talles actualmente asignados */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {cat.sizes.length === 0 ? (
-                        <span className="font-inter text-[12px] text-[#857466] italic py-1">
-                          Sin talles habilitados. Añade uno desde los sistemas inferiores.
-                        </span>
-                      ) : (
-                        cat.sizes.map((s) => (
-                          <span
-                            key={s}
-                            className="group inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#eee8d9] text-[#1e1c13] font-inter text-[11px] font-semibold tracking-wider hover:bg-[#e8e2d4] hover:border-[#673900]/50 hover:shadow-sm border border-transparent transition-all select-none"
-                          >
-                            <span className="material-symbols-outlined text-[15px] text-[#857466]/60 group-hover:text-[#673900] transition-colors pointer-events-none">
-                              drag_indicator
-                            </span>
-                            <span>{s}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeSizeFromCategory(cat.id, s)}
-                              className="text-[#524438] hover:text-red-600 transition-colors flex items-center ml-0.5"
-                              title={`Eliminar talle ${s}`}
-                            >
-                              <span className="material-symbols-outlined text-[14px]">close</span>
-                            </button>
-                          </span>
-                        ))
-                      )}
-                    </div>
+                {/* Subpanel integrado de talles */}
+                <div className="bg-[#fff9ed] p-4 border border-[#d8c3b2]/30 flex flex-col gap-2.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1e1c13] uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[#673900] text-[16px]">
+                      straighten
+                    </span>
+                    <span>TALLES HABILITADOS PARA ESTA CATEGORÍA</span>
+                  </div>
 
-                    {/* Presets rápidos y selector */}
-                    <div className="flex flex-col gap-2 pt-2 border-t border-[#d8c3b2]/20">
-                      {/* Presets del sistema específico */}
-                      <div className="flex flex-wrap items-center gap-2 font-inter text-[14px]">
-                        <span className="font-inter text-[10px] uppercase text-[#524438] font-semibold tracking-wider">
-                          {cat.systemPresets.systemName}:
-                        </span>
-                        {cat.systemPresets.sizes.map((presetSize, idx) => (
-                          <span key={presetSize} className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => addSizeToCategory(cat.id, presetSize)}
-                              className={`font-mono text-[12px] font-semibold transition-colors ${
-                                cat.sizes.includes(presetSize)
-                                  ? "text-[#857466] line-through opacity-50 cursor-default"
-                                  : "text-[#673900] hover:text-[#c77d2e] hover:underline"
-                              }`}
-                              title={
-                                cat.sizes.includes(presetSize)
-                                  ? "Ya añadido"
-                                  : `Añadir ${presetSize}`
-                              }
-                            >
-                              {presetSize}
-                            </button>
-                            {idx < cat.systemPresets.sizes.length - 1 && (
-                              <span className="text-[#d8c3b2] text-[11px]">·</span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
+                  {/* Fila del sistema específico */}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+                    <span className="font-semibold text-[#524438] uppercase tracking-wider">
+                      {cat.systemName}:
+                    </span>
+                    {cat.systemSizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => addSize(cat.id, size)}
+                        className="font-mono text-[#673900] hover:text-[#c77d2e] hover:underline transition-colors font-medium"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
 
-                      {/* Presets de Talles Únicos */}
-                      <div className="flex flex-wrap items-center gap-2 font-inter text-[14px]">
-                        <span className="font-inter text-[10px] uppercase text-[#524438] font-semibold tracking-wider">
-                          Talles Únicos:
-                        </span>
-                        {UNIQUE_SIZES_PRESET.map((uniqueSize, idx) => (
-                          <span key={uniqueSize} className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => addSizeToCategory(cat.id, uniqueSize)}
-                              className={`font-mono text-[12px] font-semibold transition-colors ${
-                                cat.sizes.includes(uniqueSize)
-                                  ? "text-[#857466] line-through opacity-50 cursor-default"
-                                  : "text-[#673900] hover:text-[#c77d2e] hover:underline"
-                              }`}
-                              title={
-                                cat.sizes.includes(uniqueSize)
-                                  ? "Ya añadido"
-                                  : `Añadir ${uniqueSize}`
-                              }
-                            >
-                              {uniqueSize}
-                            </button>
-                            {idx < UNIQUE_SIZES_PRESET.length - 1 && (
-                              <span className="text-[#d8c3b2] text-[11px]">·</span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
+                  {/* Fila de talles únicos */}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+                    <span className="font-semibold text-[#524438] uppercase tracking-wider">
+                      TALLES ÚNICOS:
+                    </span>
+                    {cat.uniqueSizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => addSize(cat.id, size)}
+                        className="font-mono text-[#673900] hover:text-[#c77d2e] hover:underline transition-colors font-medium"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
 
-                      {/* Selector de sistema y campo personalizado */}
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl pt-1">
-                        <select
-                          value={currentSelectVal}
-                          onChange={(e) =>
-                            setSelectedSystem((prev) => ({
-                              ...prev,
-                              [cat.id]: e.target.value,
-                            }))
-                          }
-                          className="flex-1 h-9 bg-white px-3 text-[#1e1c13] font-inter text-[13px] border border-[#d8c3b2]/50 focus:border-[#673900] focus:outline-none cursor-pointer"
+                  {/* Talles adicionales agregados */}
+                  {cat.addedSizes.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#d8c3b2]/20">
+                      <span className="text-[10px] text-[#524438] uppercase font-semibold">
+                        Añadidos:
+                      </span>
+                      {cat.addedSizes.map((size) => (
+                        <span
+                          key={size}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#eee8d9] text-[#1e1c13] text-[11px] font-mono font-medium"
                         >
-                          <option value="" disabled>
-                            Selecciona sistema de talla
-                          </option>
-                          {SIZE_SYSTEM_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            placeholder="O talle manual..."
-                            value={currentInputVal}
-                            onChange={(e) =>
-                              setCustomInputSize((prev) => ({
-                                ...prev,
-                                [cat.id]: e.target.value,
-                              }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                if (currentInputVal.trim()) {
-                                  addSizeToCategory(cat.id, currentInputVal.trim());
-                                  setCustomInputSize((prev) => ({ ...prev, [cat.id]: "" }));
-                                }
-                              }
-                            }}
-                            className="w-32 h-9 bg-white px-2 text-[#1e1c13] font-mono text-[12px] border border-[#d8c3b2]/50 focus:border-[#673900] focus:outline-none"
-                          />
+                          {size}
                           <button
                             type="button"
-                            onClick={() => {
-                              if (currentInputVal.trim()) {
-                                addSizeToCategory(cat.id, currentInputVal.trim());
-                                setCustomInputSize((prev) => ({ ...prev, [cat.id]: "" }));
-                              } else if (currentSelectVal) {
-                                // Añadir la etiqueta seleccionada
-                                addSizeToCategory(cat.id, currentSelectVal.split("(")[0].trim());
-                                setSelectedSystem((prev) => ({ ...prev, [cat.id]: "" }));
-                              }
-                            }}
-                            className="h-9 px-4 bg-[#54624f] hover:bg-[#33402f] text-white font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors active:translate-y-px inline-flex items-center justify-center shrink-0"
+                            onClick={() => removeSize(cat.id, size)}
+                            className="hover:text-red-600 text-[#857466]"
                           >
-                            + AÑADIR TALLE
+                            ×
                           </button>
-                        </div>
-                      </div>
+                        </span>
+                      ))}
                     </div>
+                  )}
+
+                  {/* Dropdown y botón Añadir Talle */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 max-w-md">
+                    <select
+                      value={selectedSystem[cat.id] || ""}
+                      onChange={(e) =>
+                        setSelectedSystem((prev) => ({ ...prev, [cat.id]: e.target.value }))
+                      }
+                      className="flex-1 h-8 bg-white px-3 text-[12px] text-[#1e1c13] border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none cursor-pointer"
+                    >
+                      <option value="" disabled>
+                        Selecciona sistema de talla
+                      </option>
+                      {SIZE_SYSTEM_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => handleAddSelectedSystem(cat.id)}
+                      className="h-8 px-4 bg-[#54624f] hover:bg-[#33402f] text-white text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0"
+                    >
+                      + AÑADIR TALLE
+                    </button>
                   </div>
-                </article>
-              );
-            })}
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
-        {/* ── Banner de Sincronización Global de Catálogo ── */}
-        <div className="bg-[#f4eddf] p-4 border border-[#d8c3b2]/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[#673900] text-[22px]">sync</span>
-            <p className="font-inter text-[12px] text-[#524438] leading-relaxed">
-              <strong className="font-semibold text-[#1e1c13]">Sincronización Automática:</strong>{" "}
-              Cualquier cambio en las categorías, talles por categoría, colores o firmas se propaga
+        {/* ── 5. Banner de Sincronización Automática inferior ── */}
+        <footer className="bg-[#f4eddf] p-4 border border-[#d8c3b2]/40 flex flex-col sm:flex-row items-center justify-between gap-4 mt-2">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[#673900] text-[20px] shrink-0">
+              sync
+            </span>
+            <p className="text-[11px] text-[#524438] leading-normal">
+              <strong className="text-[#1e1c13]">Sincronización Automática:</strong> Cualquier
+              cambio en las categorías, talles por categoría, colores o firmas se propaga
               inmediatamente a las pantallas de Creación de Producto, Fichas de Inventario y Tienda
               Online Pública.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 text-[10px] font-bold uppercase tracking-wider">
             <button
               type="button"
-              onClick={() => alert("Registro de cambios: Sistema v2025.1 en sincronía continua.")}
-              className="font-inter text-[10px] text-[#673900] font-bold uppercase tracking-wider hover:underline flex items-center gap-1"
+              onClick={() => alert("Registro de Cambios: Catálogo sincronizado.")}
+              className="text-[#673900] hover:underline flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-[16px]">history</span> Registro de
-              Cambios
+              <span className="material-symbols-outlined text-[15px]">history</span> REGISTRO DE
+              CAMBIOS
             </button>
             <span className="text-[#d8c3b2]">|</span>
             <button
               type="button"
-              onClick={handleExportJSON}
-              className="font-inter text-[10px] text-[#524438] hover:text-[#1e1c13] uppercase tracking-wider flex items-center gap-1 font-semibold"
+              onClick={() => {
+                const data = JSON.stringify(categories, null, 2);
+                const blob = new Blob([data], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "norte_categorias.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="text-[#524438] hover:text-[#1e1c13] flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-[16px]">download</span> Exportar JSON
+              <span className="material-symbols-outlined text-[15px]">download</span> EXPORTAR JSON
             </button>
           </div>
-        </div>
+        </footer>
       </div>
-
-      {/* ── MODAL NUEVA CATEGORÍA ── */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e1c13]/60 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="bg-white w-full max-w-lg p-8 shadow-2xl flex flex-col gap-6 border border-[#d8c3b2]">
-            <div className="flex items-center justify-between border-b border-[#eee8d9] pb-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#673900] text-[24px]">
-                  account_tree
-                </span>
-                <h3 className="font-headline text-[26px] uppercase text-[#1e1c13] tracking-wide">
-                  NUEVA CATEGORÍA DE ATELIER
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-[#857466] hover:text-[#1e1c13] transition-colors"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateCategory} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
-                  Nombre de la Categoría *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: CAMISAS DE LINO"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  className="w-full bg-[#faf3e4] px-4 py-2.5 font-inter text-[14px] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
-                    Prefijo SKU
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: NRT-CAM"
-                    value={newCatSku}
-                    onChange={(e) => setNewCatSku(e.target.value)}
-                    className="w-full bg-[#faf3e4] px-4 py-2 font-mono text-[13px] uppercase text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
-                    Ruta / Slug
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="/camisas"
-                    value={newCatSlug}
-                    onChange={(e) => setNewCatSlug(e.target.value)}
-                    className="w-full bg-[#faf3e4] px-4 py-2 font-mono text-[13px] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
-                  Descripción Textil / Confección
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Describe la tipología de prenda, hilado o confección artesanal..."
-                  value={newCatDescription}
-                  onChange={(e) => setNewCatDescription(e.target.value)}
-                  className="w-full bg-[#faf3e4] p-3 font-inter text-[13px] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] resize-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#eee8d9]">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2.5 bg-[#eee8d9] hover:bg-[#e8e2d4] text-[#1e1c13] font-inter text-[11px] uppercase tracking-widest transition-colors"
-                >
-                  CANCELAR
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[18px] uppercase tracking-wider transition-colors shadow-sm"
-                >
-                  CREAR CATEGORÍA
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
