@@ -194,7 +194,7 @@ export function AdminColorsBrandsView() {
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "100px" }}
+                style={{ fontSize: "95px" }}
               >
                 colors
               </span>
@@ -223,7 +223,7 @@ export function AdminColorsBrandsView() {
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "100px" }}
+                style={{ fontSize: "95px" }}
               >
                 label
               </span>
@@ -254,7 +254,7 @@ export function AdminColorsBrandsView() {
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "100px" }}
+                style={{ fontSize: "95px" }}
               >
                 inventory_2
               </span>
@@ -283,7 +283,7 @@ export function AdminColorsBrandsView() {
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "100px" }}
+                style={{ fontSize: "95px" }}
               >
                 cloud_done
               </span>
