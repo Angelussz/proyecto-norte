@@ -219,28 +219,38 @@ export function AdminSidebar() {
                         </Link>
                       )}
 
-                      {/* Sub-menu */}
-                      {hasChildren && isOpen && (
-                        <div className="flex flex-col ml-4 pl-3 border-l border-white/10 py-1 gap-0.5">
-                          {item.children!.map((child) => {
-                            const childActive = pathname === child.href;
-                            return (
-                              <Link
-                                key={child.href}
-                                href={child.href}
-                                className={`flex items-center px-2 py-1 font-inter text-[12px] transition-colors ${
-                                  childActive
-                                    ? "text-[#ffb875] font-semibold bg-white/10 border-l-2 border-[#c77d2e]"
-                                    : "text-[#e0dacb] hover:text-[#fff9ed] hover:bg-white/5"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-[14px] mr-1.5 opacity-80">
-                                  {child.icon}
-                                </span>
-                                {child.label}
-                              </Link>
-                            );
-                          })}
+                      {/* Sub-menu con animación suave de acordeón */}
+                      {hasChildren && (
+                        <div
+                          className={`grid transition-all duration-300 ease-in-out ${
+                            isOpen
+                              ? "grid-rows-[1fr] opacity-100"
+                              : "grid-rows-[0fr] opacity-0 pointer-events-none"
+                          }`}
+                        >
+                          <div className="overflow-hidden">
+                            <div className="flex flex-col ml-4 pl-3 border-l border-white/10 py-1 gap-0.5">
+                              {item.children!.map((child) => {
+                                const childActive = pathname === child.href;
+                                return (
+                                  <Link
+                                    key={child.href}
+                                    href={child.href}
+                                    className={`flex items-center px-2 py-1 font-inter text-[12px] transition-colors ${
+                                      childActive
+                                        ? "text-[#ffb875] font-semibold bg-white/10 border-l-2 border-[#c77d2e]"
+                                        : "text-[#e0dacb] hover:text-[#fff9ed] hover:bg-white/5"
+                                    }`}
+                                  >
+                                    <span className="material-symbols-outlined text-[14px] mr-1.5 opacity-80">
+                                      {child.icon}
+                                    </span>
+                                    {child.label}
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
