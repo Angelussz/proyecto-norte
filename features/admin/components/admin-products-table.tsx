@@ -251,7 +251,10 @@ function ActiveToggle({ active, productId: _productId }: { active: boolean; prod
     <button
       type="button"
       aria-label={isActive ? "Desactivar producto" : "Activar producto"}
-      onClick={() => setIsActive(!isActive)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsActive(!isActive);
+      }}
       className={cn(
         "w-9 h-5 relative inline-flex items-center px-0.5 rounded-none cursor-pointer transition-colors duration-200",
         isActive ? "bg-primary" : "bg-surface-dim",
@@ -428,8 +431,10 @@ export function AdminProductsTable() {
                 {/* ── Fila principal ── */}
                 <tr
                   key={product.id}
+                  onClick={() => hasVariants && toggle(product.id)}
                   className={cn(
-                    "transition-colors group/row",
+                    "transition-colors group/row select-none",
+                    hasVariants && "cursor-pointer",
                     !product.active
                       ? "bg-surface-container-high/20 opacity-80 hover:opacity-100"
                       : "bg-surface hover:bg-surface-container-low",
@@ -440,7 +445,10 @@ export function AdminProductsTable() {
                     {hasVariants && (
                       <button
                         type="button"
-                        onClick={() => toggle(product.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggle(product.id);
+                        }}
                         aria-label={isExpanded ? "Cerrar variantes" : "Ver variantes"}
                         className={cn(
                           // Visible al hacer hover en la fila o si ya está expandido
@@ -530,21 +538,29 @@ export function AdminProductsTable() {
                   </td>
 
                   {/* Toggle activo */}
-                  <td className="py-3 px-4 text-center">
+                  <td
+                    className="py-3 px-4 text-center cursor-default"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <ActiveToggle active={product.active} productId={product.id} />
                   </td>
 
                   {/* Acciones */}
-                  <td className="py-3 px-4 text-right">
+                  <td
+                    className="py-3 px-4 text-right cursor-default"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="inline-flex items-center justify-end gap-2">
                       <button
                         type="button"
+                        onClick={(e) => e.stopPropagation()}
                         className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface hover:text-primary hover:bg-surface-container transition-colors rounded-none"
                       >
                         Editar
                       </button>
                       <button
                         type="button"
+                        onClick={(e) => e.stopPropagation()}
                         title="Borrar producto"
                         className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors rounded-none flex items-center gap-1"
                       >
