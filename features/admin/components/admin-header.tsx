@@ -7,6 +7,17 @@ export function AdminHeader() {
 
   // Generar breadcrumbs según la ruta activa en el panel admin
   function getBreadcrumbs() {
+    if (pathname.startsWith("/admin/inventario")) {
+      return (
+        <div className="flex items-center gap-1.5 text-[11px] font-inter font-medium text-on-surface-variant uppercase tracking-wider">
+          <span className="text-primary font-semibold">ADMIN</span>
+          <span className="text-outline-variant">/</span>
+          <span className="text-on-surface-variant">TIENDA</span>
+          <span className="text-outline-variant">/</span>
+          <span className="text-on-surface font-medium">INVENTARIO</span>
+        </div>
+      );
+    }
     if (pathname.startsWith("/admin/categorias/colores-marcas")) {
       return (
         <div className="flex items-center gap-1.5 text-[11px] font-inter font-medium text-on-surface-variant uppercase tracking-wider">
