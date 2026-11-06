@@ -248,7 +248,7 @@ export function AdminSizeSystemView() {
               {/* Badge + live indicator */}
               <div className="flex items-center gap-2 mt-1">
                 <span className="px-2 py-0.5 bg-secondary-fixed text-on-secondary-fixed font-inter text-[10px] uppercase tracking-widest font-semibold">
-                  GUÍA DE PATRONAJE &amp; SISTEMAS ACTIVOS
+                  NORMATIVA DE MEDIDAS &amp; SISTEMAS ACTIVOS
                 </span>
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c77d2e] opacity-75" />
@@ -277,18 +277,18 @@ export function AdminSizeSystemView() {
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div className="max-w-3xl">
               <h1 className="font-headline text-[42px] text-on-surface tracking-normal leading-none uppercase">
-                NORTE ADMIN — SISTEMAS DE TALLES Y GUÍA DE PATRONAJE
+                NORTE ADMIN — SISTEMAS DE TALLES Y NORMATIVA DE MEDIDAS
               </h1>
               <p className="font-inter text-[14px] text-on-surface-variant mt-2 leading-relaxed max-w-2xl">
-                Normativas de tallaje oficiales, taxonomía unificada y tablas de equivalencias de
-                patronaje para confección artesanal y venta multicanal.
+                Normativas de tallaje oficiales, tablas de equivalencias y medidas estándar para
+                confección artesanal y venta multicanal.
               </p>
             </div>
             <div className="flex items-center gap-1.5 text-on-surface-variant font-inter text-[10px] tracking-widest uppercase bg-surface-container-low px-4 py-2 self-start lg:self-auto border border-outline-variant/40">
               <span className="material-symbols-outlined text-[16px] text-[#c77d2e]">
                 straighten
               </span>
-              <span>NORTE SYSTEM DESIGN — GUÍA DE TALLES</span>
+              <span>NORTE SYSTEM DESIGN — NORMATIVA DE MEDIDAS</span>
             </div>
           </div>
         </div>
@@ -300,10 +300,10 @@ export function AdminSizeSystemView() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             {
-              label: "Categorías",
+              label: "Grupos de Uso",
               value: categories.length,
-              sub: "Grupos de prendas",
-              icon: "category",
+              sub: "Tipos de prenda cubiertos",
+              icon: "style",
               color: "text-primary",
             },
             {
