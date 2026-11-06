@@ -162,32 +162,23 @@ export function AdminCategoriesView() {
   }
 
   return (
-    <div className="w-full bg-[#fff9ed] min-h-screen px-6 lg:px-16 py-10 font-inter text-[#1e1c13]">
-      <div className="max-w-[1200px] mx-auto flex flex-col gap-8">
+    <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         {/* ── 1. Encabezado principal ── */}
         <header className="flex flex-col gap-2">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.15em] text-[#524438] uppercase">
-            <span className="text-[#673900]">ADMIN</span>
-            <span className="text-[#d8c3b2]">/</span>
-            <span>TIENDA</span>
-            <span className="text-[#d8c3b2]">/</span>
-            <span className="text-[#1e1c13]">CATEGORÍAS Y ATRIBUTOS</span>
-          </div>
-
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 mt-0.5">
-            <span className="px-2 py-0.5 bg-[#d8e7cf] text-[#121f10] text-[10px] font-semibold uppercase tracking-widest">
+          <div className="inline-flex items-center gap-2">
+            <span className="w-2 h-2 bg-mustard" />
+            <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-[0.25em] font-semibold">
               ESTRUCTURA DE CATÁLOGO &amp; VALORES GLOBALES
             </span>
-            <span className="w-2 h-2 rounded-full bg-[#673900]" />
           </div>
 
           {/* Título y subtítulo */}
-          <h1 className="font-headline text-[48px] uppercase tracking-normal leading-none text-[#1e1c13] mt-2">
+          <h1 className="font-headline text-[42px] uppercase tracking-normal leading-none text-on-surface mt-1">
             GESTIÓN DE CATEGORÍAS Y ATRIBUTOS
           </h1>
-          <p className="text-[14px] text-[#524438] leading-relaxed max-w-3xl">
+          <p className="font-inter text-[13px] text-on-surface-variant leading-relaxed max-w-3xl">
             Administración unificada del catálogo textil del atelier: jerarquías de categorías,
             parametrización de talles individuales por prenda, cartas de color de tintura oficial y
             firmas registradas.
@@ -198,8 +189,13 @@ export function AdminCategoriesView() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1 */}
           <div className="relative bg-[#faf3e4] p-6 border border-[#d8c3b2]/30 flex flex-col justify-between overflow-hidden">
-            <div className="absolute -right-2 -bottom-4 text-[#e8e2d4]/50 pointer-events-none font-headline text-[90px] select-none leading-none">
-              01
+            <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
+              <span
+                className="material-symbols-outlined text-on-surface leading-none block"
+                style={{ fontSize: "95px" }}
+              >
+                category
+              </span>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -229,8 +225,13 @@ export function AdminCategoriesView() {
 
           {/* Card 2 */}
           <div className="relative bg-[#faf3e4] p-6 border border-[#d8c3b2]/30 flex flex-col justify-between overflow-hidden">
-            <div className="absolute -right-2 -bottom-4 text-[#e8e2d4]/50 pointer-events-none font-headline text-[90px] select-none leading-none">
-              02
+            <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
+              <span
+                className="material-symbols-outlined text-on-surface leading-none block"
+                style={{ fontSize: "95px" }}
+              >
+                straighten
+              </span>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -258,8 +259,13 @@ export function AdminCategoriesView() {
 
           {/* Card 3 */}
           <div className="relative bg-[#faf3e4] p-6 border border-[#d8c3b2]/30 flex flex-col justify-between overflow-hidden">
-            <div className="absolute -right-2 -bottom-4 text-[#e8e2d4]/50 pointer-events-none font-headline text-[90px] select-none leading-none">
-              03
+            <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
+              <span
+                className="material-symbols-outlined text-on-surface leading-none block"
+                style={{ fontSize: "95px" }}
+              >
+                checkroom
+              </span>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -550,6 +556,6 @@ export function AdminCategoriesView() {
           </div>
         </footer>
       </div>
-    </div>
+    </main>
   );
 }

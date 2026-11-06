@@ -31,7 +31,7 @@ export function AdminHeader() {
         </div>
       );
     }
-    if (pathname === "/admin/categorias") {
+    if (pathname.startsWith("/admin/categorias/talles")) {
       return (
         <div className="flex items-center gap-1.5 text-[11px] font-inter font-medium text-on-surface-variant uppercase tracking-wider">
           <span className="text-primary font-semibold">ADMIN</span>
@@ -51,7 +51,7 @@ export function AdminHeader() {
           <span className="text-outline-variant">/</span>
           <span className="text-on-surface-variant">TIENDA</span>
           <span className="text-outline-variant">/</span>
-          <span className="text-on-surface font-medium">CATEGORÍAS Y ATRIBUTOS</span>
+          <span className="text-on-surface font-medium">CATEGORÍAS</span>
         </div>
       );
     }

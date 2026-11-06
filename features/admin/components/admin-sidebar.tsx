@@ -41,7 +41,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
           {
             label: "Sistema de Talles",
             icon: "straighten",
-            href: "/admin/categorias",
+            href: "/admin/categorias/talles",
           },
           {
             label: "Marcas y Colores",
