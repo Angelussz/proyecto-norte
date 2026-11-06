@@ -173,7 +173,7 @@ export function AdminColorsBrandsView() {
         {/* ── 1. Top 4 KPI Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* KPI 1: Cartas de Color */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm min-h-[140px]">
+          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm">
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
                 Cartas de Color
@@ -191,14 +191,13 @@ export function AdminColorsBrandsView() {
                 Hexadecimal vinculado, 100% activo en catálogo
               </p>
             </div>
-            {/* Watermark grande como en modelo1-norte/screen.png */}
-            <div className="absolute -right-3 -bottom-5 pointer-events-none select-none text-on-surface-variant/15 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[130px] leading-none">colors</span>
+            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[88px] text-on-surface">colors</span>
             </div>
           </div>
 
           {/* KPI 2: Marcas & Líneas Atelier */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm min-h-[140px]">
+          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm">
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
                 Marcas &amp; Líneas Atelier
@@ -216,14 +215,13 @@ export function AdminColorsBrandsView() {
                 Sello de confección oficial
               </p>
             </div>
-            {/* Watermark grande como en modelo1-norte/screen.png */}
-            <div className="absolute -right-3 -bottom-5 pointer-events-none select-none text-on-surface-variant/15 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[130px] leading-none">label</span>
+            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[88px] text-on-surface">label</span>
             </div>
           </div>
 
           {/* KPI 3: Prendas Asignadas */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm min-h-[140px]">
+          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm">
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
                 Prendas Asignadas
@@ -243,16 +241,15 @@ export function AdminColorsBrandsView() {
                 Vinculadas a marcas del atelier
               </p>
             </div>
-            {/* Watermark grande como en modelo1-norte/screen.png */}
-            <div className="absolute -right-3 -bottom-5 pointer-events-none select-none text-on-surface-variant/15 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[130px] leading-none">
+            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[88px] text-on-surface">
                 inventory_2
               </span>
             </div>
           </div>
 
           {/* KPI 4: Disponibilidad */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm min-h-[140px]">
+          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm">
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
                 Disponibilidad
@@ -270,9 +267,8 @@ export function AdminColorsBrandsView() {
                 Con tienda online y fichas técnicas
               </p>
             </div>
-            {/* Watermark grande como en modelo1-norte/screen.png */}
-            <div className="absolute -right-3 -bottom-5 pointer-events-none select-none text-on-surface-variant/15 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[130px] leading-none">
+            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[88px] text-on-surface">
                 cloud_done
               </span>
             </div>
