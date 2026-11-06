@@ -80,29 +80,44 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    Productos: pathname.startsWith("/admin/productos"),
-    Categorías: pathname.startsWith("/admin/categorias"),
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    if (pathname.startsWith("/admin/productos")) initial.Productos = true;
+    if (pathname.startsWith("/admin/categorias")) initial.Categorías = true;
+    return initial;
   });
 
-  // Mantener desplegado el menú que contiene la ruta activa
+  // Mantener desplegado únicamente el menú que contiene la ruta activa
   useEffect(() => {
+    let matchedParent: string | null = null;
     NAV_SECTIONS.forEach((section) => {
       section.items.forEach((item) => {
         if (item.children?.length) {
           if (
-            pathname.startsWith(item.href) ||
-            item.children.some((child) => pathname.startsWith(child.href))
+            pathname === item.href ||
+            item.children.some((child) => pathname === child.href) ||
+            pathname.startsWith(item.href)
           ) {
-            setOpenMenus((prev) => ({ ...prev, [item.label]: true }));
+            matchedParent = item.label;
           }
         }
       });
     });
+
+    if (matchedParent) {
+      setOpenMenus({ [matchedParent]: true });
+    } else {
+      setOpenMenus({});
+    }
   }, [pathname]);
 
   function toggleMenu(label: string) {
-    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
+    setOpenMenus((prev) => {
+      if (prev[label]) {
+        return {};
+      }
+      return { [label]: true };
+    });
   }
 
   function isActive(href: string) {
@@ -158,7 +173,7 @@ export function AdminSidebar() {
                               if (pathname === item.href) {
                                 toggleMenu(item.label);
                               } else {
-                                setOpenMenus((prev) => ({ ...prev, [item.label]: true }));
+                                setOpenMenus({ [item.label]: true });
                               }
                             }}
                             className="flex items-center flex-1 min-w-0"
@@ -190,6 +205,7 @@ export function AdminSidebar() {
                       ) : (
                         <Link
                           href={item.href}
+                          onClick={() => setOpenMenus({})}
                           className={`flex items-center px-2 py-1.5 font-inter text-[14px] transition-colors ${
                             active
                               ? "bg-white/10 text-[#ffb875] font-semibold border-l-2 border-[#c77d2e]"
