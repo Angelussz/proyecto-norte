@@ -1,4 +1,3 @@
-import { AdminProductsHeader } from "@/features/admin/components/admin-products-header";
 import { AdminProductsStats } from "@/features/admin/components/admin-products-stats";
 import { AdminProductsFilters } from "@/features/admin/components/admin-products-filters";
 import { AdminProductsTable } from "@/features/admin/components/admin-products-table";
@@ -11,16 +10,13 @@ export const metadata = {
 
 export default function AdminProductsPage() {
   return (
-    <>
-      <AdminProductsHeader />
-      <main className="w-full pt-16 bg-surface min-h-screen">
-        <div className="flex flex-col w-full">
-          <AdminProductsStats />
-          <AdminProductsFilters />
-          <AdminProductsTable />
-          <AdminProductsPagination />
-        </div>
-      </main>
-    </>
+    <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
+      <div className="flex flex-col w-full">
+        <AdminProductsStats />
+        <AdminProductsFilters />
+        <AdminProductsTable />
+        <AdminProductsPagination />
+      </div>
+    </main>
   );
 }
