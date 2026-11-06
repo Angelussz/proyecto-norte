@@ -132,7 +132,7 @@ export function AdminEditProductForm() {
               </span>
             </div>
             <h1 className="font-headline text-[48px] leading-none text-[#1e1c13] uppercase tracking-tight mt-1">
-              {p.name}
+              EDITAR PRODUCTO
             </h1>
             <p className="font-inter text-[12px] text-[#524438] mt-1">
               Última edición por <strong className="text-[#1e1c13]">{p.lastEditedBy}</strong> el{" "}
@@ -437,6 +437,22 @@ export function AdminEditProductForm() {
                   </div>
                 ))}
               </div>
+
+              {/* Toggle Portada Dinámica */}
+              <div className="flex items-center justify-between bg-[#faf3e4] p-4">
+                <div className="flex flex-col">
+                  <span className="font-inter text-[11px] uppercase tracking-wider text-[#1e1c13] font-semibold">
+                    Portada Dinámica en Vitrina
+                  </span>
+                  <span className="font-inter text-[12px] text-[#524438]">
+                    Alternar automáticamente con foto de silueta al pasar el cursor (hover preview).
+                  </span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                  <input defaultChecked={p.dynamicCover} className="sr-only peer" type="checkbox" />
+                  <div className="w-11 h-6 bg-[#eee8d9] peer-focus:outline-none peer-checked:bg-[#673900] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-5 after:w-5 after:transition-all" />
+                </label>
+              </div>
             </section>
 
             {/* ── CARD C: PRECIOS ── */}
@@ -596,11 +612,6 @@ export function AdminEditProductForm() {
                     label: "Destacado en Home",
                     desc: "Aparece en sección Novedades",
                     checked: p.featured,
-                  },
-                  {
-                    label: "Portada Dinámica",
-                    desc: "Hover preview en vitrina",
-                    checked: p.dynamicCover,
                   },
                 ].map((item) => (
                   <div
