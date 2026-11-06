@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type NavItem = {
   label: string;
@@ -21,6 +21,11 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
         icon: "checkroom",
         href: "/admin/productos",
         children: [
+          {
+            label: "Listado de Productos",
+            icon: "styler",
+            href: "/admin/productos",
+          },
           {
             label: "Agregar Producto",
             icon: "add",
@@ -85,6 +90,22 @@ export function AdminSidebar() {
     Categorías: pathname.startsWith("/admin/categorias"),
   });
 
+  // Mantener desplegado el menú que contiene la ruta activa
+  useEffect(() => {
+    NAV_SECTIONS.forEach((section) => {
+      section.items.forEach((item) => {
+        if (item.children?.length) {
+          if (
+            pathname.startsWith(item.href) ||
+            item.children.some((child) => pathname.startsWith(child.href))
+          ) {
+            setOpenMenus((prev) => ({ ...prev, [item.label]: true }));
+          }
+        }
+      });
+    });
+  }, [pathname]);
+
   function toggleMenu(label: string) {
     setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
   }
@@ -125,32 +146,30 @@ export function AdminSidebar() {
                   return (
                     <div key={item.href} className="flex flex-col">
                       {hasChildren ? (
-                        /* Fila con link al padre + botón flecha por separado */
-                        <div
-                          className={`flex items-center justify-between px-2 py-1.5 font-inter text-[14px] transition-colors ${
+                        /* Botón que despliega automáticamente las subopciones al apretar en la opción */
+                        <button
+                          type="button"
+                          onClick={() => toggleMenu(item.label)}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 font-inter text-[14px] transition-colors cursor-pointer select-none text-left ${
                             active
                               ? "bg-white/10 text-[#ffb875] font-semibold"
                               : "text-[#e0dacb] hover:text-[#fff9ed] hover:bg-white/5"
                           }`}
                         >
-                          <Link href={item.href} className="flex items-center flex-1 min-w-0">
+                          <div className="flex items-center flex-1 min-w-0">
                             <span className="material-symbols-outlined text-[18px] mr-2 opacity-80">
                               {item.icon}
                             </span>
                             <span>{item.label}</span>
-                          </Link>
-                          <button
-                            onClick={() => toggleMenu(item.label)}
-                            className="ml-1 p-0.5 hover:text-white shrink-0"
-                            aria-label="Expandir submenú"
+                          </div>
+                          <span
+                            className={`material-symbols-outlined text-[16px] text-[#e0dacb] transition-transform duration-200 ${
+                              isOpen ? "rotate-180" : ""
+                            }`}
                           >
-                            <span
-                              className={`material-symbols-outlined text-[16px] text-[#e0dacb] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                            >
-                              expand_more
-                            </span>
-                          </button>
-                        </div>
+                            expand_more
+                          </span>
+                        </button>
                       ) : (
                         <Link
                           href={item.href}
