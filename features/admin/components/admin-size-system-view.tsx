@@ -155,6 +155,57 @@ const INITIAL_CATEGORIES: SizeCategory[] = [
       },
     ],
   },
+  {
+    id: "pijamas-interior",
+    title: "6. Para Pijamas, Ropa Interior, Sweaters Holgados, Sombreros",
+    description:
+      "Opciones de patronaje técnico bajo pedido, ajustes especiales y confección a medida artesanal.",
+    options: [
+      {
+        id: "talles-dobles",
+        label: "Talles Dobles",
+        description:
+          "Ideal para siluetas fluidas, prendas holgadas o hombros caídos con patronaje versátil.",
+        sizes: ["XS/S", "S/M", "M/L", "L/XL"],
+        active: true,
+      },
+    ],
+  },
+  {
+    id: "joyeria-metales",
+    title: "7. Joyería y Accesorios de Metales (Anillos, Cadenas, Pulseras)",
+    description:
+      "Parametrización y normativas de tallaje para orfebrería, sortijas, gargantillas y brazaletes de atelier.",
+    options: [
+      {
+        id: "anillos-sortijas",
+        label: "A. Anillos y Sortijas",
+        badge: "US / EU RING SIZE",
+        badgeVariant: "workshop",
+        description: "Escala milimétrica de diámetro interior para sortijas en metales nobles.",
+        sizes: ["5 US", "6 US", "7 US", "8 US", "9 US", "10 US"],
+        active: true,
+      },
+      {
+        id: "cadenas-collares",
+        label: "B. Cadenas y Collares",
+        badge: "LONGITUD DE CAÍDA",
+        badgeVariant: "workshop",
+        description: "Largos estandarizados para cadenas de plata 925, gargantillas y colgantes.",
+        sizes: ["40 cm (Gargantilla)", "45 cm (Princesa)", "50 cm (Matinée)"],
+        active: true,
+      },
+      {
+        id: "pulseras-brazaletes",
+        label: "C. Pulseras y Brazaletes",
+        badge: "CONTORNO MUÑECA",
+        badgeVariant: "workshop",
+        description: "Perímetro circular de ajuste con cierre de caja o mosquetón de orfebrería.",
+        sizes: ["16 cm (S)", "18 cm (M)", "20 cm (L)"],
+        active: true,
+      },
+    ],
+  },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -442,10 +493,14 @@ export function AdminSizeSystemView() {
                           <span className="font-inter text-[13px] font-semibold text-on-surface">
                             {opt.label}
                           </span>
-                          {opt.badge && (
+                          {opt.badge && opt.badgeVariant !== "active" && (
                             <BadgeVariant variant={opt.badgeVariant} text={opt.badge} />
                           )}
-                          {!opt.active && (
+                          {opt.active ? (
+                            <span className="px-1.5 py-0.5 bg-[#33402f] text-[#fff9ed] font-mono text-[9px] uppercase tracking-wider font-bold">
+                              ACTIVO
+                            </span>
+                          ) : (
                             <span className="px-1.5 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold">
                               INACTIVO
                             </span>
