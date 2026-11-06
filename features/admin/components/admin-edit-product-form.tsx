@@ -392,30 +392,21 @@ export function AdminEditProductForm() {
               {/* Uploaded images */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { label: "PORTADA EDITORIAL", featured: true },
-                  { label: "DETALLE TEXTURA", featured: false },
-                  { label: "ESPALDA / ÁNGULO", featured: false },
+                  { label: "PORTADA EDITORIAL", size: "2.4 MB • 3000x4000", featured: true },
+                  { label: "", size: "1.9 MB • 3000x4000", featured: false },
+                  { label: "", size: "2.1 MB • 3000x4000", featured: false },
                 ].map((img, i) => (
                   <div key={i} className="relative group bg-[#f4eddf] flex flex-col">
                     <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb] flex items-center justify-center">
                       <span className="material-symbols-outlined text-[40px] text-[#857466]">
                         image
                       </span>
-                      {img.label && (
+                      {img.featured && (
                         <span className="absolute top-2 left-2 bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold">
-                          {img.label}
+                          PORTADA EDITORIAL
                         </span>
                       )}
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {!img.featured && (
-                          <button
-                            type="button"
-                            className="w-7 h-7 bg-[#1e1c13]/80 hover:bg-[#c77d2e] text-white flex items-center justify-center transition-colors"
-                            title="Marcar como portada"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">star</span>
-                          </button>
-                        )}
                         <button
                           type="button"
                           className="w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
@@ -424,12 +415,13 @@ export function AdminEditProductForm() {
                         </button>
                       </div>
                     </div>
-                    <div className="p-2 bg-[#faf3e4] flex items-center justify-between">
-                      <span className="font-inter text-[11px] text-[#524438]">
-                        {i + 1}.{i === 0 ? " Portada" : i === 1 ? " Textura" : " Espalda"}
-                      </span>
+                    <div className="p-3 bg-[#faf3e4] flex items-center justify-between">
+                      <span className="font-inter text-[12px] text-[#524438]">{img.size}</span>
                       {img.featured && (
-                        <span className="material-symbols-outlined text-[16px] text-[#c77d2e]">
+                        <span
+                          className="material-symbols-outlined text-[18px] text-[#c77d2e]"
+                          title="Imagen destacada"
+                        >
                           star
                         </span>
                       )}
@@ -790,28 +782,6 @@ export function AdminEditProductForm() {
                   {p.createdAt}
                 </p>
               </div>
-            </section>
-
-            {/* ── ZONA PELIGROSA ── */}
-            <section className="bg-white p-6 shadow-sm border border-red-100 flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-red-500 text-[20px]">warning</span>
-                <h2 className="font-headline text-[20px] uppercase tracking-wide text-red-600">
-                  ZONA DE PELIGRO
-                </h2>
-              </div>
-              <p className="font-inter text-[12px] text-[#524438]">
-                Eliminar este producto es una acción permanente. Desaparecerá del catálogo y de
-                todos los pedidos históricos asociados.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="w-full py-3 border border-red-300 text-red-600 hover:bg-red-50 font-inter text-[11px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[16px]">delete_forever</span>
-                ELIMINAR ESTE PRODUCTO
-              </button>
             </section>
           </aside>
         </div>
