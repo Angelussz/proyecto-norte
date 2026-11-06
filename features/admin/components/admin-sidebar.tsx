@@ -108,26 +108,32 @@ export function AdminSidebar() {
                   return (
                     <div key={item.href} className="flex flex-col">
                       {hasChildren ? (
-                        <button
-                          onClick={() => toggleMenu(item.label)}
-                          className={`flex items-center justify-between px-2 py-1.5 w-full text-left font-inter text-[14px] transition-colors ${
+                        /* Fila con link al padre + botón flecha por separado */
+                        <div
+                          className={`flex items-center justify-between px-2 py-1.5 font-inter text-[14px] transition-colors ${
                             active
                               ? "bg-white/10 text-[#ffb875] font-semibold"
                               : "text-[#e0dacb] hover:text-[#fff9ed] hover:bg-white/5"
                           }`}
                         >
-                          <div className="flex items-center">
+                          <Link href={item.href} className="flex items-center flex-1 min-w-0">
                             <span className="material-symbols-outlined text-[18px] mr-2 opacity-80">
                               {item.icon}
                             </span>
                             <span>{item.label}</span>
-                          </div>
-                          <span
-                            className={`material-symbols-outlined text-[16px] text-[#e0dacb] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                          </Link>
+                          <button
+                            onClick={() => toggleMenu(item.label)}
+                            className="ml-1 p-0.5 hover:text-white shrink-0"
+                            aria-label="Expandir submenú"
                           >
-                            expand_more
-                          </span>
-                        </button>
+                            <span
+                              className={`material-symbols-outlined text-[16px] text-[#e0dacb] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                            >
+                              expand_more
+                            </span>
+                          </button>
+                        </div>
                       ) : (
                         <Link
                           href={item.href}
