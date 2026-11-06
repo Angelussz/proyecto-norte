@@ -36,11 +36,6 @@ export function AdminProductsStats() {
       {/* Title row */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="flex flex-col">
-          <div className="flex items-center gap-1.5 text-[11px] font-inter font-medium text-on-surface-variant uppercase tracking-widest mb-1">
-            <span className="text-primary font-semibold">ADMIN</span>
-            <span className="text-outline-variant">/</span>
-            <span className="text-on-surface font-medium">PRODUCTOS</span>
-          </div>
           <h1 className="font-headline text-[48px] text-on-surface tracking-[0.05em] uppercase leading-none">
             PRODUCTOS
           </h1>
