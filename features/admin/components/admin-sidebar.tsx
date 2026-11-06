@@ -39,8 +39,8 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
         href: "/admin/categorias",
         children: [
           {
-            label: "Categorías y Talles",
-            icon: "category",
+            label: "Sistema de Talles",
+            icon: "straighten",
             href: "/admin/categorias",
           },
           {

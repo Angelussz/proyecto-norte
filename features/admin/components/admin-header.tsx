@@ -20,6 +20,19 @@ export function AdminHeader() {
         </div>
       );
     }
+    if (pathname === "/admin/categorias") {
+      return (
+        <div className="flex items-center gap-1.5 text-[11px] font-inter font-medium text-on-surface-variant uppercase tracking-wider">
+          <span className="text-primary font-semibold">ADMIN</span>
+          <span className="text-outline-variant">/</span>
+          <span className="text-on-surface-variant">TIENDA</span>
+          <span className="text-outline-variant">/</span>
+          <span className="text-on-surface-variant">CATEGORÍAS</span>
+          <span className="text-outline-variant">/</span>
+          <span className="text-on-surface font-medium">SISTEMA DE TALLES</span>
+        </div>
+      );
+    }
     if (pathname.startsWith("/admin/categorias")) {
       return (
         <div className="flex items-center gap-1.5 text-[11px] font-inter font-medium text-on-surface-variant uppercase tracking-wider">

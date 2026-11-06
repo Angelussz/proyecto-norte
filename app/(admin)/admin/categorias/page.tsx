@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { AdminCategoriesView } from "@/features/admin/components/admin-categories-view";
+import { AdminSizeSystemView } from "@/features/admin/components/admin-size-system-view";
 
 export const metadata: Metadata = {
-  title: "Categorías y Atributos | NORTE Admin",
+  title: "Sistema de Talles | NORTE Admin",
   description:
-    "Gestión unificada del catálogo textil del atelier: jerarquías de categorías y parametrización de talles.",
+    "Normativas de tallaje oficiales, taxonomía unificada y guía de patronaje para confección artesanal.",
 };
 
-export default function AdminCategoriasPage() {
-  return <AdminCategoriesView />;
+export default function AdminSizeSystemPage() {
+  return <AdminSizeSystemView />;
 }
