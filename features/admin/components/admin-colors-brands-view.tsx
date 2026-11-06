@@ -191,10 +191,10 @@ export function AdminColorsBrandsView() {
                 Hexadecimal vinculado, 100% activo en catálogo
               </p>
             </div>
-            <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none select-none">
+            <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "200px" }}
+                style={{ fontSize: "100px" }}
               >
                 colors
               </span>
@@ -220,10 +220,10 @@ export function AdminColorsBrandsView() {
                 Sello de confección oficial
               </p>
             </div>
-            <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none select-none">
+            <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "200px" }}
+                style={{ fontSize: "100px" }}
               >
                 label
               </span>
@@ -251,10 +251,10 @@ export function AdminColorsBrandsView() {
                 Vinculadas a marcas del atelier
               </p>
             </div>
-            <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none select-none">
+            <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "200px" }}
+                style={{ fontSize: "100px" }}
               >
                 inventory_2
               </span>
@@ -280,10 +280,10 @@ export function AdminColorsBrandsView() {
                 Con tienda online y fichas técnicas
               </p>
             </div>
-            <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none select-none">
+            <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
-                style={{ fontSize: "200px" }}
+                style={{ fontSize: "100px" }}
               >
                 cloud_done
               </span>
