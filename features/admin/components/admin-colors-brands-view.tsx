@@ -291,144 +291,9 @@ export function AdminColorsBrandsView() {
           </div>
         </div>
 
-        {/* ── 2. SECCIÓN 1: Paleta de Colores & Tinturas Globales ── */}
+        {/* ── 2. SECCIÓN 1: Marcas & Firmas de Atelier ── */}
         <section className="bg-surface-container-low p-6 lg:p-8 shadow-sm border border-outline-variant/40 flex flex-col gap-6">
           {/* Header de la Sección 1 */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant/30">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#c77d2e] flex items-center justify-center shrink-0 shadow-sm">
-                <span className="material-symbols-outlined text-[#1e1c13] text-[26px]">
-                  palette
-                </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-headline text-[24px] uppercase tracking-wide text-on-surface leading-tight">
-                    1. PALETA DE COLORES &amp; TINTURAS GLOBALES
-                  </h2>
-                  <span className="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed font-inter text-[10px] uppercase font-bold tracking-widest">
-                    VALORES GLOBALES ATELIER
-                  </span>
-                </div>
-                <p className="font-inter text-[12px] text-on-surface-variant mt-0.5">
-                  Carta cromática oficial registrada para teñidos en taller. Estos colores están
-                  disponibles en toda la tienda online y fichas técnicas.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-[12px] text-on-surface-variant bg-surface-container px-3 py-1 border border-outline-variant/30">
-              <span className="material-symbols-outlined text-[16px] text-secondary">
-                format_paint
-              </span>
-              <span>{colors.length} Tinturas Registradas</span>
-            </div>
-          </div>
-
-          {/* Formulario para Añadir Color Global */}
-          <div className="bg-surface p-4 border border-outline-variant/30">
-            <h3 className="font-headline text-[18px] uppercase text-on-surface tracking-wider mb-3">
-              REGISTRAR NUEVA TINTURA OFICIAL
-            </h3>
-            <form
-              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddColor();
-              }}
-            >
-              <div className="sm:col-span-6 relative">
-                <input
-                  type="text"
-                  value={newColorName}
-                  onChange={(e) => setNewColorName(e.target.value)}
-                  placeholder="Nombre del color (ej: Añil Natural, Índigo Atelier)"
-                  className="w-full bg-surface-container-lowest px-4 py-2.5 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
-                />
-              </div>
-              <div className="sm:col-span-3 flex items-center gap-2 bg-surface-container-lowest px-3 py-2 border border-outline-variant/40">
-                <label
-                  className="w-7 h-7 p-0 border border-outline-variant/60 cursor-pointer rounded-none shrink-0 relative"
-                  style={{ backgroundColor: newColorHex }}
-                  title="Elegir muestra de color"
-                >
-                  <input
-                    type="color"
-                    value={newColorHex}
-                    onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
-                    className="opacity-0 absolute inset-0 cursor-pointer w-full h-full"
-                  />
-                </label>
-                <input
-                  type="text"
-                  value={newColorHex}
-                  onChange={(e) => setNewColorHex(e.target.value)}
-                  className="w-full font-mono text-[12px] text-on-surface bg-transparent focus:outline-none uppercase"
-                  placeholder="#000000"
-                />
-              </div>
-              <div className="sm:col-span-3">
-                <button
-                  type="submit"
-                  className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">add</span>
-                  <span>+ AÑADIR COLOR</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Grid de Colores Activos con Swatches Físicos */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
-                TINTURAS Y TONOS ACTIVOS EN CATÁLOGO
-              </span>
-              <span className="font-inter text-[11px] text-on-surface-variant">
-                Click en la muestra para previsualizar
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {colors.map((color) => (
-                <div
-                  key={color.id}
-                  className="bg-surface p-3.5 border border-outline-variant/30 flex items-center justify-between group hover:border-primary transition-colors"
-                >
-                  <div
-                    className="flex items-center gap-3 cursor-pointer min-w-0"
-                    onClick={() => setPreviewColor(color)}
-                    title="Click para ver detalle del tono"
-                  >
-                    <span
-                      className="w-8 h-8 shadow-sm shrink-0 border border-outline-variant/50 rounded-none group-hover:scale-105 transition-transform"
-                      style={{ backgroundColor: color.hex }}
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-inter text-[13px] font-semibold text-on-surface truncate">
-                        {color.name}
-                      </span>
-                      <span className="font-mono text-[11px] text-on-surface-variant uppercase">
-                        {color.hex}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteColor(color.id)}
-                    className="text-on-surface-variant hover:text-error transition-colors p-1 shrink-0 ml-1 cursor-pointer"
-                    title={`Eliminar color ${color.name}`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">close</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── 3. SECCIÓN 2: Marcas & Firmas de Atelier ── */}
-        <section className="bg-surface-container-low p-6 lg:p-8 shadow-sm border border-outline-variant/40 flex flex-col gap-6">
-          {/* Header de la Sección 2 */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant/30">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-[#33402f] flex items-center justify-center shrink-0 shadow-sm">
@@ -439,7 +304,7 @@ export function AdminColorsBrandsView() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-headline text-[24px] uppercase tracking-wide text-on-surface leading-tight">
-                    2. MARCAS &amp; FIRMAS DE ATELIER
+                    1. MARCAS &amp; FIRMAS DE ATELIER
                   </h2>
                   <span className="px-2 py-0.5 bg-secondary-fixed text-on-secondary-fixed font-inter text-[10px] uppercase font-bold tracking-widest">
                     LÍNEAS Y COLABORACIONES
@@ -567,6 +432,141 @@ export function AdminColorsBrandsView() {
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* ── 3. SECCIÓN 2: Paleta de Colores & Tinturas Globales ── */}
+        <section className="bg-surface-container-low p-6 lg:p-8 shadow-sm border border-outline-variant/40 flex flex-col gap-6">
+          {/* Header de la Sección 2 */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant/30">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-[#c77d2e] flex items-center justify-center shrink-0 shadow-sm">
+                <span className="material-symbols-outlined text-[#1e1c13] text-[26px]">
+                  palette
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-headline text-[24px] uppercase tracking-wide text-on-surface leading-tight">
+                    2. PALETA DE COLORES &amp; TINTURAS GLOBALES
+                  </h2>
+                  <span className="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed font-inter text-[10px] uppercase font-bold tracking-widest">
+                    VALORES GLOBALES ATELIER
+                  </span>
+                </div>
+                <p className="font-inter text-[12px] text-on-surface-variant mt-0.5">
+                  Carta cromática oficial registrada para teñidos en taller. Estos colores están
+                  disponibles en toda la tienda online y fichas técnicas.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-[12px] text-on-surface-variant bg-surface-container px-3 py-1 border border-outline-variant/30">
+              <span className="material-symbols-outlined text-[16px] text-secondary">
+                format_paint
+              </span>
+              <span>{colors.length} Tinturas Registradas</span>
+            </div>
+          </div>
+
+          {/* Formulario para Añadir Color Global */}
+          <div className="bg-surface p-4 border border-outline-variant/30">
+            <h3 className="font-headline text-[18px] uppercase text-on-surface tracking-wider mb-3">
+              REGISTRAR NUEVA TINTURA OFICIAL
+            </h3>
+            <form
+              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddColor();
+              }}
+            >
+              <div className="sm:col-span-6 relative">
+                <input
+                  type="text"
+                  value={newColorName}
+                  onChange={(e) => setNewColorName(e.target.value)}
+                  placeholder="Nombre del color (ej: Añil Natural, Índigo Atelier)"
+                  className="w-full bg-surface-container-lowest px-4 py-2.5 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                />
+              </div>
+              <div className="sm:col-span-3 flex items-center gap-2 bg-surface-container-lowest px-3 py-2 border border-outline-variant/40">
+                <label
+                  className="w-7 h-7 p-0 border border-outline-variant/60 cursor-pointer rounded-none shrink-0 relative"
+                  style={{ backgroundColor: newColorHex }}
+                  title="Elegir muestra de color"
+                >
+                  <input
+                    type="color"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
+                    className="opacity-0 absolute inset-0 cursor-pointer w-full h-full"
+                  />
+                </label>
+                <input
+                  type="text"
+                  value={newColorHex}
+                  onChange={(e) => setNewColorHex(e.target.value)}
+                  className="w-full font-mono text-[12px] text-on-surface bg-transparent focus:outline-none uppercase"
+                  placeholder="#000000"
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <button
+                  type="submit"
+                  className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <span>+ AÑADIR COLOR</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Grid de Colores Activos con Swatches Físicos */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                TINTURAS Y TONOS ACTIVOS EN CATÁLOGO
+              </span>
+              <span className="font-inter text-[11px] text-on-surface-variant">
+                Click en la muestra para previsualizar
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {colors.map((color) => (
+                <div
+                  key={color.id}
+                  className="bg-surface p-3.5 border border-outline-variant/30 flex items-center justify-between group hover:border-primary transition-colors"
+                >
+                  <div
+                    className="flex items-center gap-3 cursor-pointer min-w-0"
+                    onClick={() => setPreviewColor(color)}
+                    title="Click para ver detalle del tono"
+                  >
+                    <span
+                      className="w-8 h-8 shadow-sm shrink-0 border border-outline-variant/50 rounded-none group-hover:scale-105 transition-transform"
+                      style={{ backgroundColor: color.hex }}
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-inter text-[13px] font-semibold text-on-surface truncate">
+                        {color.name}
+                      </span>
+                      <span className="font-mono text-[11px] text-on-surface-variant uppercase">
+                        {color.hex}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteColor(color.id)}
+                    className="text-on-surface-variant hover:text-error transition-colors p-1 shrink-0 ml-1 cursor-pointer"
+                    title={`Eliminar color ${color.name}`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </div>

@@ -44,7 +44,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
             href: "/admin/categorias",
           },
           {
-            label: "Colores y Marcas",
+            label: "Marcas y Colores",
             icon: "palette",
             href: "/admin/categorias/colores-marcas",
           },

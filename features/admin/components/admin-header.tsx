@@ -16,7 +16,7 @@ export function AdminHeader() {
           <span className="text-outline-variant">/</span>
           <span className="text-on-surface-variant">CATEGORÍAS</span>
           <span className="text-outline-variant">/</span>
-          <span className="text-on-surface font-medium">COLORES Y MARCAS</span>
+          <span className="text-on-surface font-medium">MARCAS Y COLORES</span>
         </div>
       );
     }
