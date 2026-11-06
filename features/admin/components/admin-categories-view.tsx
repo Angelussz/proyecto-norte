@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type CategoryItem = {
   id: string;
@@ -165,24 +166,51 @@ export function AdminCategoriesView() {
     <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         {/* ── 1. Encabezado principal ── */}
-        <header className="flex flex-col gap-2">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2">
-            <span className="w-2 h-2 bg-mustard" />
-            <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-[0.25em] font-semibold">
-              ESTRUCTURA DE CATÁLOGO &amp; VALORES GLOBALES
-            </span>
+        <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+          <div className="flex flex-col gap-2">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2">
+              <span className="w-2 h-2 bg-mustard" />
+              <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-[0.25em] font-semibold">
+                ESTRUCTURA DE CATÁLOGO &amp; VALORES GLOBALES
+              </span>
+            </div>
+
+            {/* Título y subtítulo */}
+            <h1 className="font-headline text-[42px] uppercase tracking-normal leading-none text-on-surface mt-1">
+              GESTIÓN DE CATEGORÍAS Y ATRIBUTOS
+            </h1>
+            <p className="font-inter text-[13px] text-on-surface-variant leading-relaxed max-w-3xl">
+              Administración unificada del catálogo textil del atelier: jerarquías de categorías,
+              parametrización de talles individuales por prenda, cartas de color de tintura oficial
+              y firmas registradas.
+            </p>
           </div>
 
-          {/* Título y subtítulo */}
-          <h1 className="font-headline text-[42px] uppercase tracking-normal leading-none text-on-surface mt-1">
-            GESTIÓN DE CATEGORÍAS Y ATRIBUTOS
-          </h1>
-          <p className="font-inter text-[13px] text-on-surface-variant leading-relaxed max-w-3xl">
-            Administración unificada del catálogo textil del atelier: jerarquías de categorías,
-            parametrización de talles individuales por prenda, cartas de color de tintura oficial y
-            firmas registradas.
-          </p>
+          {/* Botones de navegación directa a sub-vistas */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start lg:self-center">
+            <Link
+              href="/admin/categorias/talles"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant/40 font-inter text-[11px] uppercase tracking-wider font-semibold shadow-sm transition-all hover:border-primary/50"
+            >
+              <span className="material-symbols-outlined text-[18px] text-mustard">straighten</span>
+              <span>Ir a Sistema de Talles</span>
+              <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                arrow_forward
+              </span>
+            </Link>
+
+            <Link
+              href="/admin/categorias/colores-marcas"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant/40 font-inter text-[11px] uppercase tracking-wider font-semibold shadow-sm transition-all hover:border-primary/50"
+            >
+              <span className="material-symbols-outlined text-[18px] text-primary">palette</span>
+              <span>Ir a Marcas y Colores</span>
+              <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+                arrow_forward
+              </span>
+            </Link>
+          </div>
         </header>
 
         {/* ── 2. Panel de Métricas / 3 KPI Cards ── */}
