@@ -191,8 +191,10 @@ export function AdminColorsBrandsView() {
                 Hexadecimal vinculado, 100% activo en catálogo
               </p>
             </div>
-            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
-              <span className="material-symbols-outlined text-[88px] text-on-surface">colors</span>
+            <div className="absolute right-0 -bottom-2 opacity-15 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[115px] text-on-surface leading-none block">
+                colors
+              </span>
             </div>
           </div>
 
@@ -215,8 +217,10 @@ export function AdminColorsBrandsView() {
                 Sello de confección oficial
               </p>
             </div>
-            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
-              <span className="material-symbols-outlined text-[88px] text-on-surface">label</span>
+            <div className="absolute right-0 -bottom-2 opacity-15 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[115px] text-on-surface leading-none block">
+                label
+              </span>
             </div>
           </div>
 
@@ -241,8 +245,8 @@ export function AdminColorsBrandsView() {
                 Vinculadas a marcas del atelier
               </p>
             </div>
-            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
-              <span className="material-symbols-outlined text-[88px] text-on-surface">
+            <div className="absolute right-0 -bottom-2 opacity-15 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[115px] text-on-surface leading-none block">
                 inventory_2
               </span>
             </div>
@@ -267,8 +271,8 @@ export function AdminColorsBrandsView() {
                 Con tienda online y fichas técnicas
               </p>
             </div>
-            <div className="absolute -right-2 -bottom-3 opacity-10 pointer-events-none select-none">
-              <span className="material-symbols-outlined text-[88px] text-on-surface">
+            <div className="absolute right-0 -bottom-2 opacity-15 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[115px] text-on-surface leading-none block">
                 cloud_done
               </span>
             </div>
