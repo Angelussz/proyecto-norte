@@ -76,14 +76,7 @@ export function AdminProductForm() {
       {/* ── Header ── */}
       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6">
         <div className="flex flex-col gap-1 max-w-3xl">
-          <div className="flex items-center gap-1 text-[#524438] font-inter text-[10px] uppercase tracking-widest">
-            <span className="hover:text-[#673900] cursor-pointer">ADMIN</span>
-            <span>/</span>
-            <span className="hover:text-[#673900] cursor-pointer">PRODUCTOS</span>
-            <span>/</span>
-            <span className="text-[#c77d2e] font-semibold">NUEVO PRODUCTO</span>
-          </div>
-          <h1 className="font-headline text-[48px] leading-none text-[#1e1c13] uppercase tracking-tight mt-1">
+          <h1 className="font-headline text-[48px] leading-none text-[#1e1c13] uppercase tracking-tight">
             AGREGAR NUEVO PRODUCTO
           </h1>
           <p className="font-inter text-[16px] text-[#524438] mt-1">

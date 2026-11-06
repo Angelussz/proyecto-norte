@@ -95,25 +95,7 @@ export function AdminEditProductForm() {
         {/* ── Header ── */}
         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-[#eee8d9]">
           <div className="flex flex-col gap-1 max-w-3xl">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-1 text-[#524438] font-inter text-[10px] uppercase tracking-widest">
-              <span className="hover:text-[#673900] cursor-pointer">ADMIN</span>
-              <span>/</span>
-              <span className="hover:text-[#673900] cursor-pointer">PRODUCTOS</span>
-              <span>/</span>
-              <span className="text-[#c77d2e] font-semibold">EDITAR PRODUCTO</span>
-            </div>
-
-            {/* ID badge + título */}
-            <div className="flex items-center gap-3 mt-1">
-              <span className="px-2 py-0.5 bg-[#faf3e4] border border-[#eee8d9] font-mono text-[10px] text-[#524438] uppercase tracking-widest">
-                {p.id}
-              </span>
-              <span className="px-2 py-0.5 bg-[#c77d2e]/15 font-inter text-[10px] text-[#c77d2e] uppercase tracking-wider font-semibold">
-                PUBLICADO
-              </span>
-            </div>
-            <h1 className="font-headline text-[48px] leading-none text-[#1e1c13] uppercase tracking-tight mt-1">
+            <h1 className="font-headline text-[48px] leading-none text-[#1e1c13] uppercase tracking-tight">
               EDITAR PRODUCTO: {p.name}
             </h1>
             <p className="font-inter text-[12px] text-[#524438] mt-1">
