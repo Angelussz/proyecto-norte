@@ -188,25 +188,25 @@ export function AdminCategoriesView() {
           </div>
 
           {/* Botones de navegación directa a sub-vistas */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start lg:self-center">
+          <div className="flex flex-wrap items-center gap-3 shrink-0 self-start lg:self-center">
             <Link
               href="/admin/categorias/talles"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant/40 font-inter text-[11px] uppercase tracking-wider font-semibold shadow-sm transition-all hover:border-primary/50"
+              className="group inline-flex items-center gap-2.5 px-5 py-2.5 bg-[#c77d2e] hover:bg-[#b06a20] text-white font-inter text-[12px] uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all active:translate-y-px"
             >
-              <span className="material-symbols-outlined text-[18px] text-mustard">straighten</span>
+              <span className="material-symbols-outlined text-[19px]">straighten</span>
               <span>Ir a Sistema de Talles</span>
-              <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+              <span className="material-symbols-outlined text-[15px] group-hover:translate-x-1 transition-transform">
                 arrow_forward
               </span>
             </Link>
 
             <Link
               href="/admin/categorias/colores-marcas"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant/40 font-inter text-[11px] uppercase tracking-wider font-semibold shadow-sm transition-all hover:border-primary/50"
+              className="group inline-flex items-center gap-2.5 px-5 py-2.5 bg-[#33402f] hover:bg-[#253022] text-[#fff9ed] font-inter text-[12px] uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all active:translate-y-px"
             >
-              <span className="material-symbols-outlined text-[18px] text-primary">palette</span>
+              <span className="material-symbols-outlined text-[19px] text-[#ffb875]">palette</span>
               <span>Ir a Marcas y Colores</span>
-              <span className="material-symbols-outlined text-[14px] text-on-surface-variant">
+              <span className="material-symbols-outlined text-[15px] text-[#ffb875] group-hover:translate-x-1 transition-transform">
                 arrow_forward
               </span>
             </Link>
