@@ -33,7 +33,23 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
           },
         ],
       },
-      { label: "Categorías", icon: "category", href: "/admin/categorias" },
+      {
+        label: "Categorías",
+        icon: "category",
+        href: "/admin/categorias",
+        children: [
+          {
+            label: "Categorías y Talles",
+            icon: "category",
+            href: "/admin/categorias",
+          },
+          {
+            label: "Colores y Marcas",
+            icon: "palette",
+            href: "/admin/categorias/colores-marcas",
+          },
+        ],
+      },
       { label: "Inventario", icon: "inventory_2", href: "/admin/inventario" },
     ],
   },
@@ -66,6 +82,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     Productos: pathname.startsWith("/admin/productos"),
+    Categorías: pathname.startsWith("/admin/categorias"),
   });
 
   function toggleMenu(label: string) {
