@@ -295,17 +295,17 @@ export function AdminInventoryView() {
           {/* KPI 2 */}
           <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
             <div className="flex items-start justify-between relative z-10">
-              <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
+              <span className="font-inter text-[10px] text-secondary uppercase tracking-widest font-semibold">
                 Stock Saludable
               </span>
               <span className="material-symbols-outlined text-secondary text-[20px]">verified</span>
             </div>
             <div className="mt-4 relative z-10">
-              <span className="font-headline text-[42px] text-on-surface tracking-wide block leading-none">
+              <span className="font-headline text-[42px] text-secondary tracking-wide block leading-none">
                 38
               </span>
-              <span className="font-inter text-[11px] text-on-surface-variant uppercase block mt-1 font-medium">
-                Referencias
+              <span className="font-inter text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
+                Nivel Óptimo
               </span>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
