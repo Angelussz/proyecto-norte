@@ -283,12 +283,9 @@ export function AdminInventoryView() {
               </span>
             </div>
             <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant mb-1">
+              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
                 <span>Capacidad ocupada</span>
                 <span className="font-semibold text-on-surface">78.4% de taller</span>
-              </div>
-              <div className="w-full bg-surface-container-highest h-1">
-                <div className="bg-forest-green h-1 w-[78%]" />
               </div>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -318,12 +315,9 @@ export function AdminInventoryView() {
               </span>
             </div>
             <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant mb-1">
+              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
                 <span>Rotación promedio</span>
                 <span className="font-semibold text-on-surface">14.2 días</span>
-              </div>
-              <div className="w-full bg-surface-container-highest h-1">
-                <div className="bg-secondary h-1 w-[86%]" />
               </div>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -355,12 +349,9 @@ export function AdminInventoryView() {
               </span>
             </div>
             <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant mb-1">
+              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
                 <span>Pedidos a taller pendientes</span>
                 <span className="font-semibold text-on-surface">3 lotes en curso</span>
-              </div>
-              <div className="w-full bg-surface-container-highest h-1">
-                <div className="bg-mustard h-1 w-[45%]" />
               </div>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -390,12 +381,9 @@ export function AdminInventoryView() {
               </span>
             </div>
             <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant mb-1">
+              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
                 <span>Demanda reprimida</span>
                 <span className="font-semibold text-on-surface">19 alertas cliente</span>
-              </div>
-              <div className="w-full bg-surface-container-highest h-1">
-                <div className="bg-error h-1 w-full" />
               </div>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
