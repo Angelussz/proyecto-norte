@@ -182,6 +182,7 @@ export function AdminInventoryView() {
   const [filterCat, setFilterCat] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [filterGender, setFilterGender] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
   function toggleExpand(id: string) {
@@ -440,6 +441,22 @@ export function AdminInventoryView() {
                   keyboard_arrow_down
                 </span>
               </div>
+              {/* Selector Sexo */}
+              <div className="relative">
+                <select
+                  value={filterGender}
+                  onChange={(e) => setFilterGender(e.target.value)}
+                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full sm:w-auto border border-outline-variant/40"
+                >
+                  <option value="">Sexo: Todos</option>
+                  <option>Unisex</option>
+                  <option>Hombre</option>
+                  <option>Mujer</option>
+                </select>
+                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">
+                  keyboard_arrow_down
+                </span>
+              </div>
             </div>
           </div>
           {/* Limpiar filtros */}
@@ -451,6 +468,7 @@ export function AdminInventoryView() {
                 setFilterCat("");
                 setFilterStatus("");
                 setFilterBrand("");
+                setFilterGender("");
               }}
               className="inline-flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors font-inter text-[11px] uppercase tracking-wider font-semibold"
             >
