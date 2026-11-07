@@ -282,12 +282,6 @@ export function AdminInventoryView() {
                 +42 esta semana
               </span>
             </div>
-            <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
-                <span>Capacidad ocupada</span>
-                <span className="font-semibold text-on-surface">78.4% de taller</span>
-              </div>
-            </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
@@ -313,12 +307,6 @@ export function AdminInventoryView() {
               <span className="font-inter text-[11px] text-on-surface-variant uppercase block mt-1 font-medium">
                 Referencias
               </span>
-            </div>
-            <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
-                <span>Rotación promedio</span>
-                <span className="font-semibold text-on-surface">14.2 días</span>
-              </div>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
@@ -348,12 +336,6 @@ export function AdminInventoryView() {
                 Prioridad Media
               </span>
             </div>
-            <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
-                <span>Pedidos a taller pendientes</span>
-                <span className="font-semibold text-on-surface">3 lotes en curso</span>
-              </div>
-            </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
                 className="material-symbols-outlined text-on-surface leading-none block"
@@ -379,12 +361,6 @@ export function AdminInventoryView() {
               <span className="font-inter text-[11px] bg-error-container text-on-error-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
                 Acción Crítica
               </span>
-            </div>
-            <div className="mt-3 relative z-10">
-              <div className="flex items-center justify-between font-inter text-[11px] text-on-surface-variant">
-                <span>Demanda reprimida</span>
-                <span className="font-semibold text-on-surface">19 alertas cliente</span>
-              </div>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
               <span
