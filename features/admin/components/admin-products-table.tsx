@@ -363,6 +363,7 @@ function VariantsRow({
 // ─── Main table ───────────────────────────────────────────────────────────────
 export function AdminProductsTable() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(["2"]));
+  const [currentPage, setCurrentPage] = useState(1);
 
   const toggle = (id: string) => {
     setExpandedIds((prev) => {
@@ -377,213 +378,266 @@ export function AdminProductsTable() {
   };
 
   return (
-    <section className="w-full px-8 py-6 overflow-x-auto">
-      <table className="w-full text-left border-collapse min-w-[1080px]">
-        <thead>
-          <tr className="bg-surface-container text-on-surface-variant">
-            {/* Columna expand — estrecha */}
-            <th scope="col" className="w-10 py-3 pl-3 pr-0" />
-            <th
-              scope="col"
-              className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase w-16 text-center"
+    <section className="w-full px-8 py-6">
+      {/* ── Paginación Superior (arriba de la matriz a la derecha) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-outline-variant/30">
+        <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant">
+          Página {currentPage} de 4 • 48 productos registrados
+        </span>
+        <nav className="flex items-center gap-1.5 self-end sm:self-auto">
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className={cn(
+              "px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 bg-white transition-colors shadow-sm",
+              currentPage === 1
+                ? "text-on-surface-variant/50 cursor-not-allowed"
+                : "text-on-surface hover:bg-surface-container cursor-pointer",
+            )}
+          >
+            ← Ant
+          </button>
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setCurrentPage(n)}
+              className={cn(
+                "px-2.5 py-1 font-inter text-[11px] transition-colors shadow-sm",
+                n === currentPage
+                  ? "font-bold bg-primary text-white"
+                  : "border border-outline-variant/60 bg-white text-on-surface hover:bg-surface-container",
+              )}
             >
-              IMAGEN
-            </th>
-            <th
-              scope="col"
-              className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase"
-            >
-              NOMBRE &amp; SKU
-            </th>
-            <th
-              scope="col"
-              className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase"
-            >
-              PRECIO BASE
-            </th>
-            <th
-              scope="col"
-              className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase"
-            >
-              STOCK TOTAL
-            </th>
-            <th
-              scope="col"
-              className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase text-center w-24"
-            >
-              ACTIVO
-            </th>
-            <th
-              scope="col"
-              className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase text-right min-w-[170px]"
-            >
-              ACCIONES
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y-0">
-          {PRODUCTS_MOCK.map((product) => {
-            const isExpanded = expandedIds.has(product.id);
-            const hasVariants = Boolean(product.variants && product.variants.length > 0);
+              {n}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={currentPage === 4}
+            onClick={() => setCurrentPage((p) => Math.min(4, p + 1))}
+            className={cn(
+              "px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 bg-white transition-colors shadow-sm",
+              currentPage === 4
+                ? "text-on-surface-variant/50 cursor-not-allowed"
+                : "text-on-surface hover:bg-surface-container cursor-pointer",
+            )}
+          >
+            Sig →
+          </button>
+        </nav>
+      </div>
 
-            return (
-              <>
-                {/* ── Fila principal ── */}
-                <tr
-                  key={product.id}
-                  onClick={() => hasVariants && toggle(product.id)}
-                  className={cn(
-                    "transition-colors group/row select-none",
-                    hasVariants && "cursor-pointer",
-                    !product.active
-                      ? "bg-surface-container-high/20 opacity-80 hover:opacity-100"
-                      : "bg-surface hover:bg-surface-container-low",
-                  )}
-                >
-                  {/* ── Celda expand (izquierda de la foto) ── */}
-                  <td className="py-3 pl-3 pr-0 w-10">
-                    {hasVariants && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggle(product.id);
-                        }}
-                        aria-label={isExpanded ? "Cerrar variantes" : "Ver variantes"}
-                        className={cn(
-                          // Visible al hacer hover en la fila o si ya está expandido
-                          "flex items-center justify-center w-7 h-7 rounded-none transition-all duration-200 cursor-pointer",
-                          "text-on-surface-variant hover:text-primary hover:bg-surface-container",
-                          isExpanded ? "opacity-100" : "opacity-0 group-hover/row:opacity-100",
-                        )}
-                      >
-                        {/* La flecha rota suavemente al expandir/cerrar */}
-                        <span
+      {/* ── Contenedor scroll horizontal para la tabla ── */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[1080px]">
+          <thead>
+            <tr className="bg-surface-container text-on-surface-variant">
+              {/* Columna expand — estrecha */}
+              <th scope="col" className="w-10 py-3 pl-3 pr-0" />
+              <th
+                scope="col"
+                className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase w-16 text-center"
+              >
+                IMAGEN
+              </th>
+              <th
+                scope="col"
+                className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase"
+              >
+                NOMBRE &amp; SKU
+              </th>
+              <th
+                scope="col"
+                className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase"
+              >
+                PRECIO BASE
+              </th>
+              <th
+                scope="col"
+                className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase"
+              >
+                STOCK TOTAL
+              </th>
+              <th
+                scope="col"
+                className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase text-center w-24"
+              >
+                ACTIVO
+              </th>
+              <th
+                scope="col"
+                className="py-3 px-4 text-[12px] font-inter font-semibold tracking-widest uppercase text-right min-w-[170px]"
+              >
+                ACCIONES
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y-0">
+            {PRODUCTS_MOCK.map((product) => {
+              const isExpanded = expandedIds.has(product.id);
+              const hasVariants = Boolean(product.variants && product.variants.length > 0);
+
+              return (
+                <>
+                  {/* ── Fila principal ── */}
+                  <tr
+                    key={product.id}
+                    onClick={() => hasVariants && toggle(product.id)}
+                    className={cn(
+                      "transition-colors group/row select-none",
+                      hasVariants && "cursor-pointer",
+                      !product.active
+                        ? "bg-surface-container-high/20 opacity-80 hover:opacity-100"
+                        : "bg-surface hover:bg-surface-container-low",
+                    )}
+                  >
+                    {/* ── Celda expand (izquierda de la foto) ── */}
+                    <td className="py-3 pl-3 pr-0 w-10">
+                      {hasVariants && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggle(product.id);
+                          }}
+                          aria-label={isExpanded ? "Cerrar variantes" : "Ver variantes"}
                           className={cn(
-                            "material-symbols-outlined text-[20px] transition-transform duration-300 select-none",
-                            isExpanded ? "rotate-180" : "rotate-0",
+                            // Visible al hacer hover en la fila o si ya está expandido
+                            "flex items-center justify-center w-7 h-7 rounded-none transition-all duration-200 cursor-pointer",
+                            "text-on-surface-variant hover:text-primary hover:bg-surface-container",
+                            isExpanded ? "opacity-100" : "opacity-0 group-hover/row:opacity-100",
                           )}
                         >
-                          expand_more
+                          {/* La flecha rota suavemente al expandir/cerrar */}
+                          <span
+                            className={cn(
+                              "material-symbols-outlined text-[20px] transition-transform duration-300 select-none",
+                              isExpanded ? "rotate-180" : "rotate-0",
+                            )}
+                          >
+                            expand_more
+                          </span>
+                        </button>
+                      )}
+                    </td>
+
+                    {/* Imagen */}
+                    <td className="py-3 px-4">
+                      <div
+                        className={cn(
+                          "w-12 h-12 bg-surface-container overflow-hidden shrink-0",
+                          !product.active && "filter grayscale",
+                        )}
+                      >
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover rounded-none"
+                          unoptimized
+                        />
+                      </div>
+                    </td>
+
+                    {/* Nombre & SKU */}
+                    <td className="py-3 px-4">
+                      <div className="flex flex-col min-w-0">
+                        <span
+                          className={cn(
+                            "text-[16px] font-inter font-medium text-on-surface transition-colors",
+                            product.active
+                              ? "group-hover/row:text-primary"
+                              : "line-through text-outline",
+                            hasVariants && "font-semibold",
+                          )}
+                        >
+                          {product.name}
                         </span>
-                      </button>
-                    )}
-                  </td>
+                        <span
+                          className={cn(
+                            "text-[10px] font-inter text-on-surface-variant uppercase tracking-wider block my-0.5",
+                            !product.active && "text-[#c77d2e] font-medium",
+                          )}
+                        >
+                          {product.category}
+                        </span>
+                        <span className="text-[10px] font-mono font-inter text-outline uppercase tracking-wider">
+                          SKU: {product.sku}
+                        </span>
+                      </div>
+                    </td>
 
-                  {/* Imagen */}
-                  <td className="py-3 px-4">
-                    <div
-                      className={cn(
-                        "w-12 h-12 bg-surface-container overflow-hidden shrink-0",
-                        !product.active && "filter grayscale",
-                      )}
-                    >
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        width={48}
-                        height={48}
-                        className="w-full h-full object-cover rounded-none"
-                        unoptimized
+                    {/* Precio */}
+                    <td className="py-3 px-4">
+                      <span
+                        className={cn(
+                          "text-[16px] font-inter font-medium",
+                          product.active ? "text-on-surface" : "text-on-surface-variant",
+                        )}
+                      >
+                        ${product.price.toFixed(2)}
+                      </span>
+                    </td>
+
+                    {/* Stock */}
+                    <td className="py-3 px-4">
+                      <StockBadge
+                        stock={product.stock}
+                        level={product.stockLevel as "good" | "low" | "out"}
                       />
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Nombre & SKU */}
-                  <td className="py-3 px-4">
-                    <div className="flex flex-col min-w-0">
-                      <span
-                        className={cn(
-                          "text-[16px] font-inter font-medium text-on-surface transition-colors",
-                          product.active
-                            ? "group-hover/row:text-primary"
-                            : "line-through text-outline",
-                          hasVariants && "font-semibold",
-                        )}
-                      >
-                        {product.name}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-[10px] font-inter text-on-surface-variant uppercase tracking-wider block my-0.5",
-                          !product.active && "text-[#c77d2e] font-medium",
-                        )}
-                      >
-                        {product.category}
-                      </span>
-                      <span className="text-[10px] font-mono font-inter text-outline uppercase tracking-wider">
-                        SKU: {product.sku}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Precio */}
-                  <td className="py-3 px-4">
-                    <span
-                      className={cn(
-                        "text-[16px] font-inter font-medium",
-                        product.active ? "text-on-surface" : "text-on-surface-variant",
-                      )}
+                    {/* Toggle activo */}
+                    <td
+                      className="py-3 px-4 text-center cursor-default"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      ${product.price.toFixed(2)}
-                    </span>
-                  </td>
+                      <ActiveToggle active={product.active} productId={product.id} />
+                    </td>
 
-                  {/* Stock */}
-                  <td className="py-3 px-4">
-                    <StockBadge
-                      stock={product.stock}
-                      level={product.stockLevel as "good" | "low" | "out"}
+                    {/* Acciones */}
+                    <td
+                      className="py-3 px-4 text-right cursor-default"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="inline-flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface hover:text-primary hover:bg-surface-container transition-colors rounded-none"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Borrar producto"
+                          className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors rounded-none flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                          <span>Borrar</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* ── Fila de variantes animada ── Siempre renderizada, animada con grid */}
+                  {hasVariants && (
+                    <VariantsRow
+                      key={`variants-${product.id}`}
+                      variants={product.variants!}
+                      isOpen={isExpanded}
                     />
-                  </td>
-
-                  {/* Toggle activo */}
-                  <td
-                    className="py-3 px-4 text-center cursor-default"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ActiveToggle active={product.active} productId={product.id} />
-                  </td>
-
-                  {/* Acciones */}
-                  <td
-                    className="py-3 px-4 text-right cursor-default"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="inline-flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface hover:text-primary hover:bg-surface-container transition-colors rounded-none"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => e.stopPropagation()}
-                        title="Borrar producto"
-                        className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors rounded-none flex items-center gap-1"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                        <span>Borrar</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-
-                {/* ── Fila de variantes animada ── Siempre renderizada, animada con grid */}
-                {hasVariants && (
-                  <VariantsRow
-                    key={`variants-${product.id}`}
-                    variants={product.variants!}
-                    isOpen={isExpanded}
-                  />
-                )}
-              </>
-            );
-          })}
-        </tbody>
-      </table>
+                  )}
+                </>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
