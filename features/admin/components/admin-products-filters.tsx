@@ -6,13 +6,13 @@ export function AdminProductsFilters() {
   const [search, setSearch] = useState("");
 
   return (
-    <section className="w-full px-8 py-4 bg-surface-container-high/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <section className="w-full px-8 py-4 bg-surface-container-high/60">
       <div className="flex flex-col gap-3 w-full">
-        {/* Filters row */}
-        <div className="flex flex-wrap items-center gap-3 w-full">
+        {/* Filters grid (12 columnas ocupando todo el ancho) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 w-full">
           {/* Search input */}
-          <div className="relative flex items-center min-w-[260px] flex-1 max-w-md">
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px] absolute left-3 pointer-events-none">
+          <div className="relative sm:col-span-2 lg:col-span-4 w-full">
+            <span className="material-symbols-outlined text-on-surface-variant text-[18px] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
               search
             </span>
             <input
@@ -25,7 +25,7 @@ export function AdminProductsFilters() {
           </div>
 
           {/* Category filter */}
-          <div className="relative min-w-[170px]">
+          <div className="relative sm:col-span-1 lg:col-span-2 w-full">
             <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
               <option value="">Categoría: Todas</option>
               <option value="sobrecamisas">Sobrecamisas</option>
@@ -40,7 +40,7 @@ export function AdminProductsFilters() {
           </div>
 
           {/* Status filter */}
-          <div className="relative min-w-[150px]">
+          <div className="relative sm:col-span-1 lg:col-span-2 w-full">
             <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
               <option value="">Estado: Todos</option>
               <option value="in_stock">En stock</option>
@@ -53,7 +53,7 @@ export function AdminProductsFilters() {
           </div>
 
           {/* Brand filter */}
-          <div className="relative min-w-[150px]">
+          <div className="relative sm:col-span-1 lg:col-span-2 w-full">
             <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
               <option value="">Marca: Todas</option>
               <option value="atelier">NORTE Atelier</option>
@@ -66,7 +66,7 @@ export function AdminProductsFilters() {
           </div>
 
           {/* Gender filter */}
-          <div className="relative min-w-[150px]">
+          <div className="relative sm:col-span-1 lg:col-span-2 w-full">
             <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
               <option value="">Sexo: Todos</option>
               <option value="hombre">Hombre</option>
