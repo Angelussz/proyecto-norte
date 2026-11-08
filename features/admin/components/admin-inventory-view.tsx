@@ -192,10 +192,12 @@ export function AdminInventoryView() {
   const [filterBrand, setFilterBrand] = useState("");
   const [filterGender, setFilterGender] = useState("");
   const [activeColorGroups, setActiveColorGroups] = useState<Record<string, number>>({});
+  const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
 
-  function setColorGroup(productId: string, group: number) {
+  function handleColorGroupSelect(productId: string, group: number) {
     setActiveColorGroups((prev) => ({ ...prev, [productId]: group }));
+    setDismissedAlerts((prev) => ({ ...prev, [`${productId}-${group}`]: true }));
   }
 
   function toggleExpand(id: string) {
@@ -706,7 +708,7 @@ export function AdminInventoryView() {
                           {/* Botón 1 */}
                           <button
                             type="button"
-                            onClick={() => setColorGroup(product.id, 1)}
+                            onClick={() => handleColorGroupSelect(product.id, 1)}
                             className={`w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
                               (activeColorGroups[product.id] ?? 1) === 1
                                 ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
@@ -716,10 +718,10 @@ export function AdminInventoryView() {
                             1
                           </button>
 
-                          {/* Botón 2 con alerta roja titilante */}
+                          {/* Botón 2 con alerta roja titilante (desaparece al hacer click) */}
                           <button
                             type="button"
-                            onClick={() => setColorGroup(product.id, 2)}
+                            onClick={() => handleColorGroupSelect(product.id, 2)}
                             className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
                               (activeColorGroups[product.id] ?? 1) === 2
                                 ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
@@ -727,16 +729,18 @@ export function AdminInventoryView() {
                             }`}
                           >
                             2{/* Titilante Rojo */}
-                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                            </span>
+                            {!dismissedAlerts[`${product.id}-2`] && (
+                              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                              </span>
+                            )}
                           </button>
 
-                          {/* Botón 3 con alerta naranja / mostaza titilante */}
+                          {/* Botón 3 con alerta naranja / mostaza titilante (desaparece al hacer click) */}
                           <button
                             type="button"
-                            onClick={() => setColorGroup(product.id, 3)}
+                            onClick={() => handleColorGroupSelect(product.id, 3)}
                             className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
                               (activeColorGroups[product.id] ?? 1) === 3
                                 ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
@@ -744,10 +748,12 @@ export function AdminInventoryView() {
                             }`}
                           >
                             3{/* Titilante Ámbar / Mostaza */}
-                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d97706]"></span>
-                            </span>
+                            {!dismissedAlerts[`${product.id}-3`] && (
+                              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d97706]"></span>
+                              </span>
+                            )}
                           </button>
                         </div>
                       </div>
