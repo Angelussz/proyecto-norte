@@ -5,7 +5,7 @@
  * cualquier página. Lo usamos como guardián de rutas protegidas.
  *
  * Lógica:
- *  - Si el usuario visita una ruta protegida (ej: /account, /orders)
+ *  - Si el usuario visita una ruta protegida (ej: /account, /orders, /admin)
  *    sin tener cookie de sesión válida → lo redirigimos a /login.
  *  - Si ya está logueado e intenta entrar a /login o /register
  *    → lo mandamos a la tienda (/).
@@ -19,7 +19,7 @@ import type { NextRequest } from "next/server";
 import { verifyToken, SESSION_COOKIE_NAME } from "@/lib/session";
 
 // Rutas que REQUIEREN estar autenticado
-const PROTECTED_ROUTES = ["/account", "/orders", "/checkout"];
+const PROTECTED_ROUTES = ["/account", "/orders", "/checkout", "/admin"];
 
 // Rutas que solo se muestran a usuarios NO autenticados
 const AUTH_ROUTES = ["/login", "/register"];
