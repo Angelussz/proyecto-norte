@@ -391,10 +391,10 @@ export function AdminInventoryView() {
 
         {/* ── Filter Bar ── */}
         <div className="flex flex-col gap-2">
-          <div className="bg-surface-container-low border border-outline-variant/30 shadow-sm p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+          <div className="bg-surface-container-low border border-outline-variant/30 shadow-sm p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 w-full">
               {/* Búsqueda */}
-              <div className="relative flex-1 max-w-md">
+              <div className="relative sm:col-span-2 lg:col-span-4 w-full">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">
                   search
                 </span>
@@ -403,15 +403,16 @@ export function AdminInventoryView() {
                   placeholder="Buscar por nombre, SKU o etiqueta..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white text-on-surface placeholder:text-outline/70 font-inter text-[13px] outline-none shadow-sm focus:ring-1 focus:ring-primary"
+                  className="w-full pl-9 pr-3 py-2 bg-white text-on-surface placeholder:text-outline/70 font-inter text-[13px] outline-none shadow-sm focus:ring-1 focus:ring-primary border border-outline-variant/40"
                 />
               </div>
+
               {/* Selector Categoría */}
-              <div className="relative">
+              <div className="relative sm:col-span-1 lg:col-span-2 w-full">
                 <select
                   value={filterCat}
                   onChange={(e) => setFilterCat(e.target.value)}
-                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full sm:w-auto border border-outline-variant/40"
+                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/40"
                 >
                   <option value="">Categoría: Todas</option>
                   <option>Sobrecamisas</option>
@@ -424,12 +425,13 @@ export function AdminInventoryView() {
                   keyboard_arrow_down
                 </span>
               </div>
+
               {/* Selector Estado */}
-              <div className="relative">
+              <div className="relative sm:col-span-1 lg:col-span-2 w-full">
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full sm:w-auto border border-outline-variant/40"
+                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/40"
                 >
                   <option value="">Estado: Todos</option>
                   <option>Activo</option>
@@ -440,12 +442,13 @@ export function AdminInventoryView() {
                   keyboard_arrow_down
                 </span>
               </div>
+
               {/* Selector Marca */}
-              <div className="relative">
+              <div className="relative sm:col-span-1 lg:col-span-2 w-full">
                 <select
                   value={filterBrand}
                   onChange={(e) => setFilterBrand(e.target.value)}
-                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full sm:w-auto border border-outline-variant/40"
+                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/40"
                 >
                   <option value="">Marca: Todas</option>
                   <option>NORTE Atelier</option>
@@ -456,12 +459,13 @@ export function AdminInventoryView() {
                   keyboard_arrow_down
                 </span>
               </div>
+
               {/* Selector Sexo */}
-              <div className="relative">
+              <div className="relative sm:col-span-1 lg:col-span-2 w-full">
                 <select
                   value={filterGender}
                   onChange={(e) => setFilterGender(e.target.value)}
-                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full sm:w-auto border border-outline-variant/40"
+                  className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/40"
                 >
                   <option value="">Sexo: Todos</option>
                   <option>Unisex</option>
