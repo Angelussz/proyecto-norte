@@ -20,7 +20,7 @@ export function AdminProductsFilters() {
   return (
     <section className="w-full px-8 py-4">
       <div className="flex flex-col gap-2 w-full">
-        <div className="bg-surface-container-low border border-outline-variant/30 shadow-sm p-4">
+        <div className="bg-surface-container-low p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full">
             {/* Search input */}
             <div className="relative sm:col-span-2 lg:col-span-1 w-full">
@@ -32,7 +32,7 @@ export function AdminProductsFilters() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, SKU"
-                className="w-full pl-9 pr-3 py-2 bg-white text-on-surface placeholder:text-outline/70 font-inter text-[13px] outline-none shadow-sm focus:ring-1 focus:ring-primary border border-outline-variant/30"
+                className="w-full pl-9 pr-3 py-2 bg-white text-on-surface placeholder:text-outline/70 font-inter text-[13px] outline-none shadow-sm focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -41,7 +41,7 @@ export function AdminProductsFilters() {
               <select
                 value={filterCat}
                 onChange={(e) => setFilterCat(e.target.value)}
-                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/30"
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Categoría: Todas</option>
                 <option value="sobrecamisas">Sobrecamisas</option>
@@ -60,7 +60,7 @@ export function AdminProductsFilters() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/30"
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Estado: Todos</option>
                 <option value="in_stock">En stock</option>
@@ -77,7 +77,7 @@ export function AdminProductsFilters() {
               <select
                 value={filterBrand}
                 onChange={(e) => setFilterBrand(e.target.value)}
-                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/30"
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Marca: Todas</option>
                 <option value="atelier">NORTE Atelier</option>
@@ -94,7 +94,7 @@ export function AdminProductsFilters() {
               <select
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
-                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full border border-outline-variant/30"
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Sexo: Todos</option>
                 <option value="hombre">Hombre</option>
