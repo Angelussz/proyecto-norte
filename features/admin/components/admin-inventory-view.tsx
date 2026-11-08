@@ -10,7 +10,7 @@ interface ColorVariant {
 }
 
 interface StockMatrix {
-  [talle: string]: { [color: string]: number };
+  [talle: string]: { [color: string]: number | null | undefined };
 }
 
 interface ProductCard {
@@ -54,11 +54,11 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     ],
     stock: {
       "38 (S)": { "Arena Natural": 8, "Verde Oliva": 4, Terracota: 0 },
-      "40 (M)": { "Arena Natural": 10, "Verde Oliva": 6, Terracota: 3 },
-      "42 (L)": { "Arena Natural": 5, "Verde Oliva": 2, Terracota: 1 },
+      "40 (M)": { "Arena Natural": 10, "Verde Oliva": 5, Terracota: 3 },
+      "42 (L)": { "Arena Natural": 3, "Verde Oliva": 5, Terracota: null },
       "44 (XL)": { "Arena Natural": 2, "Verde Oliva": 1, Terracota: 1 },
     },
-    totalStock: 43,
+    totalStock: 39,
     stockLevel: "healthy",
     expanded: true,
     image:
@@ -136,10 +136,18 @@ const MOVEMENTS: Movement[] = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function calcTotal(stock: StockMatrix): number {
-  return Object.values(stock).reduce(
-    (sum, row) => sum + Object.values(row).reduce((s, v) => s + (v as number), 0),
-    0,
-  );
+  return Object.values(stock).reduce<number>((sum, row) => {
+    if (!row) return sum;
+    return (
+      sum + Object.values(row).reduce<number>((s, v) => s + (typeof v === "number" ? v : 0), 0)
+    );
+  }, 0);
+}
+
+function getSizeSku(productSku: string, talle: string): string {
+  const cleanPrefix = productSku.replace(/-[A-Z]+-/, "-");
+  const sizeNum = talle.split(" ")[0].replace(/[^0-9A-Za-z]/g, "");
+  return `${cleanPrefix}-${sizeNum}`;
 }
 
 // ─── StockCell ────────────────────────────────────────────────────────────────
@@ -183,7 +191,12 @@ export function AdminInventoryView() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
   const [filterGender, setFilterGender] = useState("");
+  const [activeColorGroups, setActiveColorGroups] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<string | null>(null);
+
+  function setColorGroup(productId: string, group: number) {
+    setActiveColorGroups((prev) => ({ ...prev, [productId]: group }));
+  }
 
   function toggleExpand(id: string) {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, expanded: !p.expanded } : p)));
@@ -674,13 +687,79 @@ export function AdminInventoryView() {
                       </div>
                     </div>
 
+                    {/* Matrix Bar Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 pb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[20px] text-primary">
+                          apps
+                        </span>
+                        <h4 className="font-inter text-[12px] font-bold uppercase tracking-wider text-on-surface">
+                          MATRIZ DE EXISTENCIAS POR TALLA Y COLOR
+                        </h4>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="font-inter text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
+                          GRUPO COLORES:
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {/* Botón 1 */}
+                          <button
+                            type="button"
+                            onClick={() => setColorGroup(product.id, 1)}
+                            className={`w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
+                              (activeColorGroups[product.id] ?? 1) === 1
+                                ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
+                                : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
+                            }`}
+                          >
+                            1
+                          </button>
+
+                          {/* Botón 2 con alerta roja titilante */}
+                          <button
+                            type="button"
+                            onClick={() => setColorGroup(product.id, 2)}
+                            className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
+                              (activeColorGroups[product.id] ?? 1) === 2
+                                ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
+                                : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
+                            }`}
+                          >
+                            2{/* Titilante Rojo */}
+                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                            </span>
+                          </button>
+
+                          {/* Botón 3 con alerta naranja / mostaza titilante */}
+                          <button
+                            type="button"
+                            onClick={() => setColorGroup(product.id, 3)}
+                            className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
+                              (activeColorGroups[product.id] ?? 1) === 3
+                                ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
+                                : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
+                            }`}
+                          >
+                            3{/* Titilante Ámbar / Mostaza */}
+                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d97706]"></span>
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Matrix Table */}
                     <div className="overflow-x-auto">
                       <table className="w-full text-left bg-white shadow-sm border-collapse">
                         <thead>
                           <tr className="bg-surface-container text-on-surface">
                             <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold">
-                              Talla
+                              TALLA
                             </th>
                             {product.colors.map((c) => (
                               <th
@@ -692,23 +771,23 @@ export function AdminInventoryView() {
                                     className="w-2.5 h-2.5 inline-block shrink-0"
                                     style={{ backgroundColor: c.hex }}
                                   />
-                                  {c.name}
+                                  {c.name.toUpperCase()}
                                 </div>
                               </th>
                             ))}
                             <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold text-center">
-                              Subtotal
+                              SUBTOTAL
                             </th>
-                            <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold text-right">
-                              Acciones
+                            <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold text-center">
+                              ACCIONES
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-surface-container">
                           {product.sizes.map((talle) => {
                             const rowData = product.stock[talle] ?? {};
-                            const rowTotal = Object.values(rowData).reduce(
-                              (s, v) => s + (v as number),
+                            const rowTotal = Object.values(rowData).reduce<number>(
+                              (s, v) => s + (typeof v === "number" ? v : 0),
                               0,
                             );
                             return (
@@ -716,29 +795,59 @@ export function AdminInventoryView() {
                                 key={talle}
                                 className="hover:bg-surface-container-low transition-colors"
                               >
-                                <td className="py-3 px-4 font-inter text-[13px] font-bold text-on-surface">
-                                  {talle}
-                                </td>
-                                {product.colors.map((c) => (
-                                  <td key={c.name} className="py-3 px-4">
-                                    <StockCell
-                                      value={rowData[c.name] ?? 0}
-                                      onChange={(v) => updateStock(product.id, talle, c.name, v)}
-                                    />
-                                  </td>
-                                ))}
-                                <td className="py-3 px-4 text-center font-inter text-[13px] font-bold text-on-surface">
-                                  {rowTotal}
-                                </td>
-                                <td className="py-3 px-4 text-right">
-                                  <button
-                                    type="button"
-                                    className="text-on-surface-variant hover:text-primary transition-colors"
-                                  >
-                                    <span className="material-symbols-outlined text-[18px]">
-                                      more_horiz
+                                <td className="py-3 px-4">
+                                  <div className="flex flex-col">
+                                    <span className="font-inter text-[13px] font-bold text-on-surface">
+                                      {talle}
                                     </span>
-                                  </button>
+                                    <span className="font-mono text-[10px] text-on-surface-variant tracking-wider uppercase">
+                                      {getSizeSku(product.sku, talle)}
+                                    </span>
+                                  </div>
+                                </td>
+                                {product.colors.map((c) => {
+                                  const cellVal = rowData[c.name];
+                                  return (
+                                    <td key={c.name} className="py-3 px-4">
+                                      {cellVal === null || cellVal === undefined ? (
+                                        <span className="font-inter text-[12px] text-on-surface-variant/70 italic">
+                                          No fabricado
+                                        </span>
+                                      ) : (
+                                        <StockCell
+                                          value={cellVal}
+                                          onChange={(v) =>
+                                            updateStock(product.id, talle, c.name, v)
+                                          }
+                                        />
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                                <td className="py-3 px-4 text-center font-inter text-[13px] font-bold text-on-surface">
+                                  {rowTotal} uds
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      type="button"
+                                      title="Editar variante"
+                                      className="p-1 text-on-surface-variant hover:text-primary transition-colors"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">
+                                        edit
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title="Eliminar fila"
+                                      className="p-1 text-on-surface-variant hover:text-error transition-colors"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">
+                                        delete_outline
+                                      </span>
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
