@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AdminInventoryVariantsSection } from "@/features/admin/components/admin-inventory-variants-section";
 
 /* ─── Mock data: producto existente ─── */
 const MOCK_PRODUCT = {
@@ -26,66 +27,9 @@ const MOCK_PRODUCT = {
   lastEditedBy: "Elena Vázquez",
 };
 
-type ColorVariant = { name: string; hex: string; stock: number };
-type SizeVariant = {
-  size: string;
-  label: string;
-  colors: ColorVariant[];
-  open: boolean;
-};
-
-const INITIAL_SIZES: SizeVariant[] = [
-  {
-    size: "38",
-    label: "S",
-    open: true,
-    colors: [
-      { name: "Arena Natural", hex: "#e0dacb", stock: 10 },
-      { name: "Verde Oliva", hex: "#54624f", stock: 8 },
-    ],
-  },
-  {
-    size: "40",
-    label: "M",
-    open: false,
-    colors: [
-      { name: "Arena Natural", hex: "#e0dacb", stock: 9 },
-      { name: "Terracota", hex: "#c77d2e", stock: 7 },
-    ],
-  },
-  {
-    size: "42",
-    label: "L",
-    open: false,
-    colors: [{ name: "Negro Carbón", hex: "#222220", stock: 8 }],
-  },
-];
-
 export function AdminEditProductForm() {
   const p = MOCK_PRODUCT;
-  const [sizes, setSizes] = useState<SizeVariant[]>(INITIAL_SIZES);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  function toggleSize(idx: number) {
-    setSizes((prev) => prev.map((s, i) => (i === idx ? { ...s, open: !s.open } : s)));
-  }
-
-  function updateStock(sIdx: number, cIdx: number, delta: number) {
-    setSizes((prev) =>
-      prev.map((s, i) =>
-        i === sIdx
-          ? {
-              ...s,
-              colors: s.colors.map((c, j) =>
-                j === cIdx ? { ...c, stock: Math.max(0, c.stock + delta) } : c,
-              ),
-            }
-          : s,
-      ),
-    );
-  }
-
-  const totalStock = sizes.reduce((acc, s) => acc + s.colors.reduce((a, c) => a + c.stock, 0), 0);
 
   const margin = (((p.priceRetail - p.priceCost) / p.priceRetail) * 100).toFixed(1);
 
@@ -593,126 +537,8 @@ export function AdminEditProductForm() {
               </div>
             </section>
 
-            {/* ── CARD 2: INVENTARIO & VARIANTES ── */}
-            <section className="bg-white p-8 shadow-sm flex flex-col gap-6">
-              <div className="flex items-center justify-between pb-1 border-b border-[#eee8d9]">
-                <div className="flex items-center gap-3">
-                  <span className="w-2 h-2 bg-[#c77d2e]" />
-                  <h2 className="font-headline text-[24px] uppercase tracking-wide text-[#1e1c13]">
-                    INVENTARIO &amp; VARIANTES
-                  </h2>
-                </div>
-                <span className="px-2 py-0.5 bg-[#c77d2e]/15 text-[#c77d2e] font-inter text-[10px] uppercase tracking-wider font-semibold">
-                  {totalStock} UDS
-                </span>
-              </div>
-
-              <div className="bg-[#faf3e4] p-4 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="font-inter text-[10px] uppercase tracking-wider text-[#524438] font-semibold">
-                    Total General Prenda
-                  </span>
-                  <span className="font-headline text-[36px] text-[#1e1c13] leading-none mt-1">
-                    {totalStock}{" "}
-                    <span className="font-inter text-[12px] text-[#524438] uppercase tracking-wider">
-                      Unidades
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
-                    Desglose por Tallas &amp; Colores
-                  </span>
-                  <button
-                    type="button"
-                    className="font-inter text-[10px] uppercase tracking-widest text-[#673900] hover:text-[#c77d2e] flex items-center gap-1 font-semibold transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">add</span>
-                    AGREGAR TALLA
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {sizes.map((size, sIdx) => {
-                    const sizeTotal = size.colors.reduce((a, c) => a + c.stock, 0);
-                    return (
-                      <div key={size.size} className="border border-[#eee8d9] bg-white">
-                        <div
-                          className="p-3 bg-[#faf3e4] flex items-center justify-between cursor-pointer select-none"
-                          onClick={() => toggleSize(sIdx)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`material-symbols-outlined text-[18px] text-[#524438] transition-transform duration-200 ${size.open ? "rotate-180" : ""}`}
-                            >
-                              expand_more
-                            </span>
-                            <span className="font-headline text-[20px] uppercase text-[#1e1c13] tracking-wide">
-                              Talla {size.size} ({size.label})
-                            </span>
-                          </div>
-                          <span className="px-2 py-0.5 bg-[#eee8d9] font-inter text-[10px] uppercase tracking-wider text-[#1e1c13] font-semibold">
-                            {sizeTotal} uds
-                          </span>
-                        </div>
-                        {size.open && (
-                          <div className="p-3 flex flex-col gap-1">
-                            {size.colors.map((color, cIdx) => (
-                              <div
-                                key={color.name}
-                                className="flex items-center justify-between py-1 border-b border-[#faf3e4]"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className="w-3.5 h-3.5 border border-[#eee8d9] shrink-0"
-                                    style={{ backgroundColor: color.hex }}
-                                  />
-                                  <span className="font-inter text-[12px] text-[#1e1c13] font-medium">
-                                    {color.name}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => updateStock(sIdx, cIdx, -1)}
-                                    className="w-6 h-6 flex items-center justify-center bg-[#faf3e4] hover:bg-[#f4eddf] text-[#1e1c13] text-[14px]"
-                                  >
-                                    -
-                                  </button>
-                                  <input
-                                    type="number"
-                                    value={color.stock}
-                                    readOnly
-                                    className="w-10 text-center font-mono text-[12px] bg-white border border-[#eee8d9] py-0.5 focus:outline-none"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => updateStock(sIdx, cIdx, 1)}
-                                    className="w-6 h-6 flex items-center justify-center bg-[#faf3e4] hover:bg-[#f4eddf] text-[#1e1c13] text-[14px]"
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                            <button
-                              type="button"
-                              className="mt-1 py-1 px-2 border border-dashed border-[#eee8d9] hover:border-[#c77d2e] text-[#524438] hover:text-[#c77d2e] font-inter text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">add</span>
-                              Agregar Color
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
+            {/* ── CARD 2: INVENTARIO, TALLES Y COLORES ── */}
+            <AdminInventoryVariantsSection />
           </aside>
         </div>
 
