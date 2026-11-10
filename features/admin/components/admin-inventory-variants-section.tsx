@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -78,10 +78,33 @@ export function AdminInventoryVariantsSection() {
     "Arena Natural",
   ]);
   const [colorSearch, setColorSearch] = useState("");
+  const [isColorOpen, setIsColorOpen] = useState(false);
 
   // Selected sizes in the size picker
   const [selectedSizeKeys, setSelectedSizeKeys] = useState<string[]>(["38", "40", "42"]);
   const [sizeSearch, setSizeSearch] = useState("");
+  const [isSizeOpen, setIsSizeOpen] = useState(false);
+
+  // Refs for click outside
+  const colorContainerRef = useRef<HTMLDivElement>(null);
+  const sizeContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      if (colorContainerRef.current && !colorContainerRef.current.contains(target)) {
+        setIsColorOpen(false);
+      }
+      if (sizeContainerRef.current && !sizeContainerRef.current.contains(target)) {
+        setIsSizeOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Configured talles and their stock per color
   const [sizes, setSizes] = useState<SizeConfig[]>(INITIAL_ACTIVE_SIZES);
@@ -137,6 +160,7 @@ export function AdminInventoryVariantsSection() {
         };
       }),
     );
+    setIsColorOpen(false);
   }
 
   // Add selected sizes to configured list
@@ -168,6 +192,7 @@ export function AdminInventoryVariantsSection() {
 
       return [...prevSizes, ...newSizesToAdd];
     });
+    setIsSizeOpen(false);
   }
 
   // Accordion toggle
@@ -253,12 +278,12 @@ export function AdminInventoryVariantsSection() {
       </div>
 
       {/* ── 1. Color Selection Section ── */}
-      <div className="flex flex-col gap-2.5">
+      <div ref={colorContainerRef} className="flex flex-col gap-2.5">
         <span className="font-inter text-[12px] text-[#c77d2e] font-semibold tracking-wide">
           {selectedColorNames.length} seleccionados
         </span>
 
-        {/* Search input */}
+        {/* Search input & toggle */}
         <div className="relative">
           <span className="material-symbols-outlined text-[16px] text-[#786c5e] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
             search
@@ -267,71 +292,96 @@ export function AdminInventoryVariantsSection() {
             type="text"
             placeholder="Escribir o buscar color..."
             value={colorSearch}
-            onChange={(e) => setColorSearch(e.target.value)}
-            className="w-full pl-8 pr-7 py-1.5 bg-white border border-[#eee8d9] font-inter text-[12px] text-[#1e1c13] placeholder:text-[#a09587] outline-none focus:border-[#c77d2e]"
+            onChange={(e) => {
+              setColorSearch(e.target.value);
+              setIsColorOpen(true);
+            }}
+            className="w-full pl-8 pr-8 py-1.5 bg-white border border-[#eee8d9] font-inter text-[12px] text-[#1e1c13] placeholder:text-[#a09587] outline-none focus:border-[#c77d2e]"
           />
-          <span className="material-symbols-outlined text-[16px] text-[#786c5e] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-            keyboard_arrow_down
-          </span>
+          <button
+            type="button"
+            onClick={() => setIsColorOpen((prev) => !prev)}
+            aria-label={isColorOpen ? "Cerrar selector de colores" : "Abrir selector de colores"}
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[#786c5e] hover:text-[#1e1c13] transition-colors"
+          >
+            <span
+              className={cn(
+                "material-symbols-outlined text-[18px] transition-transform duration-200",
+                isColorOpen && "rotate-180",
+              )}
+            >
+              keyboard_arrow_down
+            </span>
+          </button>
         </div>
 
-        {/* Scrollable list */}
-        <div className="border border-[#eee8d9] bg-white divide-y divide-[#faf3e4] max-h-[160px] overflow-y-auto">
-          {filteredColors.map((c) => {
-            const isChecked = selectedColorNames.includes(c.name);
-            return (
-              <div
-                key={c.name}
-                onClick={() => toggleColorSelect(c.name)}
-                className="flex items-center justify-between px-3 py-2 hover:bg-[#faf3e4]/60 cursor-pointer select-none transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-3.5 h-3.5 inline-block shrink-0 border border-black/10"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span className="font-inter text-[12px] text-[#1e1c13] font-medium">
-                    {c.name}
-                  </span>
+        {/* Collapsible Dropdown: Scrollable list + Action button */}
+        {isColorOpen && (
+          <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
+            <div className="border border-[#eee8d9] bg-white divide-y divide-[#faf3e4] max-h-[160px] overflow-y-auto">
+              {filteredColors.length === 0 ? (
+                <div className="p-3 text-center font-inter text-[12px] text-[#857466]">
+                  No se encontraron colores
                 </div>
-                {/* Checkbox */}
-                <div
-                  className={cn(
-                    "w-4 h-4 border flex items-center justify-center transition-colors",
-                    isChecked
-                      ? "bg-[#c77d2e] border-[#c77d2e] text-white"
-                      : "bg-white border-[#ccc]",
-                  )}
-                >
-                  {isChecked && (
-                    <span className="material-symbols-outlined text-[13px] leading-none font-bold">
-                      check
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              ) : (
+                filteredColors.map((c) => {
+                  const isChecked = selectedColorNames.includes(c.name);
+                  return (
+                    <div
+                      key={c.name}
+                      onClick={() => toggleColorSelect(c.name)}
+                      className="flex items-center justify-between px-3 py-2 hover:bg-[#faf3e4]/60 cursor-pointer select-none transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-3.5 h-3.5 inline-block shrink-0 border border-black/10"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        <span className="font-inter text-[12px] text-[#1e1c13] font-medium">
+                          {c.name}
+                        </span>
+                      </div>
+                      {/* Checkbox */}
+                      <div
+                        className={cn(
+                          "w-4 h-4 border flex items-center justify-center transition-colors",
+                          isChecked
+                            ? "bg-[#c77d2e] border-[#c77d2e] text-white"
+                            : "bg-white border-[#ccc]",
+                        )}
+                      >
+                        {isChecked && (
+                          <span className="material-symbols-outlined text-[13px] leading-none font-bold">
+                            check
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
 
-        {/* Action button */}
-        <button
-          type="button"
-          onClick={handleAddColors}
-          className="w-full py-2.5 bg-[#673900] hover:bg-[#7e4600] text-white font-inter text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-        >
-          <span className="material-symbols-outlined text-[16px]">add</span>
-          AGREGAR COLORES SELECCIONADOS
-        </button>
+            {/* Action button */}
+            <button
+              type="button"
+              onClick={handleAddColors}
+              className="w-full py-2.5 bg-[#673900] hover:bg-[#7e4600] text-white font-inter text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              AGREGAR COLORES SELECCIONADOS
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── 2. Size (Talle) Selection Section ── */}
-      <div className="flex flex-col gap-2.5">
+      <div ref={sizeContainerRef} className="flex flex-col gap-2.5">
         <span className="font-inter text-[12px] text-[#c77d2e] font-semibold tracking-wide">
           {selectedSizeKeys.length} seleccionadas
         </span>
 
-        {/* Search input */}
+        {/* Search input & toggle */}
         <div className="relative">
           <span className="material-symbols-outlined text-[16px] text-[#786c5e] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
             search
@@ -340,61 +390,86 @@ export function AdminInventoryVariantsSection() {
             type="text"
             placeholder="Escribir o buscar talle..."
             value={sizeSearch}
-            onChange={(e) => setSizeSearch(e.target.value)}
-            className="w-full pl-8 pr-7 py-1.5 bg-white border border-[#eee8d9] font-inter text-[12px] text-[#1e1c13] placeholder:text-[#a09587] outline-none focus:border-[#c77d2e]"
+            onChange={(e) => {
+              setSizeSearch(e.target.value);
+              setIsSizeOpen(true);
+            }}
+            className="w-full pl-8 pr-8 py-1.5 bg-white border border-[#eee8d9] font-inter text-[12px] text-[#1e1c13] placeholder:text-[#a09587] outline-none focus:border-[#c77d2e]"
           />
-          <span className="material-symbols-outlined text-[16px] text-[#786c5e] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-            keyboard_arrow_down
-          </span>
+          <button
+            type="button"
+            onClick={() => setIsSizeOpen((prev) => !prev)}
+            aria-label={isSizeOpen ? "Cerrar selector de talles" : "Abrir selector de talles"}
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[#786c5e] hover:text-[#1e1c13] transition-colors"
+          >
+            <span
+              className={cn(
+                "material-symbols-outlined text-[18px] transition-transform duration-200",
+                isSizeOpen && "rotate-180",
+              )}
+            >
+              keyboard_arrow_down
+            </span>
+          </button>
         </div>
 
-        {/* Scrollable list */}
-        <div className="border border-[#eee8d9] bg-white divide-y divide-[#faf3e4] max-h-[170px] overflow-y-auto">
-          {filteredSizes.map((s) => {
-            const isChecked = selectedSizeKeys.includes(s.size);
-            return (
-              <div
-                key={s.size}
-                onClick={() => toggleSizeSelect(s.size)}
-                className="flex items-center justify-between px-3 py-2 hover:bg-[#faf3e4]/60 cursor-pointer select-none transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[15px] text-[#786c5e]">
-                    straighten
-                  </span>
-                  <span className="font-inter text-[12px] text-[#1e1c13] font-medium">
-                    {s.full}
-                  </span>
+        {/* Collapsible Dropdown: Scrollable list + Action button */}
+        {isSizeOpen && (
+          <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
+            <div className="border border-[#eee8d9] bg-white divide-y divide-[#faf3e4] max-h-[170px] overflow-y-auto">
+              {filteredSizes.length === 0 ? (
+                <div className="p-3 text-center font-inter text-[12px] text-[#857466]">
+                  No se encontraron talles
                 </div>
-                {/* Checkbox */}
-                <div
-                  className={cn(
-                    "w-4 h-4 border flex items-center justify-center transition-colors",
-                    isChecked
-                      ? "bg-[#c77d2e] border-[#c77d2e] text-white"
-                      : "bg-white border-[#ccc]",
-                  )}
-                >
-                  {isChecked && (
-                    <span className="material-symbols-outlined text-[13px] leading-none font-bold">
-                      check
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              ) : (
+                filteredSizes.map((s) => {
+                  const isChecked = selectedSizeKeys.includes(s.size);
+                  return (
+                    <div
+                      key={s.size}
+                      onClick={() => toggleSizeSelect(s.size)}
+                      className="flex items-center justify-between px-3 py-2 hover:bg-[#faf3e4]/60 cursor-pointer select-none transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[15px] text-[#786c5e]">
+                          straighten
+                        </span>
+                        <span className="font-inter text-[12px] text-[#1e1c13] font-medium">
+                          {s.full}
+                        </span>
+                      </div>
+                      {/* Checkbox */}
+                      <div
+                        className={cn(
+                          "w-4 h-4 border flex items-center justify-center transition-colors",
+                          isChecked
+                            ? "bg-[#c77d2e] border-[#c77d2e] text-white"
+                            : "bg-white border-[#ccc]",
+                        )}
+                      >
+                        {isChecked && (
+                          <span className="material-symbols-outlined text-[13px] leading-none font-bold">
+                            check
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
 
-        {/* Action button */}
-        <button
-          type="button"
-          onClick={handleAddSizes}
-          className="w-full py-2.5 bg-[#673900] hover:bg-[#7e4600] text-white font-inter text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-        >
-          <span className="material-symbols-outlined text-[16px]">add</span>
-          AGREGAR TALLES SELECCIONADOS
-        </button>
+            {/* Action button */}
+            <button
+              type="button"
+              onClick={handleAddSizes}
+              className="w-full py-2.5 bg-[#673900] hover:bg-[#7e4600] text-white font-inter text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              AGREGAR TALLES SELECCIONADOS
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── 3. Configured Talles Accordion Cards ── */}
