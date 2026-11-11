@@ -245,9 +245,26 @@ export function AdminSizeSystemView() {
   const [categories, setCategories] = useState<SizeCategory[]>(INITIAL_CATEGORIES);
   const [saved, setSaved] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<SizeCategory | null>(null);
 
-  function handleCreateCategory(newCat: NewSizeCategory) {
-    setCategories((prev) => [...prev, newCat]);
+  function handleOpenAdd() {
+    setEditingCategory(null);
+    setIsAddModalOpen(true);
+  }
+
+  function handleEditCategory(cat: SizeCategory) {
+    setEditingCategory(cat);
+    setIsAddModalOpen(true);
+  }
+
+  function handleSaveCategory(savedCat: NewSizeCategory) {
+    if (editingCategory) {
+      setCategories((prev) =>
+        prev.map((c) => (c.id === editingCategory.id ? (savedCat as SizeCategory) : c)),
+      );
+    } else {
+      setCategories((prev) => [...prev, savedCat as SizeCategory]);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
@@ -453,7 +470,7 @@ export function AdminSizeSystemView() {
             </div>
             <button
               type="button"
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={handleOpenAdd}
               className="flex items-center gap-1.5 px-3 py-2 bg-[#33402f] hover:bg-secondary text-[#fff9ed] font-headline text-[16px] uppercase tracking-wider transition-colors duration-150 shadow-sm active:translate-y-px cursor-pointer self-start sm:self-auto shrink-0"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
@@ -476,8 +493,9 @@ export function AdminSizeSystemView() {
                     </h3>
                     <button
                       type="button"
+                      onClick={() => handleEditCategory(cat)}
                       className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-highest transition-colors cursor-pointer"
-                      title="Editar sistema de talles"
+                      title={`Editar sistema de talles: ${cat.title}`}
                     >
                       <span className="material-symbols-outlined text-[18px] block">edit_note</span>
                     </button>
@@ -582,12 +600,20 @@ export function AdminSizeSystemView() {
             v2.4 — ACTIVO
           </span>
         </div>
-        {/* ── Modal Agregar Grupo y Sistema de Talles ── */}
+        {/* ── Modal Agregar / Editar Grupo y Sistema de Talles ── */}
         <AdminAddSizeSystemModal
           isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onSave={handleCreateCategory}
-          groupNumber={categories.length + 1}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditingCategory(null);
+          }}
+          onSave={handleSaveCategory}
+          initialData={editingCategory}
+          groupNumber={
+            editingCategory
+              ? categories.findIndex((c) => c.id === editingCategory.id) + 1
+              : categories.length + 1
+          }
         />
       </div>
     </main>

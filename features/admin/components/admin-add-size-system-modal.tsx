@@ -25,6 +25,7 @@ interface AdminAddSizeSystemModalProps {
   onClose: () => void;
   onSave: (category: NewSizeCategory) => void;
   groupNumber?: number;
+  initialData?: NewSizeCategory | null;
 }
 
 interface SystemDraft {
@@ -40,7 +41,10 @@ export function AdminAddSizeSystemModal({
   onClose,
   onSave,
   groupNumber = 8,
+  initialData = null,
 }: AdminAddSizeSystemModalProps) {
+  const isEdit = Boolean(initialData);
+
   const [groupTitle, setGroupTitle] = useState("ROPA DE ABRIGO PESADA, TAPADOS Y PARCAS");
   const [groupDescription, setGroupDescription] = useState(
     "Prendas exteriores técnicas, parkas, sobretodos y tapados envolventes con calce holgado diseñados para capas intermedias o sastrería artesanal.",
@@ -62,6 +66,52 @@ export function AdminAddSizeSystemModal({
   const [dragOverIndex, setDragOverIndex] = useState<{ systemId: string; index: number } | null>(
     null,
   );
+
+  // Sync state whenever modal opens or initialData changes
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setGroupTitle(initialData.title.replace(/^\d+\.\s*/, ""));
+        setGroupDescription(initialData.description || "");
+        setSystems(
+          initialData.options.length > 0
+            ? initialData.options.map((opt, i) => ({
+                id: opt.id || `sys-${i}-${Date.now()}`,
+                title: opt.label,
+                description: opt.description,
+                sizes: [...opt.sizes],
+                newSizeInput: "",
+              }))
+            : [
+                {
+                  id: `sys-1-${Date.now()}`,
+                  title: "Sistema 1",
+                  description: "Escala estándar de talles.",
+                  sizes: ["S", "M", "L", "XL"],
+                  newSizeInput: "",
+                },
+              ],
+        );
+      } else {
+        setGroupTitle("ROPA DE ABRIGO PESADA, TAPADOS Y PARCAS");
+        setGroupDescription(
+          "Prendas exteriores técnicas, parkas, sobretodos y tapados envolventes con calce holgado diseñados para capas intermedias o sastrería artesanal.",
+        );
+        setSystems([
+          {
+            id: "sys-1",
+            title: "Sistema Alfa Abrigo con Holgura (Calce Oversize)",
+            description:
+              "Escala estándar para capas intermedias, forros polares y parkas técnicas con holgura de 6 a 8 cm.",
+            sizes: ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"],
+            newSizeInput: "",
+          },
+        ]);
+      }
+      setDraggedSize(null);
+      setDragOverIndex(null);
+    }
+  }, [isOpen, initialData]);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -193,19 +243,32 @@ export function AdminAddSizeSystemModal({
   }
 
   function handleSave() {
+    const prefix =
+      isEdit && initialData && /^\d+\./.test(initialData.title)
+        ? initialData.title.match(/^\d+\.\s*/)?.[0] || ""
+        : `${groupNumber}. `;
+
+    const cleanTitle =
+      groupTitle.trim() || (isEdit && initialData ? initialData.title : "Grupo Personalizado");
+    const finalTitle = cleanTitle.startsWith(prefix) ? cleanTitle : `${prefix}${cleanTitle}`;
+
     const newCat: NewSizeCategory = {
-      id: `grupo-${groupNumber}-${Date.now()}`,
-      title: `${groupNumber}. ${groupTitle.trim() || "Grupo Personalizado"}`,
+      id: initialData ? initialData.id : `grupo-${groupNumber}-${Date.now()}`,
+      title: finalTitle,
       description: groupDescription.trim(),
-      options: systems.map((sys) => ({
-        id: sys.id,
-        label: sys.title.trim() || "Sistema de Talles",
-        badge: "NUEVO",
-        badgeVariant: "active",
-        description: sys.description.trim(),
-        sizes: sys.sizes,
-        active: true,
-      })),
+      options: systems.map((sys, idx) => {
+        const existingOpt =
+          initialData?.options.find((o) => o.id === sys.id) || initialData?.options[idx];
+        return {
+          id: sys.id,
+          label: sys.title.trim() || `Sistema ${idx + 1}`,
+          badge: existingOpt?.badge || (isEdit ? "ACTIVO" : "NUEVO"),
+          badgeVariant: existingOpt?.badgeVariant || "active",
+          description: sys.description.trim(),
+          sizes: sys.sizes,
+          active: existingOpt?.active ?? true,
+        };
+      }),
     };
 
     onSave(newCat);
@@ -234,14 +297,18 @@ export function AdminAddSizeSystemModal({
                 ATELIER NORTE
               </span>
               <span className="px-2 py-0.5 bg-[#d8e7cf] text-[#121f10] font-mono text-[9px] uppercase tracking-wider font-semibold">
-                GRUPO NUEVO #{groupNumber}
+                {isEdit ? `EDITANDO GRUPO #${groupNumber}` : `GRUPO NUEVO #${groupNumber}`}
               </span>
             </div>
             <h2 className="font-headline text-[28px] sm:text-[34px] uppercase tracking-wide text-[#1e1c13] leading-none mt-1">
-              + AGREGAR NUEVO GRUPO &amp; SISTEMA DE TALLES
+              {isEdit
+                ? "EDITAR GRUPO & SISTEMA DE TALLES"
+                : "+ AGREGAR NUEVO GRUPO & SISTEMA DE TALLES"}
             </h2>
             <p className="font-inter text-[12px] text-[#524438] leading-relaxed">
-              Parametrización oficial de tallaje para catálogo del atelier NORTE
+              {isEdit
+                ? "Modificación oficial de normativas de tallaje para catálogo del atelier NORTE"
+                : "Parametrización oficial de tallaje para catálogo del atelier NORTE"}
             </p>
           </div>
           <button
@@ -268,7 +335,7 @@ export function AdminAddSizeSystemModal({
                 </span>
               </div>
               <span className="px-2 py-0.5 bg-[#673900] text-white font-mono text-[10px] uppercase font-bold tracking-widest">
-                GRUPO #{groupNumber}
+                {isEdit ? `EDITAR GRUPO #${groupNumber}` : `GRUPO #${groupNumber}`}
               </span>
             </div>
 
@@ -538,7 +605,11 @@ export function AdminAddSizeSystemModal({
             className="px-6 py-2.5 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[17px] uppercase tracking-wider transition-all shadow-md active:translate-y-px flex items-center justify-center gap-2 w-full sm:w-auto cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">check</span>
-            <span>+ CREAR Y GUARDAR SISTEMA DE TALLES #{groupNumber}</span>
+            <span>
+              {isEdit
+                ? `GUARDAR CAMBIOS DE SISTEMA #${groupNumber}`
+                : `+ CREAR Y GUARDAR SISTEMA DE TALLES #${groupNumber}`}
+            </span>
           </button>
         </div>
       </div>
