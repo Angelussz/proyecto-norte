@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 export interface NewSizeOption {
   id: string;
@@ -56,6 +57,12 @@ export function AdminAddSizeSystemModal({
     },
   ]);
 
+  // Drag-and-drop reordering state
+  const [draggedSize, setDraggedSize] = useState<{ systemId: string; index: number } | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<{ systemId: string; index: number } | null>(
+    null,
+  );
+
   // Handle ESC key to close
   useEffect(() => {
     if (!isOpen) return;
@@ -99,6 +106,76 @@ export function AdminAddSizeSystemModal({
 
   function handleRemoveSystem(systemId: string) {
     setSystems((prev) => prev.filter((sys) => sys.id !== systemId));
+  }
+
+  function handleDragStart(e: React.DragEvent, systemId: string, index: number, size: string) {
+    setDraggedSize({ systemId, index });
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", size);
+  }
+
+  function handleDragOver(e: React.DragEvent, systemId: string, index: number) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedSize && (draggedSize.systemId !== systemId || draggedSize.index !== index)) {
+      setDragOverIndex({ systemId, index });
+    }
+  }
+
+  function handleDragEnter(systemId: string, targetIndex: number) {
+    if (!draggedSize || draggedSize.systemId !== systemId) return;
+    const fromIndex = draggedSize.index;
+    if (fromIndex === targetIndex) return;
+
+    setSystems((prev) =>
+      prev.map((sys) => {
+        if (sys.id !== systemId) return sys;
+        const newSizes = [...sys.sizes];
+        const [movedItem] = newSizes.splice(fromIndex, 1);
+        newSizes.splice(targetIndex, 0, movedItem);
+        return { ...sys, sizes: newSizes };
+      }),
+    );
+
+    setDraggedSize({ systemId, index: targetIndex });
+  }
+
+  function handleDrop(e: React.DragEvent, systemId: string, targetIndex: number) {
+    e.preventDefault();
+    if (!draggedSize || draggedSize.systemId !== systemId) return;
+    const fromIndex = draggedSize.index;
+    if (fromIndex !== targetIndex) {
+      setSystems((prev) =>
+        prev.map((sys) => {
+          if (sys.id !== systemId) return sys;
+          const newSizes = [...sys.sizes];
+          const [movedItem] = newSizes.splice(fromIndex, 1);
+          newSizes.splice(targetIndex, 0, movedItem);
+          return { ...sys, sizes: newSizes };
+        }),
+      );
+    }
+    setDraggedSize(null);
+    setDragOverIndex(null);
+  }
+
+  function handleDragEnd() {
+    setDraggedSize(null);
+    setDragOverIndex(null);
+  }
+
+  function handleMoveSize(systemId: string, fromIndex: number, delta: number) {
+    setSystems((prev) =>
+      prev.map((sys) => {
+        if (sys.id !== systemId) return sys;
+        const targetIndex = fromIndex + delta;
+        if (targetIndex < 0 || targetIndex >= sys.sizes.length) return sys;
+        const newSizes = [...sys.sizes];
+        const [movedItem] = newSizes.splice(fromIndex, 1);
+        newSizes.splice(targetIndex, 0, movedItem);
+        return { ...sys, sizes: newSizes };
+      }),
+    );
   }
 
   function handleAddAnotherSystem() {
@@ -324,34 +401,80 @@ export function AdminAddSizeSystemModal({
 
                     {/* Chips / Pills container */}
                     <div className="flex flex-wrap gap-1.5 p-3 bg-[#faf3e4] border border-[#d8c3b2]/40 min-h-[52px] items-center">
-                      {sys.sizes.map((size) => (
-                        <span
-                          key={size}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-[#d8c3b2]/50 hover:border-[#673900]/50 text-[#1e1c13] shadow-sm select-none transition-all"
-                        >
-                          <svg
-                            className="w-3 h-3 text-[#524438]/60 shrink-0"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
+                      {sys.sizes.map((size, idx) => {
+                        const isDragging =
+                          draggedSize?.systemId === sys.id && draggedSize?.index === idx;
+                        const isOver =
+                          dragOverIndex?.systemId === sys.id && dragOverIndex?.index === idx;
+
+                        return (
+                          <div
+                            key={`${sys.id}-${size}-${idx}`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, sys.id, idx, size)}
+                            onDragOver={(e) => handleDragOver(e, sys.id, idx)}
+                            onDragEnter={() => handleDragEnter(sys.id, idx)}
+                            onDragLeave={() => {
+                              if (
+                                dragOverIndex?.systemId === sys.id &&
+                                dragOverIndex?.index === idx
+                              ) {
+                                setDragOverIndex(null);
+                              }
+                            }}
+                            onDrop={(e) => handleDrop(e, sys.id, idx)}
+                            onDragEnd={handleDragEnd}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={`Talle ${size}. Arrastra o usa flechas para mover.`}
+                            onKeyDown={(e) => {
+                              if (e.key === "ArrowLeft") {
+                                e.preventDefault();
+                                handleMoveSize(sys.id, idx, -1);
+                              } else if (e.key === "ArrowRight") {
+                                e.preventDefault();
+                                handleMoveSize(sys.id, idx, 1);
+                              }
+                            }}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border text-[#1e1c13] shadow-sm select-none transition-all cursor-grab active:cursor-grabbing focus:outline-none focus:ring-1 focus:ring-[#673900]",
+                              isDragging
+                                ? "opacity-30 border-dashed border-[#673900] scale-95"
+                                : isOver
+                                  ? "border-2 border-[#673900] bg-[#fff9ed] scale-105 shadow-md ring-2 ring-[#c77d2e]/30"
+                                  : "border-[#d8c3b2]/50 hover:border-[#673900]/70",
+                            )}
+                            title="Arrastra para reordenar (o usa las flechas del teclado ← / →)"
                           >
-                            <circle cx="8" cy="6" r="2" />
-                            <circle cx="16" cy="6" r="2" />
-                            <circle cx="8" cy="12" r="2" />
-                            <circle cx="16" cy="12" r="2" />
-                            <circle cx="8" cy="18" r="2" />
-                            <circle cx="16" cy="18" r="2" />
-                          </svg>
-                          <span className="font-mono text-[11px] font-semibold">{size}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSize(sys.id, size)}
-                            className="hover:text-[#ba1a1a] transition-colors text-[#524438] text-[11px] ml-0.5 cursor-pointer font-bold"
-                            title="Eliminar talle"
-                          >
-                            ✕
-                          </button>
-                        </span>
-                      ))}
+                            <span className="text-[#524438]/70 hover:text-[#673900] shrink-0 cursor-grab active:cursor-grabbing">
+                              <svg
+                                className="w-3 h-3 text-current shrink-0"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <circle cx="8" cy="6" r="2" />
+                                <circle cx="16" cy="6" r="2" />
+                                <circle cx="8" cy="12" r="2" />
+                                <circle cx="16" cy="12" r="2" />
+                                <circle cx="8" cy="18" r="2" />
+                                <circle cx="16" cy="18" r="2" />
+                              </svg>
+                            </span>
+                            <span className="font-mono text-[11px] font-semibold">{size}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveSize(sys.id, size);
+                              }}
+                              className="hover:text-[#ba1a1a] transition-colors text-[#524438] text-[11px] ml-0.5 cursor-pointer font-bold"
+                              title="Eliminar talle"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Add size input bar */}
