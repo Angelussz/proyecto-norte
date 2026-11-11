@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+  AdminAddSizeSystemModal,
+  type NewSizeCategory,
+} from "@/features/admin/components/admin-add-size-system-modal";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 interface SizeOption {
@@ -240,6 +244,13 @@ function BadgeVariant({ variant, text }: { variant?: SizeOption["badgeVariant"];
 export function AdminSizeSystemView() {
   const [categories, setCategories] = useState<SizeCategory[]>(INITIAL_CATEGORIES);
   const [saved, setSaved] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  function handleCreateCategory(newCat: NewSizeCategory) {
+    setCategories((prev) => [...prev, newCat]);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
 
   function toggleOption(catId: string, optId: string) {
     setCategories((prev) =>
@@ -442,6 +453,7 @@ export function AdminSizeSystemView() {
             </div>
             <button
               type="button"
+              onClick={() => setIsAddModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-2 bg-[#33402f] hover:bg-secondary text-[#fff9ed] font-headline text-[16px] uppercase tracking-wider transition-colors duration-150 shadow-sm active:translate-y-px cursor-pointer self-start sm:self-auto shrink-0"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
@@ -570,6 +582,13 @@ export function AdminSizeSystemView() {
             v2.4 — ACTIVO
           </span>
         </div>
+        {/* ── Modal Agregar Grupo y Sistema de Talles ── */}
+        <AdminAddSizeSystemModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSave={handleCreateCategory}
+          groupNumber={categories.length + 1}
+        />
       </div>
     </main>
   );
