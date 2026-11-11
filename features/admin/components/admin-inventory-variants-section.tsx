@@ -252,18 +252,15 @@ export function AdminInventoryVariantsSection() {
         <span className="font-inter text-[10px] uppercase tracking-widest text-[#524438] font-bold">
           TOTAL GENERAL PRENDA
         </span>
-        <div className="flex items-baseline gap-2">
-          <span className="font-headline text-[36px] text-[#1e1c13] font-bold leading-none">
-            {totalStock}
-          </span>
-          <span className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
-            UNIDADES EN
-          </span>
-        </div>
-        <div className="flex items-center justify-between pt-1">
-          <span className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
-            STOCK
-          </span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <span className="font-headline text-[36px] text-[#1e1c13] font-bold leading-none">
+              {totalStock}
+            </span>
+            <span className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold">
+              UNIDADES EN STOCK
+            </span>
+          </div>
           <div className="flex items-center gap-1.5">
             {activeColors.map((c) => (
               <span
