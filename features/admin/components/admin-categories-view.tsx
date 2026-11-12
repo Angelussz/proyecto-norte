@@ -2,14 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import {
+  AdminAddCategoryModal,
+  type CreateCategoryData,
+} from "@/features/admin/components/admin-add-category-modal";
+import {
+  AdminEditCategoryModal,
+  type EditableCategory,
+  type AssignedSizeSystem,
+} from "@/features/admin/components/admin-edit-category-modal";
 
-type CategoryItem = {
+export type CategoryItem = {
   id: string;
   name: string;
   sku: string;
   slug: string;
   active: boolean;
   description: string;
+  systems?: AssignedSizeSystem[];
   systemName: string;
   systemSizes: string[];
   uniqueSizes: string[];
@@ -98,6 +108,8 @@ const SIZE_SYSTEM_OPTIONS = [
 export function AdminCategoriesView() {
   const [categories, setCategories] = useState<CategoryItem[]>(INITIAL_CATEGORIES);
   const [selectedSystem, setSelectedSystem] = useState<Record<string, string>>({});
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
 
   function addSize(catId: string, sizeName: string) {
     setCategories((prev) =>
@@ -136,30 +148,47 @@ export function AdminCategoriesView() {
     setCategories((prev) => prev.filter((cat) => cat.id !== catId));
   }
 
-  function handleNewCategory() {
-    const name = prompt("Nombre de la nueva categoría (ej: CAMISERÍA CLÁSICA):");
-    if (!name?.trim()) return;
-    const sku = prompt("Prefijo SKU (ej: NRT-CAM):") || `NRT-${name.slice(0, 3).toUpperCase()}`;
+  function handleSaveNewCategory(data: CreateCategoryData) {
+    const slug = `/${data.name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")}`;
 
     const newCat: CategoryItem = {
       id: `cat-${Date.now()}`,
-      name: name.trim().toUpperCase(),
-      sku: sku.trim().toUpperCase(),
-      slug: `/${name
-        .trim()
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, "-")}`,
+      name: data.name,
+      sku: data.sku,
+      slug,
       active: true,
-      description: "Nueva categoría registrada en el catálogo textil de NORTE Atelier.",
+      description: data.description,
       systemName: "SISTEMA ALFA",
-      systemSizes: ["XS", "S", "M", "L", "XL"],
+      systemSizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
       uniqueSizes: ["Talle Único", "Talle Ajustable"],
       addedSizes: [],
+      systems: [
+        {
+          id: `sys-alfa-${Date.now()}`,
+          name: "Sistema Alfa Estándar (XXS - 3XL)",
+          colorDot: "bg-[#33402f]",
+          sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
+        },
+        {
+          id: `sys-unicos-${Date.now()}`,
+          name: "Talles Únicos & Adaptables",
+          colorDot: "bg-[#c77d2e]",
+          sizes: ["Talle Único", "Talle Ajustable"],
+        },
+      ],
     };
 
     setCategories((prev) => [...prev, newCat]);
+  }
+
+  function handleSaveEditedCategory(updated: EditableCategory) {
+    setCategories((prev) =>
+      prev.map((c) => (c.id === updated.id ? ({ ...c, ...updated } as CategoryItem) : c)),
+    );
   }
 
   return (
@@ -345,8 +374,8 @@ export function AdminCategoriesView() {
 
             <button
               type="button"
-              onClick={handleNewCategory}
-              className="px-6 py-3 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[18px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors shrink-0"
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-6 py-3 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[18px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors shrink-0 cursor-pointer shadow-sm active:translate-y-px"
             >
               + NUEVA CATEGORÍA
             </button>
@@ -405,18 +434,11 @@ export function AdminCategoriesView() {
                   <div className="flex items-center gap-2 text-[#524438] self-end sm:self-start">
                     <button
                       type="button"
-                      onClick={() => {
-                        const newDesc = prompt("Editar descripción:", cat.description);
-                        if (newDesc !== null) {
-                          setCategories((prev) =>
-                            prev.map((c) => (c.id === cat.id ? { ...c, description: newDesc } : c)),
-                          );
-                        }
-                      }}
-                      className="hover:text-[#673900] transition-colors p-1"
-                      title="Editar"
+                      onClick={() => setEditingCategory(cat)}
+                      className="hover:text-[#673900] transition-colors p-1 cursor-pointer"
+                      title="Editar categoría"
                     >
-                      <span className="material-symbols-outlined text-[18px]">sort</span>
+                      <span className="material-symbols-outlined text-[18px]">edit_note</span>
                     </button>
                     <button
                       type="button"
@@ -583,6 +605,22 @@ export function AdminCategoriesView() {
             </button>
           </div>
         </footer>
+
+        {/* ── Modal Agregar Nueva Categoría ── */}
+        <AdminAddCategoryModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSave={handleSaveNewCategory}
+        />
+
+        {/* ── Modal Editar Categoría ── */}
+        <AdminEditCategoryModal
+          category={editingCategory}
+          isOpen={Boolean(editingCategory)}
+          onClose={() => setEditingCategory(null)}
+          onSave={handleSaveEditedCategory}
+          onDelete={deleteCategory}
+        />
       </div>
     </main>
   );
