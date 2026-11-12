@@ -130,12 +130,18 @@ export function AdminSidebar() {
       {/* Logo / Brand */}
       <div className="flex flex-col">
         <div className="px-6 pt-8 pb-6 border-b border-white/10">
-          <span className="block font-headline text-[36px] leading-none tracking-widest text-[#fff9ed]">
-            NORTE
-          </span>
-          <span className="block font-inter text-[10px] text-[#e0dacb] uppercase tracking-widest mt-1">
-            ATELIER ADMIN
-          </span>
+          <Link
+            href="/"
+            className="group block focus:outline-none transition-opacity hover:opacity-90"
+            title="Ir al inicio de la tienda (Home)"
+          >
+            <span className="block font-headline text-[36px] leading-none tracking-widest text-[#fff9ed] transition-colors group-hover:text-white">
+              NORTE
+            </span>
+            <span className="block font-inter text-[10px] text-[#e0dacb] uppercase tracking-widest mt-1 transition-colors group-hover:text-white/90">
+              ATELIER ADMIN
+            </span>
+          </Link>
         </div>
 
         {/* Nav Sections */}
