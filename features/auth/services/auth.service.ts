@@ -6,14 +6,14 @@
  * No importa nada de Next.js (Request, Response, cookies) → fácil de testear.
  */
 
-import { compare } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type { JwtPayload } from "@/features/auth/types/auth.interface";
 
 // Error tipado para diferenciar "credenciales inválidas" de errores 500
 export class AuthError extends Error {
   constructor(
-    public readonly code: "INVALID_CREDENTIALS" | "USER_NOT_FOUND",
+    public readonly code: "INVALID_CREDENTIALS" | "USER_NOT_FOUND" | "EMAIL_ALREADY_EXISTS",
     message: string,
   ) {
     super(message);
@@ -83,6 +83,63 @@ export async function verifyCredentials(email: string, password: string): Promis
     email: user.email,
     name: user.name,
     picture: user.picture_url ?? undefined, // foto de Google si ya inició sesión con OAuth
+    role: user.role,
+  };
+}
+
+/**
+ * Registra un nuevo usuario con email y contraseña.
+ *
+ * @throws AuthError con code "EMAIL_ALREADY_EXISTS" si el email ya está en uso.
+ * @returns Payload listo para embeber en un JWT.
+ */
+export async function createUser(
+  name: string,
+  lastName: string,
+  email: string,
+  password: string,
+): Promise<JwtPayload> {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 1. Verificar que el email no esté ya registrado
+  const existing = await prisma.users.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true },
+  });
+
+  if (existing) {
+    throw new AuthError("EMAIL_ALREADY_EXISTS", "Ya existe una cuenta con ese correo.");
+  }
+
+  // 2. Hashear la contraseña (10 rondas = balance coste/seguridad en dev/prod)
+  const passwordHash = await hash(password, 10);
+
+  // 3. Crear el usuario en la DB
+  const user = await prisma.users.create({
+    data: {
+      name: name.trim(),
+      last_name: lastName.trim(),
+      email: normalizedEmail,
+      password_hash: passwordHash,
+      phone: "", // campo requerido; se podrá actualizar en el perfil
+      role: "CUSTOMER",
+      email_verified: false, // TODO: implementar flujo de verificación por email
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      picture_url: true,
+      role: true,
+    },
+  });
+
+  // 4. Devolver el payload del token
+  return {
+    sub: user.id,
+    email: user.email,
+    name: user.name,
+    picture: user.picture_url ?? undefined,
     role: user.role,
   };
 }

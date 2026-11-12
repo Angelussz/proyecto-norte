@@ -40,3 +40,21 @@ export interface LoginBody {
   email: string;
   password: string;
 }
+
+// ─── Body esperado en POST /api/auth/register ─────────────────────────────────
+export interface RegisterBody {
+  name: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+// ─── Respuesta pública de POST /api/auth/register ────────────────────────────
+export interface RegisterResponse {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: "ADMIN" | "CUSTOMER";
+  };
+}

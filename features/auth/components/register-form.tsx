@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, Loader2, Info } from "lucide-react";
 
 // ─── Google SVG Icon ────────────────────────────────────────────────────────
@@ -122,6 +124,11 @@ function PasswordInput({
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export function RegisterForm() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -142,17 +149,104 @@ export function RegisterForm() {
     }
 
     startTransition(async () => {
-      // TODO: conectar con Server Action / API Route de registro
-      await new Promise((r) => setTimeout(r, 800));
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, lastName, email, password }),
+        });
+
+        if (res.status === 201) {
+          // Registro exitoso: sesión ya creada en cookie.
+          // Invalidar la caché de React Query para que useSession
+          // refetche /api/auth/me y el navbar muestre al usuario.
+          await queryClient.invalidateQueries({ queryKey: ["session"] });
+          router.refresh();
+          router.push("/");
+        } else if (res.status === 409) {
+          setError("Ya existe una cuenta con ese correo. ¿Querés iniciar sesión?");
+        } else if (res.status === 429) {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error ?? "Demasiados intentos. Intentá más tarde.");
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setError(data.error ?? "Ocurrió un error. Intentá de nuevo.");
+        }
+      } catch {
+        setError("No se pudo conectar con el servidor.");
+      }
     });
   }
 
-  const isFormValid = email.length > 0 && password.length >= 8 && repeatPassword.length > 0;
+  const isFormValid =
+    name.trim().length >= 2 &&
+    lastName.trim().length >= 2 &&
+    email.length > 0 &&
+    password.length >= 8 &&
+    repeatPassword.length > 0;
 
   return (
     <div className="space-y-5">
       {/* ── Formulario de registro ── */}
       <form id="register-form" onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {/* Nombre y Apellido en fila */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="register-name"
+              className="block text-xs font-semibold uppercase tracking-wider text-foreground"
+            >
+              Nombre
+            </label>
+            <input
+              id="register-name"
+              name="name"
+              type="text"
+              autoComplete="given-name"
+              required
+              placeholder="Tu nombre"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isPending}
+              suppressHydrationWarning
+              className="
+                w-full rounded-lg border border-border bg-card px-4 py-3
+                text-sm text-foreground placeholder:text-muted-foreground/60 shadow-sm
+                transition-all duration-200
+                focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40
+                disabled:opacity-50
+              "
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="register-lastname"
+              className="block text-xs font-semibold uppercase tracking-wider text-foreground"
+            >
+              Apellido
+            </label>
+            <input
+              id="register-lastname"
+              name="lastName"
+              type="text"
+              autoComplete="family-name"
+              required
+              placeholder="Tu apellido"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              disabled={isPending}
+              suppressHydrationWarning
+              className="
+                w-full rounded-lg border border-border bg-card px-4 py-3
+                text-sm text-foreground placeholder:text-muted-foreground/60 shadow-sm
+                transition-all duration-200
+                focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40
+                disabled:opacity-50
+              "
+            />
+          </div>
+        </div>
+
         {/* Email */}
         <div className="space-y-1.5">
           <label
