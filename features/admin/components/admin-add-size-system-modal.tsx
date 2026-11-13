@@ -627,15 +627,17 @@ export function AdminAddSizeSystemModal({
             >
               CANCELAR
             </button>
-            <button
-              type="button"
-              onClick={handleDeleteClick}
-              className="flex items-center gap-1.5 text-[#ba1a1a] hover:text-[#93000a] font-headline text-[17px] uppercase tracking-wider transition-colors cursor-pointer py-1.5 px-1 hover:underline underline-offset-4"
-              title="Eliminar sistema de talles"
-            >
-              <span className="material-symbols-outlined text-[19px]">delete</span>
-              <span>ELIMINAR SISTEMA</span>
-            </button>
+            {isEdit && (
+              <button
+                type="button"
+                onClick={handleDeleteClick}
+                className="flex items-center gap-1.5 text-[#ba1a1a] hover:text-[#93000a] font-headline text-[17px] uppercase tracking-wider transition-colors cursor-pointer py-1.5 px-1 hover:underline underline-offset-4"
+                title="Eliminar sistema de talles"
+              >
+                <span className="material-symbols-outlined text-[19px]">delete</span>
+                <span>ELIMINAR SISTEMA</span>
+              </button>
+            )}
           </div>
           <button
             type="button"
