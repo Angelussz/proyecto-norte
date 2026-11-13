@@ -68,6 +68,7 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
   );
 
   // ── Estado de selección ───────────────────────────────────────────────────
+  const [appliedColorNames, setAppliedColorNames] = useState<string[]>([]);
   const [selectedColorNames, setSelectedColorNames] = useState<string[]>([]);
   const [colorSearch, setColorSearch] = useState("");
   const [isColorOpen, setIsColorOpen] = useState(false);
@@ -117,28 +118,6 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
     onVariantsChange(buildVariantRows(sizes));
   }, [sizes, onVariantsChange, buildVariantRows]);
 
-  // ── Sincronizar colores seleccionados → tallas existentes ─────────────────
-  // Cuando cambia `selectedColorNames`, actualizar TODAS las tallas:
-  //   - Agregar los colores nuevos (stock 0)
-  //   - Quitar los colores deseleccionados
-  useEffect(() => {
-    if (sizes.length === 0) return; // nada que sincronizar aún
-    setSizes((prev) =>
-      prev.map((s) => {
-        const kept = s.colors.filter((c) => selectedColorNames.includes(c.name));
-        const existingNames = s.colors.map((c) => c.name);
-        const toAdd = selectedColorNames
-          .filter((name) => !existingNames.includes(name))
-          .map((name) => {
-            const master = catalogColors.find((c) => c.name === name);
-            return { name, hex: master?.hex ?? "#999999", stock: 0 };
-          });
-        return { ...s, colors: [...kept, ...toAdd] };
-      }),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedColorNames]);
-
   // ── Listas filtradas ──────────────────────────────────────────────────────
   const filteredColors = catalogColors.filter((c) =>
     c.name.toLowerCase().includes(colorSearch.toLowerCase()),
@@ -153,6 +132,15 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
+  function toggleColorDropdown() {
+    setIsColorOpen((prev) => {
+      if (!prev) {
+        setSelectedColorNames(appliedColorNames);
+      }
+      return !prev;
+    });
+  }
+
   function toggleColorSelect(name: string) {
     setSelectedColorNames((prev) =>
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name],
@@ -165,25 +153,27 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
     );
   }
 
-  // Agregar los colores seleccionados a todas las tallas existentes
+  // Agregar los colores seleccionados a todas las tallas existentes (al presionar el botón)
   function handleAddColors() {
-    if (selectedColorNames.length === 0) return;
+    setAppliedColorNames([...selectedColorNames]);
+
     setSizes((prevSizes) =>
       prevSizes.map((s) => {
-        const existingColorNames = s.colors.map((c) => c.name);
+        const kept = s.colors.filter((c) => selectedColorNames.includes(c.name));
+        const existingNames = kept.map((c) => c.name);
         const newColorsToAdd = selectedColorNames
-          .filter((name) => !existingColorNames.includes(name))
+          .filter((name) => !existingNames.includes(name))
           .map((name) => {
             const master = catalogColors.find((c) => c.name === name);
             return { name, hex: master?.hex || "#999999", stock: 0 };
           });
-        return { ...s, colors: [...s.colors, ...newColorsToAdd] };
+        return { ...s, colors: [...kept, ...newColorsToAdd] };
       }),
     );
     setIsColorOpen(false);
   }
 
-  // Agregar las tallas seleccionadas con los colores actuales
+  // Agregar las tallas seleccionadas con los colores confirmados actualmente
   function handleAddSizes() {
     if (selectedSizeKeys.length === 0) return;
     setSizes((prevSizes) => {
@@ -192,7 +182,7 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
         .filter((key) => !existingKeys.includes(key))
         .map((key) => {
           const master = uniqueSizes.find((s) => s.size === key);
-          const initialColors = selectedColorNames.map((name) => {
+          const initialColors = appliedColorNames.map((name) => {
             const colorMaster = catalogColors.find((c) => c.name === name);
             return { name, hex: colorMaster?.hex || "#999999", stock: 0 };
           });
@@ -245,10 +235,10 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
   // ── Totales y colores activos ─────────────────────────────────────────────
   const totalStock = sizes.reduce((acc, s) => acc + s.colors.reduce((a, c) => a + c.stock, 0), 0);
 
-  // Muestra los colores seleccionados (o los presentes en tallas) en el banner de total
+  // Muestra los colores confirmados (o presentes en tallas) en el banner de total
   const activeColorsMap = new Map<string, { name: string; hex: string }>();
 
-  selectedColorNames.forEach((name) => {
+  appliedColorNames.forEach((name) => {
     const found = catalogColors.find((c) => c.name === name);
     if (found) {
       activeColorsMap.set(name, { name: found.name, hex: found.hex });
@@ -306,7 +296,7 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
       {/* ── 1. Color Selection Section ── */}
       <div ref={colorContainerRef} className="flex flex-col gap-2.5">
         <span className="font-inter text-[12px] text-[#c77d2e] font-semibold tracking-wide">
-          {selectedColorNames.length} seleccionados
+          {(isColorOpen ? selectedColorNames : appliedColorNames).length} seleccionados
         </span>
 
         {/* Search input & toggle */}
@@ -320,13 +310,22 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
             value={colorSearch}
             onChange={(e) => {
               setColorSearch(e.target.value);
-              setIsColorOpen(true);
+              if (!isColorOpen) {
+                setSelectedColorNames(appliedColorNames);
+                setIsColorOpen(true);
+              }
+            }}
+            onFocus={() => {
+              if (!isColorOpen) {
+                setSelectedColorNames(appliedColorNames);
+                setIsColorOpen(true);
+              }
             }}
             className="w-full pl-8 pr-8 py-1.5 bg-white border border-[#eee8d9] font-inter text-[12px] text-[#1e1c13] placeholder:text-[#a09587] outline-none focus:border-[#c77d2e]"
           />
           <button
             type="button"
-            onClick={() => setIsColorOpen((prev) => !prev)}
+            onClick={toggleColorDropdown}
             aria-label={isColorOpen ? "Cerrar selector de colores" : "Abrir selector de colores"}
             className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[#786c5e] hover:text-[#1e1c13] transition-colors"
           >
