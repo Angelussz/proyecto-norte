@@ -405,17 +405,6 @@ export function AdminColorsBrandsView() {
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setEditingBrand(null);
-                setIsAddBrandModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-[#33402f] hover:bg-secondary text-[#fff9ed] font-headline text-[16px] uppercase tracking-wider transition-colors duration-150 shadow-sm active:translate-y-px cursor-pointer self-start sm:self-auto shrink-0"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              <span>AÑADIR MARCA</span>
-            </button>
           </div>
 
           {/* Formulario para Añadir Firma */}
@@ -565,24 +554,11 @@ export function AdminColorsBrandsView() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 self-end sm:self-auto">
-              <div className="flex items-center gap-2 font-mono text-[12px] text-on-surface-variant bg-surface-container px-3 py-1.5 border border-outline-variant/30">
-                <span className="material-symbols-outlined text-[16px] text-secondary">
-                  format_paint
-                </span>
-                <span>{colors.length} Tinturas Registradas</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingColor(null);
-                  setIsAddColorModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-[#c77d2e] hover:bg-[#b06a22] text-[#1e1c13] font-headline text-[16px] uppercase tracking-wider transition-colors duration-150 shadow-sm active:translate-y-px cursor-pointer font-bold shrink-0"
-              >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                <span>AÑADIR COLOR</span>
-              </button>
+            <div className="flex items-center gap-2 self-end sm:self-auto font-mono text-[12px] text-on-surface-variant bg-surface-container px-3 py-1 border border-outline-variant/30">
+              <span className="material-symbols-outlined text-[16px] text-secondary">
+                format_paint
+              </span>
+              <span>{colors.length} Tinturas Registradas</span>
             </div>
           </div>
 
