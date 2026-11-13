@@ -669,38 +669,54 @@ export function AdminColorsBrandsView() {
                 Cargando tinturas…
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {colors.map((color) => (
                   <div
                     key={color.id}
-                    className="bg-surface p-3.5 border border-outline-variant/30 flex items-center justify-between group hover:border-primary transition-colors"
+                    className="bg-surface border border-outline-variant/30 flex flex-col group hover:border-primary transition-colors overflow-hidden"
                   >
-                    <div
-                      className="flex items-center gap-3 cursor-pointer min-w-0"
-                      onClick={() => setEditingColor(color)}
-                      title="Click para ver o editar detalle del tono"
-                    >
-                      <span
-                        className="w-8 h-8 shadow-sm shrink-0 border border-outline-variant/50 rounded-none group-hover:scale-105 transition-transform"
-                        style={{ backgroundColor: color.hex }}
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-inter text-[13px] font-semibold text-on-surface truncate">
-                          {color.name}
-                        </span>
-                        <span className="font-mono text-[11px] text-on-surface-variant uppercase">
-                          {color.hex}
-                        </span>
+                    {/* Header: SKU + acciones */}
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-outline-variant/20 bg-surface-container-lowest">
+                      <span className="font-mono text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">
+                        SKU: {color.skuCode ?? "—"}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingColor(color)}
+                          className="text-on-surface-variant hover:text-primary transition-colors p-0.5 cursor-pointer"
+                          title={`Editar ${color.name}`}
+                        >
+                          <span className="material-symbols-outlined text-[15px]">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteColor(color.id)}
+                          className="text-on-surface-variant hover:text-error transition-colors p-0.5 cursor-pointer"
+                          title={`Eliminar color ${color.name}`}
+                        >
+                          <span className="material-symbols-outlined text-[15px]">close</span>
+                        </button>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteColor(color.id)}
-                      className="text-on-surface-variant hover:text-error transition-colors p-1 shrink-0 ml-1 cursor-pointer"
-                      title={`Eliminar color ${color.name}`}
-                    >
-                      <span className="material-symbols-outlined text-[16px]">close</span>
-                    </button>
+
+                    {/* Muestra de color */}
+                    <div
+                      className="w-full h-16 cursor-pointer group-hover:opacity-90 transition-opacity"
+                      style={{ backgroundColor: color.hex }}
+                      onClick={() => setEditingColor(color)}
+                      title="Click para editar"
+                    />
+
+                    {/* Nombre y hex */}
+                    <div className="px-3 py-2.5 flex flex-col gap-0.5">
+                      <span className="font-inter text-[13px] font-semibold text-on-surface leading-tight truncate">
+                        {color.name}
+                      </span>
+                      <span className="font-mono text-[11px] text-on-surface-variant uppercase">
+                        {color.hex}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
