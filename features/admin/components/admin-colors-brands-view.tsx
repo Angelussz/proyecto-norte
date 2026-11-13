@@ -9,17 +9,23 @@ import {
   AdminAddColorModal,
   type ColorFormData,
 } from "@/features/admin/components/admin-add-color-modal";
+import {
+  useBrands,
+  useCreateBrand,
+  useUpdateBrand,
+  useDeleteBrand,
+} from "@/features/admin/hooks/useBrands";
+import {
+  useColors,
+  useCreateColor,
+  useUpdateColor,
+  useDeleteColor,
+} from "@/features/admin/hooks/useColors";
+import type { BrandDto, ColorDto } from "@/features/admin/types/brand-color.interface";
 
-interface OfficialColor {
-  id: string;
-  name: string;
-  hex: string;
-  skuCode?: string;
-  assignedItems?: number;
-  active?: boolean;
-}
+// ── Tipos locales para el modal (view-layer) ──────────────────────────────────
 
-interface AtelierBrand {
+type AtelierBrandLocal = {
   id: string;
   name: string;
   skuPrefix?: string;
@@ -28,136 +34,76 @@ interface AtelierBrand {
   iconColor: "primary" | "secondary" | "mustard";
   locked?: boolean;
   active?: boolean;
+};
+
+type OfficialColorLocal = {
+  id: string;
+  name: string;
+  hex: string;
+  skuCode?: string;
+  assignedItems?: number;
+  active?: boolean;
+};
+
+function dtoToBrandLocal(b: BrandDto): AtelierBrandLocal {
+  return {
+    id: b.id,
+    name: b.name,
+    skuPrefix: b.skuPrefix,
+    description: b.description ?? "",
+    assignedItems: b.assignedItems,
+    iconColor: (b.iconColor as "primary" | "secondary" | "mustard") ?? "secondary",
+    locked: b.locked,
+    active: b.active,
+  };
 }
 
-const INITIAL_COLORS: OfficialColor[] = [
-  {
-    id: "c1",
-    name: "Arena Natural",
-    hex: "#E4D5B7",
-    skuCode: "ARN",
-    assignedItems: 12,
-    active: true,
-  },
-  {
-    id: "c2",
-    name: "Verde Oliva",
-    hex: "#4F583D",
-    skuCode: "VRD",
-    assignedItems: 14,
-    active: true,
-  },
-  { id: "c3", name: "Terracota", hex: "#9E472A", skuCode: "TRC", assignedItems: 9, active: true },
-  {
-    id: "c4",
-    name: "Negro Carbón",
-    hex: "#1A1A1A",
-    skuCode: "NEG",
-    assignedItems: 22,
-    active: true,
-  },
-  {
-    id: "c5",
-    name: "Blanco Puro",
-    hex: "#FDFBF7",
-    skuCode: "BLC",
-    assignedItems: 18,
-    active: true,
-  },
-  {
-    id: "c6",
-    name: "Azul Marino",
-    hex: "#1B2838",
-    skuCode: "AZM",
-    assignedItems: 15,
-    active: true,
-  },
-  {
-    id: "c7",
-    name: "Gris Melange",
-    hex: "#8C8F94",
-    skuCode: "GRS",
-    assignedItems: 8,
-    active: true,
-  },
-  {
-    id: "c8",
-    name: "Marrón Tabaco",
-    hex: "#5C3A21",
-    skuCode: "MRN",
-    assignedItems: 6,
-    active: true,
-  },
-  {
-    id: "c9",
-    name: "Burdeos / Borgoña",
-    hex: "#5A1827",
-    skuCode: "BRD",
-    assignedItems: 5,
-    active: true,
-  },
-  {
-    id: "c10",
-    name: "Beige Crudo",
-    hex: "#F5ECE1",
-    skuCode: "BEI",
-    assignedItems: 11,
-    active: true,
-  },
-];
-
-const INITIAL_BRANDS: AtelierBrand[] = [
-  {
-    id: "b1",
-    name: "NORTE ATELIER",
-    skuPrefix: "NRT-ATL",
-    description: "Línea sede confeccionada en Madrid. Patronaje clásico atemporal.",
-    assignedItems: 28,
-    iconColor: "primary",
-    locked: true,
-    active: true,
-  },
-  {
-    id: "b2",
-    name: "NORTE ESSENTIALS",
-    skuPrefix: "NRT-ESS",
-    description:
-      "Básicos perennes confeccionados en pequeñas tiradas limitadas. Línea esencial de patrones minimalistas y fibras orgánicas.",
-    assignedItems: 8,
-    iconColor: "secondary",
-    active: true,
-  },
-  {
-    id: "b3",
-    name: "COLABORACIÓN JORGE JUAN",
-    skuPrefix: "NRT-CJJ",
-    description: "Cápsula exclusiva de sastrería desestructurada para la temporada 2025.",
-    assignedItems: 2,
-    iconColor: "mustard",
-    active: true,
-  },
-];
+function dtoToColorLocal(c: ColorDto): OfficialColorLocal {
+  return {
+    id: c.id,
+    name: c.name,
+    hex: c.hex,
+    skuCode: c.skuCode,
+    assignedItems: c.assignedItems,
+    active: c.active,
+  };
+}
 
 export function AdminColorsBrandsView() {
-  const [colors, setColors] = useState<OfficialColor[]>(INITIAL_COLORS);
-  const [brands, setBrands] = useState<AtelierBrand[]>(INITIAL_BRANDS);
+  // ── React Query ───────────────────────────────────────────────────────────
+  const { data: brandsData = [], isLoading: brandsLoading, isError: brandsError } = useBrands();
+  const { data: colorsData = [], isLoading: colorsLoading, isError: colorsError } = useColors();
 
-  // Form states - Color
+  const createBrand = useCreateBrand();
+  const updateBrand = useUpdateBrand();
+  const deleteBrand = useDeleteBrand();
+
+  const createColor = useCreateColor();
+  const updateColor = useUpdateColor();
+  const deleteColor = useDeleteColor();
+
+  // ── Mapear DTOs a view-types ──────────────────────────────────────────────
+  const brands = brandsData.map(dtoToBrandLocal);
+  const colors = colorsData.map(dtoToColorLocal);
+
+  // ── Form states - Color ───────────────────────────────────────────────────
   const [newColorName, setNewColorName] = useState("");
+  const [newColorSku, setNewColorSku] = useState("");
   const [newColorHex, setNewColorHex] = useState("#2C3E50");
 
-  // Form states - Brand
+  // ── Form states - Brand ───────────────────────────────────────────────────
   const [newBrandName, setNewBrandName] = useState("");
+  const [newBrandSku, setNewBrandSku] = useState("");
   const [newBrandDesc, setNewBrandDesc] = useState("");
 
-  // Modales de Marca y Color
+  // ── Modales de Marca y Color ──────────────────────────────────────────────
   const [isAddBrandModalOpen, setIsAddBrandModalOpen] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<AtelierBrand | null>(null);
+  const [editingBrand, setEditingBrand] = useState<AtelierBrandLocal | null>(null);
 
   const [isAddColorModalOpen, setIsAddColorModalOpen] = useState(false);
-  const [editingColor, setEditingColor] = useState<OfficialColor | null>(null);
+  const [editingColor, setEditingColor] = useState<OfficialColorLocal | null>(null);
 
-  // Feedback Notification
+  // ── Feedback Notification ─────────────────────────────────────────────────
   const [notification, setNotification] = useState<string | null>(null);
 
   function triggerNotice(msg: string) {
@@ -165,84 +111,144 @@ export function AdminColorsBrandsView() {
     setTimeout(() => setNotification(null), 3000);
   }
 
-  // Handlers para Marcas
-  function handleSaveBrand(data: BrandFormData) {
-    if (data.id) {
-      setBrands((prev) =>
-        prev.map((b) =>
-          b.id === data.id
-            ? {
-                ...b,
-                name: data.name,
-                skuPrefix: data.skuPrefix,
-                description: data.description,
-                active: data.active,
-              }
-            : b,
-        ),
-      );
-      triggerNotice(`Marca "${data.name}" actualizada con éxito.`);
-    } else {
-      const newEntry: AtelierBrand = {
-        id: `b_${Date.now()}`,
-        name: data.name,
-        skuPrefix: data.skuPrefix || "NRT-BRD",
-        description: data.description || "Nueva firma textil registrada en el atelier.",
-        assignedItems: 0,
-        iconColor: "secondary",
-        active: data.active,
-      };
-      setBrands((prev) => [...prev, newEntry]);
-      triggerNotice(`Marca "${newEntry.name}" registrada con éxito.`);
+  // ── Handlers para Marcas ──────────────────────────────────────────────────
+  async function handleSaveBrand(data: BrandFormData) {
+    try {
+      if (data.id) {
+        await updateBrand.mutateAsync({
+          id: data.id,
+          body: {
+            name: data.name,
+            skuPrefix: data.skuPrefix,
+            description: data.description,
+            active: data.active,
+          },
+        });
+        triggerNotice(`Marca "${data.name}" actualizada con éxito.`);
+      } else {
+        await createBrand.mutateAsync({
+          name: data.name,
+          skuPrefix: data.skuPrefix || "BRD",
+          description: data.description || "Nueva firma textil registrada en el atelier.",
+          iconColor: "secondary",
+          active: data.active,
+        });
+        triggerNotice(`Marca "${data.name}" registrada con éxito.`);
+      }
+    } catch {
+      triggerNotice("Error al guardar la marca. Intenta de nuevo.");
     }
   }
 
-  function handleDeleteBrand(id: string) {
+  function handleInlineAddBrand(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newBrandName.trim()) {
+      setEditingBrand(null);
+      setIsAddBrandModalOpen(true);
+      return;
+    }
+    const autoSku = newBrandSku.trim()
+      ? newBrandSku.trim().toUpperCase().slice(0, 3)
+      : newBrandName
+          .trim()
+          .replace(/[^A-Za-z]/g, "")
+          .slice(0, 3)
+          .toUpperCase() || "BRD";
+
+    handleSaveBrand({
+      name: newBrandName.trim().toUpperCase(),
+      skuPrefix: autoSku,
+      description: newBrandDesc.trim() || "Nueva firma textil registrada en el atelier.",
+      assignedItems: 0,
+      active: true,
+    });
+    setNewBrandName("");
+    setNewBrandSku("");
+    setNewBrandDesc("");
+  }
+
+  async function handleDeleteBrand(id: string) {
     const toDelete = brands.find((b) => b.id === id);
     if (!toDelete || toDelete.locked) return;
     if (confirm(`¿Eliminar la firma "${toDelete.name}"?`)) {
-      setBrands((prev) => prev.filter((b) => b.id !== id));
-      triggerNotice(`Firma "${toDelete.name}" eliminada.`);
+      try {
+        await deleteBrand.mutateAsync(id);
+        triggerNotice(`Firma "${toDelete.name}" eliminada.`);
+      } catch {
+        triggerNotice("Error al eliminar la marca.");
+      }
     }
   }
 
-  // Handlers para Colores
-  function handleSaveColor(data: ColorFormData) {
-    if (data.id) {
-      setColors((prev) =>
-        prev.map((c) =>
-          c.id === data.id
-            ? {
-                ...c,
-                name: data.name,
-                hex: data.hex,
-                skuCode: data.skuCode,
-                active: data.active,
-              }
-            : c,
-        ),
-      );
-      triggerNotice(`Tintura "${data.name}" actualizada con éxito.`);
-    } else {
-      const newEntry: OfficialColor = {
-        id: `c_${Date.now()}`,
-        name: data.name,
-        hex: data.hex,
-        skuCode: data.skuCode || "CLR",
-        assignedItems: 0,
-        active: data.active,
-      };
-      setColors((prev) => [...prev, newEntry]);
-      triggerNotice(`Tintura "${newEntry.name}" añadida con éxito.`);
+  // ── Handlers para Colores ─────────────────────────────────────────────────
+  async function handleSaveColor(data: ColorFormData) {
+    try {
+      if (data.id) {
+        await updateColor.mutateAsync({
+          id: data.id,
+          body: {
+            name: data.name,
+            hex: data.hex,
+            skuCode: data.skuCode,
+            active: data.active,
+          },
+        });
+        triggerNotice(`Tintura "${data.name}" actualizada con éxito.`);
+      } else {
+        await createColor.mutateAsync({
+          name: data.name,
+          skuCode: data.skuCode || "CLR",
+          hex: data.hex,
+          active: data.active,
+        });
+        triggerNotice(`Tintura "${data.name}" añadida con éxito.`);
+      }
+    } catch {
+      triggerNotice("Error al guardar el color. Intenta de nuevo.");
     }
   }
 
-  function handleDeleteColor(id: string) {
+  function handleInlineAddColor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newColorName.trim()) {
+      setEditingColor(null);
+      setIsAddColorModalOpen(true);
+      return;
+    }
+    const autoSku = newColorSku.trim()
+      ? newColorSku.trim().toUpperCase().slice(0, 3)
+      : newColorName
+          .trim()
+          .replace(/[^A-Za-z]/g, "")
+          .slice(0, 3)
+          .toUpperCase() || "CLR";
+
+    const formattedHex = newColorHex.startsWith("#")
+      ? newColorHex.toUpperCase()
+      : `#${newColorHex.toUpperCase()}`;
+
+    handleSaveColor({
+      name: newColorName.trim(),
+      skuCode: autoSku,
+      hex: formattedHex,
+      assignedItems: 0,
+      active: true,
+    });
+    setNewColorName("");
+    setNewColorSku("");
+    setNewColorHex("#2C3E50");
+  }
+
+  async function handleDeleteColor(id: string) {
     const toDelete = colors.find((c) => c.id === id);
     if (!toDelete) return;
     if (confirm(`¿Eliminar la tintura oficial "${toDelete.name}" (${toDelete.hex})?`)) {
-      setColors((prev) => prev.filter((c) => c.id !== id));
-      triggerNotice(`Tintura "${toDelete.name}" eliminada.`);
+      try {
+        await deleteColor.mutateAsync(id);
+        triggerNotice(`Tintura "${toDelete.name}" eliminada.`);
+      } catch {
+        triggerNotice("Error al eliminar el color.");
+      }
     }
   }
 
@@ -271,7 +277,7 @@ export function AdminColorsBrandsView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[36px] text-on-surface tracking-wide block leading-none">
-                {colors.length}
+                {colorsLoading ? "…" : colors.length}
               </span>
               <span className="font-inter text-[12px] text-on-surface-variant uppercase block mt-1 font-medium">
                 Tinturas Oficiales
@@ -300,7 +306,7 @@ export function AdminColorsBrandsView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[36px] text-on-surface tracking-wide block leading-none">
-                {brands.length}
+                {brandsLoading ? "…" : brands.length}
               </span>
               <span className="font-inter text-[12px] text-on-surface-variant uppercase block mt-1 font-medium">
                 Firmas Registradas
@@ -414,11 +420,7 @@ export function AdminColorsBrandsView() {
             </h3>
             <form
               className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setEditingBrand(null);
-                setIsAddBrandModalOpen(true);
-              }}
+              onSubmit={handleInlineAddBrand}
             >
               <div className="sm:col-span-3 relative flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
@@ -432,7 +434,20 @@ export function AdminColorsBrandsView() {
                   className="w-full bg-surface-container-lowest px-4 py-2 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
-              <div className="sm:col-span-6 relative flex flex-col gap-1">
+              <div className="sm:col-span-2 relative flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  SKU (3 letras)
+                </label>
+                <input
+                  type="text"
+                  maxLength={3}
+                  value={newBrandSku}
+                  onChange={(e) => setNewBrandSku(e.target.value.toUpperCase())}
+                  placeholder="BRD-???"
+                  className="w-full bg-surface-container-lowest px-3 py-2 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                />
+              </div>
+              <div className="sm:col-span-4 relative flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
                   Descripción Breve
                 </label>
@@ -440,17 +455,13 @@ export function AdminColorsBrandsView() {
                   type="text"
                   value={newBrandDesc}
                   onChange={(e) => setNewBrandDesc(e.target.value)}
-                  placeholder="Ej: Lugar o tienda de procedencia (ej: Boutique Barrio Salamanca, Taller Bilbao)"
+                  placeholder="Ej: Lugar o tienda de procedencia (ej: Boutique Barrio Salamanca)"
                   className="w-full bg-surface-container-lowest px-4 py-2 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
               <div className="sm:col-span-3 flex flex-col justify-end self-end">
                 <button
-                  type="button"
-                  onClick={() => {
-                    setEditingBrand(null);
-                    setIsAddBrandModalOpen(true);
-                  }}
+                  type="submit"
                   className="w-full py-2 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
@@ -461,72 +472,73 @@ export function AdminColorsBrandsView() {
           </div>
 
           {/* Listado Horizontal de Marcas Registradas en 3 columnas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {brands.map((brand) => {
-              const bookmarkColor =
-                brand.iconColor === "primary"
-                  ? "text-primary"
-                  : brand.iconColor === "mustard"
-                    ? "text-mustard"
-                    : "text-secondary";
+          {brandsError ? (
+            <p className="font-inter text-[13px] text-error">
+              Error al cargar las marcas. Recarga la página.
+            </p>
+          ) : brandsLoading ? (
+            <p className="font-inter text-[13px] text-on-surface-variant animate-pulse">
+              Cargando marcas…
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {brands.map((brand) => {
+                const bookmarkColor =
+                  brand.iconColor === "primary"
+                    ? "text-primary"
+                    : brand.iconColor === "mustard"
+                      ? "text-mustard"
+                      : "text-secondary";
 
-              return (
-                <div
-                  key={brand.id}
-                  className="bg-surface p-4 border border-outline-variant/30 flex flex-col justify-between gap-3 hover:border-primary transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`material-symbols-outlined text-[18px] ${bookmarkColor}`}>
-                        bookmark
-                      </span>
-                      <span className="font-headline text-[18px] uppercase text-on-surface tracking-wider">
-                        {brand.name}
-                      </span>
+                return (
+                  <div
+                    key={brand.id}
+                    className="bg-surface p-4 border border-outline-variant/30 flex flex-col justify-between gap-3 hover:border-primary transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`material-symbols-outlined text-[18px] ${bookmarkColor}`}>
+                          bookmark
+                        </span>
+                        <span className="font-headline text-[18px] uppercase text-on-surface tracking-wider">
+                          {brand.name}
+                        </span>
+                      </div>
+                      {!brand.locked && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBrand(brand.id)}
+                          className="text-on-surface-variant hover:text-error transition-colors p-1 cursor-pointer"
+                          title={`Eliminar marca ${brand.name}`}
+                        >
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      )}
                     </div>
-                    {!brand.locked && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteBrand(brand.id)}
-                        className="text-on-surface-variant hover:text-error transition-colors p-1 cursor-pointer"
-                        title={`Eliminar marca ${brand.name}`}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">close</span>
-                      </button>
-                    )}
-                  </div>
-                  <p className="font-inter text-[12px] text-on-surface-variant leading-relaxed">
-                    {brand.description}
-                  </p>
-                  <div className="flex items-center justify-between pt-2 border-t border-outline-variant/20">
-                    <span
-                      className={`font-inter text-[11px] uppercase font-semibold ${
-                        brand.locked ? "text-forest-green" : "text-on-surface-variant"
-                      }`}
-                    >
-                      {brand.assignedItems} Prendas Asignadas
-                    </span>
-                    {brand.locked ? (
+                    <p className="font-inter text-[12px] text-on-surface-variant leading-relaxed">
+                      {brand.description}
+                    </p>
+                    <div className="flex items-center justify-between pt-2 border-t border-outline-variant/20">
                       <span
-                        className="material-symbols-outlined text-[16px] text-on-surface-variant"
-                        title="Línea sede oficial protegida"
+                        className={`font-inter text-[11px] uppercase font-semibold ${
+                          brand.locked ? "text-forest-green" : "text-on-surface-variant"
+                        }`}
                       >
-                        lock
+                        {brand.assignedItems} Prendas Asignadas
                       </span>
-                    ) : (
                       <button
                         type="button"
-                        onClick={() => setEditingBrand({ ...brand })}
+                        onClick={() => setEditingBrand(brand)}
                         className="font-inter text-[11px] text-primary hover:underline uppercase font-medium cursor-pointer"
                       >
                         Editar
                       </button>
-                    )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* ── 3. SECCIÓN 2: Paleta de Colores & Tinturas Globales ── */}
@@ -558,7 +570,7 @@ export function AdminColorsBrandsView() {
               <span className="material-symbols-outlined text-[16px] text-secondary">
                 format_paint
               </span>
-              <span>{colors.length} Tinturas Registradas</span>
+              <span>{colorsLoading ? "…" : colors.length} Tinturas Registradas</span>
             </div>
           </div>
 
@@ -569,11 +581,7 @@ export function AdminColorsBrandsView() {
             </h3>
             <form
               className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setEditingColor(null);
-                setIsAddColorModalOpen(true);
-              }}
+              onSubmit={handleInlineAddColor}
             >
               <div className="sm:col-span-6 relative">
                 <input
@@ -631,41 +639,51 @@ export function AdminColorsBrandsView() {
                 Click en la muestra para previsualizar
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {colors.map((color) => (
-                <div
-                  key={color.id}
-                  className="bg-surface p-3.5 border border-outline-variant/30 flex items-center justify-between group hover:border-primary transition-colors"
-                >
+            {colorsError ? (
+              <p className="font-inter text-[13px] text-error">
+                Error al cargar los colores. Recarga la página.
+              </p>
+            ) : colorsLoading ? (
+              <p className="font-inter text-[13px] text-on-surface-variant animate-pulse">
+                Cargando tinturas…
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {colors.map((color) => (
                   <div
-                    className="flex items-center gap-3 cursor-pointer min-w-0"
-                    onClick={() => setEditingColor(color)}
-                    title="Click para ver o editar detalle del tono"
+                    key={color.id}
+                    className="bg-surface p-3.5 border border-outline-variant/30 flex items-center justify-between group hover:border-primary transition-colors"
                   >
-                    <span
-                      className="w-8 h-8 shadow-sm shrink-0 border border-outline-variant/50 rounded-none group-hover:scale-105 transition-transform"
-                      style={{ backgroundColor: color.hex }}
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-inter text-[13px] font-semibold text-on-surface truncate">
-                        {color.name}
-                      </span>
-                      <span className="font-mono text-[11px] text-on-surface-variant uppercase">
-                        {color.hex}
-                      </span>
+                    <div
+                      className="flex items-center gap-3 cursor-pointer min-w-0"
+                      onClick={() => setEditingColor(color)}
+                      title="Click para ver o editar detalle del tono"
+                    >
+                      <span
+                        className="w-8 h-8 shadow-sm shrink-0 border border-outline-variant/50 rounded-none group-hover:scale-105 transition-transform"
+                        style={{ backgroundColor: color.hex }}
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-inter text-[13px] font-semibold text-on-surface truncate">
+                          {color.name}
+                        </span>
+                        <span className="font-mono text-[11px] text-on-surface-variant uppercase">
+                          {color.hex}
+                        </span>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteColor(color.id)}
+                      className="text-on-surface-variant hover:text-error transition-colors p-1 shrink-0 ml-1 cursor-pointer"
+                      title={`Eliminar color ${color.name}`}
+                    >
+                      <span className="material-symbols-outlined text-[16px]">close</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteColor(color.id)}
-                    className="text-on-surface-variant hover:text-error transition-colors p-1 shrink-0 ml-1 cursor-pointer"
-                    title={`Eliminar color ${color.name}`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">close</span>
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -678,7 +696,7 @@ export function AdminColorsBrandsView() {
           setEditingBrand(null);
         }}
         onSave={handleSaveBrand}
-        onDelete={handleDeleteBrand}
+        onDelete={editingBrand && !editingBrand.locked ? handleDeleteBrand : undefined}
         initialData={
           editingBrand
             ? {

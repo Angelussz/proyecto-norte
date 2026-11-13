@@ -432,6 +432,68 @@ async function main() {
     }
   }
 
+  // 8. Marcas (Firmas de Atelier)
+  const BRANDS_SEED = [
+    {
+      name: "NORTE ATELIER",
+      sku_prefix: "ATL",
+      description: "Línea sede confeccionada en Madrid. Patronaje clásico atemporal.",
+      icon_color: "primary",
+      locked: true,
+      active: true,
+      sort_order: 0,
+    },
+    {
+      name: "NORTE ESSENTIALS",
+      sku_prefix: "ESS",
+      description:
+        "Básicos perennes confeccionados en pequeñas tiradas limitadas. Línea esencial de patrones minimalistas y fibras orgánicas.",
+      icon_color: "secondary",
+      locked: false,
+      active: true,
+      sort_order: 1,
+    },
+    {
+      name: "COLABORACIÓN JORGE JUAN",
+      sku_prefix: "CJJ",
+      description: "Cápsula exclusiva de sastrería desestructurada para la temporada 2025.",
+      icon_color: "mustard",
+      locked: false,
+      active: true,
+      sort_order: 2,
+    },
+  ];
+
+  for (const brand of BRANDS_SEED) {
+    await prisma.brand.upsert({
+      where: { sku_prefix: brand.sku_prefix },
+      update: { name: brand.name, description: brand.description, active: brand.active },
+      create: brand,
+    });
+  }
+
+  // 9. Colores (Paleta de Tinturas Globales)
+  const COLORS_SEED = [
+    { name: "Arena Natural", sku_code: "ARN", hex: "#E4D5B7", active: true, sort_order: 0 },
+    { name: "Verde Oliva", sku_code: "VRD", hex: "#4F583D", active: true, sort_order: 1 },
+    { name: "Terracota", sku_code: "TRC", hex: "#9E472A", active: true, sort_order: 2 },
+    { name: "Negro Carbón", sku_code: "NEG", hex: "#1A1A1A", active: true, sort_order: 3 },
+    { name: "Blanco Puro", sku_code: "BLC", hex: "#FDFBF7", active: true, sort_order: 4 },
+    { name: "Azul Marino", sku_code: "AZM", hex: "#1B2838", active: true, sort_order: 5 },
+    { name: "Gris Melange", sku_code: "GRS", hex: "#8C8F94", active: true, sort_order: 6 },
+    { name: "Marrón Tabaco", sku_code: "MRN", hex: "#5C3A21", active: true, sort_order: 7 },
+    { name: "Burdeos / Borgoña", sku_code: "BRD", hex: "#5A1827", active: true, sort_order: 8 },
+    { name: "Beige Crudo", sku_code: "BEI", hex: "#F5ECE1", active: true, sort_order: 9 },
+  ];
+
+  for (const color of COLORS_SEED) {
+    await prisma.color.upsert({
+      where: { sku_code: color.sku_code },
+      update: { name: color.name, hex: color.hex, active: color.active },
+      create: color,
+    });
+  }
+
   console.log("¡Seed completado exitosamente!");
 }
 

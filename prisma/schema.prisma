@@ -235,3 +235,29 @@ model SizeSystem {
 
   group SizeGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
 }
+
+// ── Marcas (Firmas de Atelier) ────────────────────────────────────────────────
+model Brand {
+  id          String   @id @default(uuid())
+  name        String
+  sku_prefix  String   @unique @db.VarChar(3)
+  description String?  @db.Text
+  icon_color  String   @default("secondary") // "primary" | "secondary" | "mustard"
+  locked      Boolean  @default(false)        // si true: no se puede eliminar
+  active      Boolean  @default(true)
+  sort_order  Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+// ── Colores (Paleta de Tinturas) ──────────────────────────────────────────────
+model Color {
+  id         String   @id @default(uuid())
+  name       String
+  sku_code   String   @unique @db.VarChar(3)
+  hex        String   @db.VarChar(7)
+  active     Boolean  @default(true)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
