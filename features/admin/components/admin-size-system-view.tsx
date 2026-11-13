@@ -695,6 +695,16 @@ export function AdminSizeSystemView() {
             setEditingCategory(null);
           }}
           onSave={handleSaveCategory}
+          onDelete={
+            editingCategory
+              ? () => {
+                  const cat = editingCategory;
+                  setIsAddModalOpen(false);
+                  setEditingCategory(null);
+                  setGroupToDelete(cat);
+                }
+              : undefined
+          }
           initialData={editingCategory ? groupToCategory(editingCategory) : null}
           groupNumber={
             editingCategory

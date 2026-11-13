@@ -24,6 +24,7 @@ interface AdminAddSizeSystemModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (category: NewSizeCategory) => void;
+  onDelete?: (id: string) => void;
   groupNumber?: number;
   initialData?: NewSizeCategory | null;
 }
@@ -40,6 +41,7 @@ export function AdminAddSizeSystemModal({
   isOpen,
   onClose,
   onSave,
+  onDelete,
   groupNumber = 8,
   initialData = null,
 }: AdminAddSizeSystemModalProps) {
@@ -233,6 +235,26 @@ export function AdminAddSizeSystemModal({
         newSizeInput: "",
       },
     ]);
+  }
+
+  function handleDeleteClick() {
+    if (isEdit && initialData && onDelete) {
+      onDelete(initialData.id);
+      onClose();
+    } else {
+      setGroupTitle("");
+      setGroupDescription("");
+      setSystems([
+        {
+          id: `sys-1-${Date.now()}`,
+          title: "",
+          description: "",
+          sizes: [],
+          newSizeInput: "",
+        },
+      ]);
+      onClose();
+    }
   }
 
   function handleSave() {
@@ -596,14 +618,25 @@ export function AdminAddSizeSystemModal({
         </div>
 
         {/* ── Modal Footer ── */}
-        <div className="px-6 py-4 bg-[#eee8d9] border-t border-[#d8c3b2]/40 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2.5 bg-[#fff9ed] text-[#524438] hover:text-[#1e1c13] font-headline text-[17px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors w-full sm:w-auto text-center cursor-pointer"
-          >
-            CANCELAR
-          </button>
+        <div className="px-6 py-4 bg-[#eee8d9] border-t border-[#d8c3b2]/40 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+          <div className="flex items-center gap-5 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 bg-[#fff9ed] text-[#524438] hover:text-[#1e1c13] font-headline text-[17px] uppercase tracking-wider border border-[#d8c3b2]/60 transition-colors w-full sm:w-auto text-center cursor-pointer shadow-sm active:translate-y-px"
+            >
+              CANCELAR
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className="flex items-center gap-1.5 text-[#ba1a1a] hover:text-[#93000a] font-headline text-[17px] uppercase tracking-wider transition-colors cursor-pointer py-1.5 px-1 hover:underline underline-offset-4"
+              title="Eliminar sistema de talles"
+            >
+              <span className="material-symbols-outlined text-[19px]">delete</span>
+              <span>ELIMINAR SISTEMA</span>
+            </button>
+          </div>
           <button
             type="button"
             onClick={handleSave}
