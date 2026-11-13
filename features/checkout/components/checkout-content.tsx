@@ -1,9 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe-client";
 import { CardElementProvider } from "@/features/checkout/components/card-element-context";
-import { CHECKOUT_SHIPPING_MOCK } from "@/lib/mocks";
 import { CheckoutSteps } from "@/features/checkout/components/checkout-steps";
 import { ShippingSummary } from "@/features/checkout/components/shipping-summary";
 import { PaymentMethodForm } from "@/features/checkout/components/payment-method-form";
@@ -14,16 +14,18 @@ import { CheckoutSummary } from "@/features/checkout/components/checkout-summary
  * compartido por el formulario de tarjeta y el botón de pago.
  */
 export function CheckoutContent() {
+  const [shippingReady, setShippingReady] = useState(false);
+
   const content = (
     <>
       <div className="flex w-full flex-col gap-14 lg:w-2/3">
         <CheckoutSteps />
-        <ShippingSummary shipping={CHECKOUT_SHIPPING_MOCK} />
+        <ShippingSummary onShippingChange={setShippingReady} />
         <PaymentMethodForm />
       </div>
       <div className="w-full lg:w-1/3">
         <div className="lg:sticky lg:top-24">
-          <CheckoutSummary />
+          <CheckoutSummary shippingReady={shippingReady} />
         </div>
       </div>
     </>

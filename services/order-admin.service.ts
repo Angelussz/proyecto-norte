@@ -41,7 +41,11 @@ type PrismaOrderDetailWithRelations = Prisma.OrdersGetPayload<{
   include: {
     user: true;
     address: true;
-    payment: true;
+    payment: {
+      include: {
+        refunds: true;
+      };
+    };
     fiscal_receipt: true;
     items: {
       include: {
@@ -62,6 +66,7 @@ export function serializeAdminOrderDetail(order: PrismaOrderDetailWithRelations)
     address_id: order.address_id,
     subtotal: Number(order.subtotal),
     shipping_cost: Number(order.shipping_cost),
+    taxes: Number(order.taxes),
     total: Number(order.total),
     status: order.status,
     cancel_reason: order.cancel_reason,
@@ -111,6 +116,7 @@ export function serializeAdminOrderDetail(order: PrismaOrderDetailWithRelations)
           }
         : null,
     })),
+
     payment: order.payment
       ? {
           id: order.payment.id,
@@ -123,8 +129,18 @@ export function serializeAdminOrderDetail(order: PrismaOrderDetailWithRelations)
           rejection_reason: order.payment.rejection_reason,
           paid_at: order.payment.paid_at ? order.payment.paid_at.toISOString() : null,
           created_at: order.payment.created_at.toISOString(),
+          refunds: order.payment.refunds.map((refund) => ({
+            id: refund.id,
+            amount: Number(refund.amount),
+            reason: refund.reason,
+            status: refund.status,
+            stripe_refund_id: refund.stripe_refund_id,
+            created_at: refund.created_at.toISOString(),
+            completed_at: refund.completed_at ? refund.completed_at.toISOString() : null,
+          })),
         }
       : null,
+
     fiscal_receipt: order.fiscal_receipt
       ? {
           id: order.fiscal_receipt.id,
@@ -236,6 +252,7 @@ export async function getAdminOrdersList(
     id: o.id,
     subtotal: Number(o.subtotal),
     shipping_cost: Number(o.shipping_cost),
+    taxes: Number(o.taxes),
     total: Number(o.total),
     status: o.status,
     cancel_reason: o.cancel_reason,
@@ -279,7 +296,15 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetail>
     include: {
       user: true,
       address: true,
-      payment: true,
+      payment: {
+        include: {
+          refunds: {
+            orderBy: {
+              created_at: "desc",
+            },
+          },
+        },
+      },
       fiscal_receipt: true,
       items: {
         include: {
@@ -299,7 +324,6 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetail>
 
   return serializeAdminOrderDetail(order);
 }
-
 /**
  * Actualiza el estado de una orden respetando la máquina de estados
  * y validando control de concurrencia optimista (expectedUpdatedAt).
@@ -370,7 +394,11 @@ export async function updateAdminOrderStatus(
     include: {
       user: true,
       address: true,
-      payment: true,
+      payment: {
+        include: {
+          refunds: true,
+        },
+      },
       fiscal_receipt: true,
       items: {
         include: {
@@ -452,7 +480,11 @@ export async function cancelAdminOrder(id: string, dto: CancelOrderDto): Promise
       include: {
         user: true,
         address: true,
-        payment: true,
+        payment: {
+          include: {
+            refunds: true,
+          },
+        },
         fiscal_receipt: true,
         items: {
           include: {

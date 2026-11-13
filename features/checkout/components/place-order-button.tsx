@@ -18,38 +18,50 @@ type PayStatus = "idle" | "confirming" | "processing" | "succeeded" | "error";
 const POLL_ATTEMPTS = 20;
 const POLL_DELAY_MS = 1500;
 
+interface PlaceOrderButtonProps {
+  shippingReady: boolean;
+}
+
 /**
  * Espera a que el webhook marque la orden PAID en la DB.
- * El éxito de confirmCardPayment solo dice que Stripe cobró; la verdad
- * para vaciar el carrito es GET /api/orders/[id] -> status PAID.
+ * Solo se vacía el carrito cuando la orden figura como PAID.
  */
-async function waitForOrderPaid(orderId: string): Promise<"PAID" | "CANCELLED" | "TIMEOUT"> {
+async function waitForOrderPaid(
+  orderId: string,
+): Promise<"PAID" | "CANCELLED" | "TIMEOUT" | "AUTH_ERROR" | "NOT_FOUND" | "SERVER_ERROR"> {
   for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         cache: "no-store",
       });
+
+      if (res.status === 401) return "AUTH_ERROR";
+      if (res.status === 404) return "NOT_FOUND";
+      if (res.status >= 500) return "SERVER_ERROR";
+
       if (res.ok) {
         const order = (await res.json()) as { status?: string };
+
         if (order.status === "PAID") return "PAID";
         if (order.status === "CANCELLED") return "CANCELLED";
       }
     } catch {
-      // Reintentar en el siguiente ciclo.
+      // Reintentar ante errores temporales de conexión.
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_DELAY_MS));
+
+    if (attempt < POLL_ATTEMPTS - 1) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_DELAY_MS));
+    }
   }
+
   return "TIMEOUT";
 }
 
 /**
- * Botón "Place Order": crea el PaymentIntent con el carrito vivo (mutación
- * TanStack, fase 1) y confirma la tarjeta ante Stripe (fase 2, manual porque
- * usa Stripe.js y el 3D Secure, no un fetch). Requiere el contexto Elements.
- * Solo se habilita con la tarjeta completa y bloquea el mutate si no lo está,
- * para no crear órdenes PENDING_PAYMENT basura.
+ * Crea el PaymentIntent y confirma la tarjeta con Stripe.
+ * El carrito solo se vacía cuando la orden queda PAID en la base de datos.
  */
-export function PlaceOrderButton() {
+export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { items, clearCart } = useCart();
@@ -63,12 +75,15 @@ export function PlaceOrderButton() {
 
   const isProcessing =
     intentMutation.isPending || status === "confirming" || status === "processing";
-  const disabled = !stripe || !elements || items.length === 0 || !cardComplete || isProcessing;
+
+  const disabled =
+    !shippingReady || !stripe || !elements || items.length === 0 || !cardComplete || isProcessing;
 
   const handleClick = () => {
-    if (!stripe || !elements || intentMutation.isPending) return;
+    if (!shippingReady || !stripe || !elements || intentMutation.isPending) {
+      return;
+    }
 
-    // Guardia: sin tarjeta completa no se crea intent ni orden.
     if (!cardComplete) {
       setStatus("error");
       setErrorMessage("Completa los datos de tu tarjeta.");
@@ -86,6 +101,7 @@ export function PlaceOrderButton() {
       {
         onSuccess: async ({ clientSecret, orderId }) => {
           const card = elements.getElement(CardElement);
+
           if (!card) {
             setStatus("error");
             setErrorMessage("No pudimos leer tu tarjeta. Recarga la página.");
@@ -100,7 +116,7 @@ export function PlaceOrderButton() {
 
           if (error) {
             setStatus("error");
-            setErrorMessage(error.message ?? "El pago fue rechazado");
+            setErrorMessage(error.message ?? "El pago fue rechazado.");
             return;
           }
 
@@ -108,25 +124,42 @@ export function PlaceOrderButton() {
             setStatus("processing");
 
             const result = await waitForOrderPaid(orderId);
+
             if (result === "PAID") {
               setStatus("succeeded");
               clearCart();
             } else if (result === "CANCELLED") {
               setStatus("error");
-              setErrorMessage("El pago no pudo completarse. Revisa tu carrito.");
+              setErrorMessage("El pago no pudo completarse. Revisa el estado de tu pedido.");
+            } else if (result === "AUTH_ERROR") {
+              setStatus("error");
+              setErrorMessage(
+                "Tu sesión expiró. Iniciá sesión y revisá el estado de tu pedido antes de volver a pagar.",
+              );
+            } else if (result === "NOT_FOUND") {
+              setStatus("error");
+              setErrorMessage(
+                "No encontramos tu orden. Contactá con soporte antes de volver a pagar.",
+              );
+            } else if (result === "SERVER_ERROR") {
+              setStatus("error");
+              setErrorMessage(
+                "No pudimos consultar el estado de tu orden. Revisalo nuevamente antes de volver a pagar.",
+              );
             } else {
               setStatus("error");
               setErrorMessage(
-                "Pago recibido, la confirmación está tardando. Revisa tus pedidos en unos minutos.",
+                "La confirmación está tardando. Revisá tus pedidos antes de volver a pagar.",
               );
             }
           } else {
             setStatus("error");
-            setErrorMessage(`Pago no completado (${paymentIntent?.status ?? "desconocido"})`);
+            setErrorMessage(`Pago no completado (${paymentIntent?.status ?? "desconocido"}).`);
           }
         },
         onError: (err) => {
           setStatus("error");
+
           if (err instanceof CheckoutQuoteError && err.status === 422) {
             setErrorMessage("Uno o más productos ya no están disponibles. Revisa tu carrito.");
           } else {
@@ -161,9 +194,18 @@ export function PlaceOrderButton() {
           ? "Confirmando pago..."
           : isProcessing
             ? "Processing..."
-            : "Place Order"}
+            : !shippingReady
+              ? "Verificando envío..."
+              : "Place Order"}
         <Lock className="size-4.5" aria-hidden />
       </Button>
+
+      {!shippingReady ? (
+        <p role="status" className="mt-3 text-center text-xs text-muted-foreground">
+          Verificá que tus datos de envío estén cargados antes de pagar.
+        </p>
+      ) : null}
+
       {status === "error" && errorMessage ? (
         <p
           role="alert"
