@@ -45,18 +45,15 @@ export function AdminAddSizeSystemModal({
 }: AdminAddSizeSystemModalProps) {
   const isEdit = Boolean(initialData);
 
-  const [groupTitle, setGroupTitle] = useState("ROPA DE ABRIGO PESADA, TAPADOS Y PARCAS");
-  const [groupDescription, setGroupDescription] = useState(
-    "Prendas exteriores técnicas, parkas, sobretodos y tapados envolventes con calce holgado diseñados para capas intermedias o sastrería artesanal.",
-  );
+  const [groupTitle, setGroupTitle] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
 
   const [systems, setSystems] = useState<SystemDraft[]>([
     {
       id: "sys-1",
-      title: "Sistema Alfa Abrigo con Holgura (Calce Oversize)",
-      description:
-        "Escala estándar para capas intermedias, forros polares y parkas técnicas con holgura de 6 a 8 cm.",
-      sizes: ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"],
+      title: "",
+      description: "",
+      sizes: [],
       newSizeInput: "",
     },
   ]);
@@ -85,25 +82,22 @@ export function AdminAddSizeSystemModal({
             : [
                 {
                   id: `sys-1-${Date.now()}`,
-                  title: "Sistema 1",
-                  description: "Escala estándar de talles.",
-                  sizes: ["S", "M", "L", "XL"],
+                  title: "",
+                  description: "",
+                  sizes: [],
                   newSizeInput: "",
                 },
               ],
         );
       } else {
-        setGroupTitle("ROPA DE ABRIGO PESADA, TAPADOS Y PARCAS");
-        setGroupDescription(
-          "Prendas exteriores técnicas, parkas, sobretodos y tapados envolventes con calce holgado diseñados para capas intermedias o sastrería artesanal.",
-        );
+        setGroupTitle("");
+        setGroupDescription("");
         setSystems([
           {
-            id: "sys-1",
-            title: "Sistema Alfa Abrigo con Holgura (Calce Oversize)",
-            description:
-              "Escala estándar para capas intermedias, forros polares y parkas técnicas con holgura de 6 a 8 cm.",
-            sizes: ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"],
+            id: `sys-1-${Date.now()}`,
+            title: "",
+            description: "",
+            sizes: [],
             newSizeInput: "",
           },
         ]);
@@ -229,27 +223,31 @@ export function AdminAddSizeSystemModal({
   }
 
   function handleAddAnotherSystem() {
-    const nextIndex = systems.length + 1;
     setSystems((prev) => [
       ...prev,
       {
         id: `sys-${Date.now()}`,
-        title: `Sistema ${nextIndex} Personalizado`,
-        description: "Descripción de escala y desahogos para este sistema.",
-        sizes: ["S", "M", "L", "XL"],
+        title: "",
+        description: "",
+        sizes: [],
         newSizeInput: "",
       },
     ]);
   }
 
   function handleSave() {
+    const trimmedTitle = groupTitle.trim();
+    if (!trimmedTitle) {
+      alert("Por favor ingresa un título para el grupo de talles.");
+      return;
+    }
+
     const prefix =
       isEdit && initialData && /^\d+\./.test(initialData.title)
         ? initialData.title.match(/^\d+\.\s*/)?.[0] || ""
         : `${groupNumber}. `;
 
-    const cleanTitle =
-      groupTitle.trim() || (isEdit && initialData ? initialData.title : "Grupo Personalizado");
+    const cleanTitle = trimmedTitle;
     const finalTitle = cleanTitle.startsWith(prefix) ? cleanTitle : `${prefix}${cleanTitle}`;
 
     const newCat: NewSizeCategory = {
@@ -303,7 +301,7 @@ export function AdminAddSizeSystemModal({
             <h2 className="font-headline text-[28px] sm:text-[34px] uppercase tracking-wide text-[#1e1c13] leading-none mt-1">
               {isEdit
                 ? "EDITAR GRUPO & SISTEMA DE TALLES"
-                : "+ AGREGAR NUEVO GRUPO & SISTEMA DE TALLES"}
+                : "AGREGAR NUEVO GRUPO & SISTEMA DE TALLES"}
             </h2>
             <p className="font-inter text-[12px] text-[#524438] leading-relaxed">
               {isEdit
@@ -352,7 +350,7 @@ export function AdminAddSizeSystemModal({
                   type="text"
                   value={groupTitle}
                   onChange={(e) => setGroupTitle(e.target.value)}
-                  placeholder="Ej: ROPA DE ABRIGO PESADA, TAPADOS Y PARCAS"
+                  placeholder="Ej: Ropa de Abrigo, Calzado Especial, Accesorios..."
                   className="w-full px-4 py-2.5 bg-white text-[#1e1c13] placeholder:text-[#857466]/70 font-inter text-[13px] border border-[#d8c3b2]/50 focus:border-[#673900] focus:outline-none transition-colors"
                 />
               </div>
@@ -427,7 +425,7 @@ export function AdminAddSizeSystemModal({
                           prev.map((s) => (s.id === sys.id ? { ...s, title: e.target.value } : s)),
                         )
                       }
-                      placeholder="Ej: Sistema Alfa Abrigo con Holgura"
+                      placeholder="Ej: Sistema Alfa Estándar, Numérico US, etc."
                       className="w-full px-4 py-2 bg-white text-[#1e1c13] placeholder:text-[#857466]/70 font-inter text-[13px] border border-[#d8c3b2]/50 focus:border-[#673900] focus:outline-none transition-colors"
                     />
                   </div>
@@ -447,7 +445,7 @@ export function AdminAddSizeSystemModal({
                           ),
                         )
                       }
-                      placeholder="Ej: Escala estándar para capas intermedias y parkas"
+                      placeholder="Ej: Escala estándar para prendas superiores con calce regular..."
                       className="w-full px-4 py-2 bg-white text-[#1e1c13] placeholder:text-[#857466]/70 font-inter text-[13px] border border-[#d8c3b2]/50 focus:border-[#673900] focus:outline-none transition-colors"
                     />
                   </div>
@@ -468,80 +466,87 @@ export function AdminAddSizeSystemModal({
 
                     {/* Chips / Pills container */}
                     <div className="flex flex-wrap gap-1.5 p-3 bg-[#faf3e4] border border-[#d8c3b2]/40 min-h-[52px] items-center">
-                      {sys.sizes.map((size, idx) => {
-                        const isDragging =
-                          draggedSize?.systemId === sys.id && draggedSize?.index === idx;
-                        const isOver =
-                          dragOverIndex?.systemId === sys.id && dragOverIndex?.index === idx;
+                      {sys.sizes.length === 0 ? (
+                        <span className="font-inter text-[12px] text-[#857466]/80 italic">
+                          Aún no hay talles agregados. Escribe un talle en el campo de abajo y
+                          presiona Añadir.
+                        </span>
+                      ) : (
+                        sys.sizes.map((size, idx) => {
+                          const isDragging =
+                            draggedSize?.systemId === sys.id && draggedSize?.index === idx;
+                          const isOver =
+                            dragOverIndex?.systemId === sys.id && dragOverIndex?.index === idx;
 
-                        return (
-                          <div
-                            key={`${sys.id}-${size}-${idx}`}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, sys.id, idx, size)}
-                            onDragOver={(e) => handleDragOver(e, sys.id, idx)}
-                            onDragEnter={() => handleDragEnter(sys.id, idx)}
-                            onDragLeave={() => {
-                              if (
-                                dragOverIndex?.systemId === sys.id &&
-                                dragOverIndex?.index === idx
-                              ) {
-                                setDragOverIndex(null);
-                              }
-                            }}
-                            onDrop={(e) => handleDrop(e, sys.id, idx)}
-                            onDragEnd={handleDragEnd}
-                            tabIndex={0}
-                            role="button"
-                            aria-label={`Talle ${size}. Arrastra o usa flechas para mover.`}
-                            onKeyDown={(e) => {
-                              if (e.key === "ArrowLeft") {
-                                e.preventDefault();
-                                handleMoveSize(sys.id, idx, -1);
-                              } else if (e.key === "ArrowRight") {
-                                e.preventDefault();
-                                handleMoveSize(sys.id, idx, 1);
-                              }
-                            }}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border text-[#1e1c13] shadow-sm select-none transition-all cursor-grab active:cursor-grabbing focus:outline-none focus:ring-1 focus:ring-[#673900]",
-                              isDragging
-                                ? "opacity-30 border-dashed border-[#673900] scale-95"
-                                : isOver
-                                  ? "border-2 border-[#673900] bg-[#fff9ed] scale-105 shadow-md ring-2 ring-[#c77d2e]/30"
-                                  : "border-[#d8c3b2]/50 hover:border-[#673900]/70",
-                            )}
-                            title="Arrastra para reordenar (o usa las flechas del teclado ← / →)"
-                          >
-                            <span className="text-[#524438]/70 hover:text-[#673900] shrink-0 cursor-grab active:cursor-grabbing">
-                              <svg
-                                className="w-3 h-3 text-current shrink-0"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                              >
-                                <circle cx="8" cy="6" r="2" />
-                                <circle cx="16" cy="6" r="2" />
-                                <circle cx="8" cy="12" r="2" />
-                                <circle cx="16" cy="12" r="2" />
-                                <circle cx="8" cy="18" r="2" />
-                                <circle cx="16" cy="18" r="2" />
-                              </svg>
-                            </span>
-                            <span className="font-mono text-[11px] font-semibold">{size}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveSize(sys.id, size);
+                          return (
+                            <div
+                              key={`${sys.id}-${size}-${idx}`}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, sys.id, idx, size)}
+                              onDragOver={(e) => handleDragOver(e, sys.id, idx)}
+                              onDragEnter={() => handleDragEnter(sys.id, idx)}
+                              onDragLeave={() => {
+                                if (
+                                  dragOverIndex?.systemId === sys.id &&
+                                  dragOverIndex?.index === idx
+                                ) {
+                                  setDragOverIndex(null);
+                                }
                               }}
-                              className="hover:text-[#ba1a1a] transition-colors text-[#524438] text-[11px] ml-0.5 cursor-pointer font-bold"
-                              title="Eliminar talle"
+                              onDrop={(e) => handleDrop(e, sys.id, idx)}
+                              onDragEnd={handleDragEnd}
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`Talle ${size}. Arrastra o usa flechas para mover.`}
+                              onKeyDown={(e) => {
+                                if (e.key === "ArrowLeft") {
+                                  e.preventDefault();
+                                  handleMoveSize(sys.id, idx, -1);
+                                } else if (e.key === "ArrowRight") {
+                                  e.preventDefault();
+                                  handleMoveSize(sys.id, idx, 1);
+                                }
+                              }}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border text-[#1e1c13] shadow-sm select-none transition-all cursor-grab active:cursor-grabbing focus:outline-none focus:ring-1 focus:ring-[#673900]",
+                                isDragging
+                                  ? "opacity-30 border-dashed border-[#673900] scale-95"
+                                  : isOver
+                                    ? "border-2 border-[#673900] bg-[#fff9ed] scale-105 shadow-md ring-2 ring-[#c77d2e]/30"
+                                    : "border-[#d8c3b2]/50 hover:border-[#673900]/70",
+                              )}
+                              title="Arrastra para reordenar (o usa las flechas del teclado ← / →)"
                             >
-                              ✕
-                            </button>
-                          </div>
-                        );
-                      })}
+                              <span className="text-[#524438]/70 hover:text-[#673900] shrink-0 cursor-grab active:cursor-grabbing">
+                                <svg
+                                  className="w-3 h-3 text-current shrink-0"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                >
+                                  <circle cx="8" cy="6" r="2" />
+                                  <circle cx="16" cy="6" r="2" />
+                                  <circle cx="8" cy="12" r="2" />
+                                  <circle cx="16" cy="12" r="2" />
+                                  <circle cx="8" cy="18" r="2" />
+                                  <circle cx="16" cy="18" r="2" />
+                                </svg>
+                              </span>
+                              <span className="font-mono text-[11px] font-semibold">{size}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveSize(sys.id, size);
+                                }}
+                                className="hover:text-[#ba1a1a] transition-colors text-[#524438] text-[11px] ml-0.5 cursor-pointer font-bold"
+                                title="Eliminar talle"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
 
                     {/* Add size input bar */}
@@ -562,7 +567,7 @@ export function AdminAddSizeSystemModal({
                             handleAddSize(sys.id);
                           }
                         }}
-                        placeholder="+ Escribir o añadir talle (ej: 5XL, Único o 42)..."
+                        placeholder="Escribir talle (ej: XS, S, M, L, 42, Único)..."
                         className="flex-1 px-3 py-1.5 bg-white text-[#1e1c13] placeholder:text-[#857466]/70 font-inter text-[13px] border border-[#d8c3b2]/50 focus:border-[#673900] focus:outline-none"
                       />
                       <button
@@ -570,7 +575,7 @@ export function AdminAddSizeSystemModal({
                         onClick={() => handleAddSize(sys.id)}
                         className="px-4 py-1.5 bg-[#54624f] hover:bg-[#33402f] text-[#fff9ed] font-headline text-[15px] uppercase tracking-wider transition-colors active:translate-y-px shrink-0 cursor-pointer"
                       >
-                        + Añadir
+                        Añadir
                       </button>
                     </div>
                   </div>
@@ -585,7 +590,7 @@ export function AdminAddSizeSystemModal({
               className="flex items-center justify-center gap-1.5 px-4 py-3 bg-[#faf3e4] hover:bg-[#e8e2d4] text-[#673900] font-headline text-[16px] uppercase tracking-wider transition-colors border-2 border-dashed border-[#d8c3b2]/60 hover:border-[#673900] active:translate-y-px mt-1 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
-              <span>+ AGREGAR OTRO SISTEMA DE TALLES A ESTA CATEGORÍA</span>
+              <span>AGREGAR OTRO SISTEMA DE TALLES A ESTA CATEGORÍA</span>
             </button>
           </div>
         </div>
@@ -608,7 +613,7 @@ export function AdminAddSizeSystemModal({
             <span>
               {isEdit
                 ? `GUARDAR CAMBIOS DE SISTEMA #${groupNumber}`
-                : `+ CREAR Y GUARDAR SISTEMA DE TALLES #${groupNumber}`}
+                : `CREAR Y GUARDAR SISTEMA DE TALLES #${groupNumber}`}
             </span>
           </button>
         </div>

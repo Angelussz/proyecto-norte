@@ -503,7 +503,7 @@ export function AdminSizeSystemView() {
               className="flex items-center gap-1.5 px-3 py-2 bg-[#33402f] hover:bg-secondary text-[#fff9ed] font-headline text-[16px] uppercase tracking-wider transition-colors duration-150 shadow-sm active:translate-y-px cursor-pointer self-start sm:self-auto shrink-0"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              <span>+ AGREGAR SISTEMA</span>
+              <span>AGREGAR SISTEMA</span>
             </button>
           </div>
 
