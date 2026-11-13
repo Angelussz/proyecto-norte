@@ -147,6 +147,15 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
     );
   }
 
+  function toggleSizeDropdown() {
+    setIsSizeOpen((prev) => {
+      if (!prev) {
+        setSelectedSizeKeys(sizes.map((s) => s.size));
+      }
+      return !prev;
+    });
+  }
+
   function toggleSizeSelect(key: string) {
     setSelectedSizeKeys((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
@@ -173,13 +182,16 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
     setIsColorOpen(false);
   }
 
-  // Agregar las tallas seleccionadas con los colores confirmados actualmente
+  // Agregar o actualizar las tallas seleccionadas con los colores confirmados actualmente
   function handleAddSizes() {
-    if (selectedSizeKeys.length === 0) return;
     setSizes((prevSizes) => {
-      const existingKeys = prevSizes.map((s) => s.size);
+      // 1. Mantener las tallas existentes que siguen estando seleccionadas
+      const keptSizes = prevSizes.filter((s) => selectedSizeKeys.includes(s.size));
+      const keptKeys = keptSizes.map((s) => s.size);
+
+      // 2. Crear las tallas nuevas que no existían antes
       const newSizesToAdd: SizeConfig[] = selectedSizeKeys
-        .filter((key) => !existingKeys.includes(key))
+        .filter((key) => !keptKeys.includes(key))
         .map((key) => {
           const master = uniqueSizes.find((s) => s.size === key);
           const initialColors = appliedColorNames.map((name) => {
@@ -193,7 +205,8 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
             colors: initialColors,
           };
         });
-      return [...prevSizes, ...newSizesToAdd];
+
+      return [...keptSizes, ...newSizesToAdd];
     });
     setIsSizeOpen(false);
   }
@@ -406,7 +419,7 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
       {/* ── 2. Size (Talle) Selection Section ── */}
       <div ref={sizeContainerRef} className="flex flex-col gap-2.5">
         <span className="font-inter text-[12px] text-[#c77d2e] font-semibold tracking-wide">
-          {selectedSizeKeys.length} seleccionadas
+          {(isSizeOpen ? selectedSizeKeys : sizes.map((s) => s.size)).length} seleccionadas
         </span>
 
         {/* Search input & toggle */}
@@ -420,13 +433,22 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
             value={sizeSearch}
             onChange={(e) => {
               setSizeSearch(e.target.value);
-              setIsSizeOpen(true);
+              if (!isSizeOpen) {
+                setSelectedSizeKeys(sizes.map((s) => s.size));
+                setIsSizeOpen(true);
+              }
+            }}
+            onFocus={() => {
+              if (!isSizeOpen) {
+                setSelectedSizeKeys(sizes.map((s) => s.size));
+                setIsSizeOpen(true);
+              }
             }}
             className="w-full pl-8 pr-8 py-1.5 bg-white border border-[#eee8d9] font-inter text-[12px] text-[#1e1c13] placeholder:text-[#a09587] outline-none focus:border-[#c77d2e]"
           />
           <button
             type="button"
-            onClick={() => setIsSizeOpen((prev) => !prev)}
+            onClick={toggleSizeDropdown}
             aria-label={isSizeOpen ? "Cerrar selector de talles" : "Abrir selector de talles"}
             className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[#786c5e] hover:text-[#1e1c13] transition-colors"
           >
