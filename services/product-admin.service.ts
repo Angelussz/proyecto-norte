@@ -332,3 +332,65 @@ export async function deleteProduct(id: string) {
   }
   return { deleted: true };
 }
+
+import type { ProductListItem } from "@/features/admin/types/product.interface";
+
+/** Lista todos los productos con nombre de categoría y conteos de variantes */
+export async function listProducts(): Promise<ProductListItem[]> {
+  const products = await prisma.products.findMany({
+    orderBy: { created_at: "desc" },
+    include: {
+      category: { select: { name: true } },
+      variants: { select: { stock: true } },
+    },
+  });
+  return products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    basePrice: Number(p.base_price),
+    active: p.active,
+    imageUrl: p.image_url,
+    categoryId: p.category_id,
+    categoryName: p.category.name,
+    variantCount: p.variants.length,
+    totalStock: p.variants.reduce((acc, v) => acc + v.stock, 0),
+  }));
+}
+
+/** Devuelve un producto completo con variantes y nombre de categoría */
+export async function getProductById(id: string) {
+  const p = await prisma.products.findUnique({
+    where: { id },
+    include: {
+      category: { select: { name: true } },
+      variants: true,
+    },
+  });
+  if (!p) throw new ProductAdminError("NOT_FOUND", `No existe el producto ${id}`);
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    description: p.description,
+    material: p.material,
+    basePrice: Number(p.base_price),
+    active: p.active,
+    imageUrl: p.image_url,
+    categoryId: p.category_id,
+    categoryName: p.category.name,
+    createdAt: p.created_at.toISOString(),
+    variants: p.variants.map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      size: v.size,
+      color: v.color,
+      colorHex: v.color, // el campo color en DB ya es el hex
+      price: Number(v.price),
+      unitCost: Number(v.unit_cost),
+      stock: v.stock,
+      active: v.active,
+      imageUrl: v.image_url,
+    })),
+  };
+}

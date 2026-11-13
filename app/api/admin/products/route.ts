@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminToken } from "@/lib/admin-auth";
 import { handleAdminError } from "@/lib/admin-api";
-import { ProductAdminError, upsertProduct } from "@/services/product-admin.service";
+import { ProductAdminError, listProducts, upsertProduct } from "@/services/product-admin.service";
+
+/**
+ * GET /api/admin/products
+ * Lista todos los productos con nombre de categoría y conteos de variantes.
+ */
+export async function GET() {
+  try {
+    const products = await listProducts();
+    return NextResponse.json({ data: products });
+  } catch (error) {
+    return handleAdminError(error, "[admin/products GET]");
+  }
+}
 
 /**
  * POST /api/admin/products
