@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Orders" ADD COLUMN     "taxes" DECIMAL(10,2) NOT NULL DEFAULT 0;

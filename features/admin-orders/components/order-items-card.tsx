@@ -7,10 +7,17 @@ interface OrderItemsCardProps {
   items: AdminOrderItem[];
   subtotal: number;
   shippingCost: number;
+  taxes: number;
   total: number;
 }
 
-export function OrderItemsCard({ items, subtotal, shippingCost, total }: OrderItemsCardProps) {
+export function OrderItemsCard({
+  items,
+  subtotal,
+  shippingCost,
+  taxes,
+  total,
+}: OrderItemsCardProps) {
   return (
     <div className="border border-border bg-card p-5 shadow-xs flex flex-col gap-4">
       {/* Cabecera */}
@@ -86,7 +93,7 @@ export function OrderItemsCard({ items, subtotal, shippingCost, total }: OrderIt
         })}
       </div>
 
-      {/* Desglose Económico Ledger */}
+      {/* Desglose Económico */}
       <div className="border border-border bg-muted/30 p-4 flex flex-col gap-2 mt-1">
         <div className="flex items-center justify-between text-xs text-muted-foreground uppercase font-medium">
           <span>Subtotal de ítems</span>
@@ -102,6 +109,12 @@ export function OrderItemsCard({ items, subtotal, shippingCost, total }: OrderIt
           >
             {shippingCost === 0 ? "GRATIS ($0.00)" : formatPrice(shippingCost)}
           </span>
+        </div>
+
+        {/* Impuestos */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground uppercase font-medium">
+          <span>Impuestos</span>
+          <span className="text-foreground font-semibold">{formatPrice(taxes)}</span>
         </div>
 
         <div className="h-px bg-border my-1" />

@@ -13,12 +13,16 @@ import { OrderSummary } from "@/features/checkout/components/order-summary";
 import { PlaceOrderButton } from "@/features/checkout/components/place-order-button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
+interface CheckoutSummaryProps {
+  shippingReady: boolean;
+}
+
 /**
  * Resumen del checkout con datos reales:
  * lee el carrito vivo (sincronizado con la siembra inicial y sus cambios)
  * y cotiza subtotal + envío + impuestos con POST /api/checkout/quote.
  */
-export function CheckoutSummary() {
+export function CheckoutSummary({ shippingReady }: CheckoutSummaryProps) {
   const { items } = useCart();
 
   const quoteInput = useMemo(
@@ -29,6 +33,7 @@ export function CheckoutSummary() {
       })),
     [items],
   );
+
   const quoteKey = useMemo(
     () => quoteInput.map((item) => `${item.variantId}:${item.quantity}`).join(","),
     [quoteInput],
@@ -57,7 +62,12 @@ export function CheckoutSummary() {
   }
 
   if (quoteQuery.data) {
-    return <OrderSummary summary={quoteQuery.data} action={<PlaceOrderButton />} />;
+    return (
+      <OrderSummary
+        summary={quoteQuery.data}
+        action={<PlaceOrderButton shippingReady={shippingReady} />}
+      />
+    );
   }
 
   if (quoteQuery.isPending || quoteQuery.isFetching) {
