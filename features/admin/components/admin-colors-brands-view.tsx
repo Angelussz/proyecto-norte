@@ -580,47 +580,68 @@ export function AdminColorsBrandsView() {
               REGISTRAR NUEVA TINTURA OFICIAL
             </h3>
             <form
-              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center"
+              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
               onSubmit={handleInlineAddColor}
             >
-              <div className="sm:col-span-6 relative">
+              <div className="sm:col-span-4 flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  Nombre del Color / Tintura
+                </label>
                 <input
                   type="text"
                   value={newColorName}
                   onChange={(e) => setNewColorName(e.target.value)}
-                  placeholder="Nombre del color (ej: Añil Natural, Índigo Atelier)"
+                  placeholder="Ej: Añil Natural, Índigo Atelier"
                   className="w-full bg-surface-container-lowest px-4 py-2.5 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
-              <div className="sm:col-span-3 flex items-center gap-2 bg-surface-container-lowest px-3 py-2 border border-outline-variant/40">
-                <label
-                  className="w-7 h-7 p-0 border border-outline-variant/60 cursor-pointer rounded-none shrink-0 relative"
-                  style={{ backgroundColor: newColorHex }}
-                  title="Elegir muestra de color"
-                >
-                  <input
-                    type="color"
-                    value={newColorHex}
-                    onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
-                    className="opacity-0 absolute inset-0 cursor-pointer w-full h-full"
-                  />
+              <div className="sm:col-span-2 flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  SKU (3 letras)
                 </label>
                 <input
                   type="text"
-                  value={newColorHex}
-                  onChange={(e) => setNewColorHex(e.target.value)}
-                  className="w-full font-mono text-[12px] text-on-surface bg-transparent focus:outline-none uppercase"
-                  placeholder="#000000"
+                  maxLength={3}
+                  value={newColorSku}
+                  onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
+                  placeholder="CLR-???"
+                  className="w-full bg-surface-container-lowest px-3 py-2.5 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-3 flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  Color Hex
+                </label>
+                <div className="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 border border-outline-variant/40 h-[42px]">
+                  <label
+                    className="w-7 h-7 p-0 border border-outline-variant/60 cursor-pointer rounded-none shrink-0 relative"
+                    style={{ backgroundColor: newColorHex }}
+                    title="Elegir muestra de color"
+                  >
+                    <input
+                      type="color"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
+                      className="opacity-0 absolute inset-0 cursor-pointer w-full h-full"
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    className="w-full font-mono text-[12px] text-on-surface bg-transparent focus:outline-none uppercase"
+                    placeholder="#000000"
+                  />
+                </div>
+              </div>
+              <div className="sm:col-span-3 flex flex-col justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     setEditingColor(null);
                     setIsAddColorModalOpen(true);
                   }}
-                  className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer h-[42px]"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   <span>+ AÑADIR COLOR</span>
