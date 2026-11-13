@@ -244,9 +244,26 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
 
   // ── Totales y colores activos ─────────────────────────────────────────────
   const totalStock = sizes.reduce((acc, s) => acc + s.colors.reduce((a, c) => a + c.stock, 0), 0);
-  const activeColors = Array.from(
-    new Map(sizes.flatMap((s) => s.colors).map((c) => [c.name, c])).values(),
-  );
+
+  // Muestra los colores seleccionados (o los presentes en tallas) en el banner de total
+  const activeColorsMap = new Map<string, { name: string; hex: string }>();
+
+  selectedColorNames.forEach((name) => {
+    const found = catalogColors.find((c) => c.name === name);
+    if (found) {
+      activeColorsMap.set(name, { name: found.name, hex: found.hex });
+    }
+  });
+
+  sizes
+    .flatMap((s) => s.colors)
+    .forEach((c) => {
+      if (!activeColorsMap.has(c.name)) {
+        activeColorsMap.set(c.name, { name: c.name, hex: c.hex });
+      }
+    });
+
+  const activeColors = Array.from(activeColorsMap.values());
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
