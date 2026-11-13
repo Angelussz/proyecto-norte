@@ -5,6 +5,14 @@ import {
   AdminAddSizeSystemModal,
   type NewSizeCategory,
 } from "@/features/admin/components/admin-add-size-system-modal";
+import {
+  useSizeGroups,
+  useCreateSizeGroup,
+  useUpdateSizeGroup,
+  useDeleteSizeGroup,
+  useToggleSizeSystem,
+} from "@/features/admin/hooks/useSizeGroups";
+import type { SizeGroupDto } from "@/features/admin/types/size-system.interface";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 interface SizeOption {
@@ -242,66 +250,100 @@ function BadgeVariant({ variant, text }: { variant?: SizeOption["badgeVariant"];
 
 // ── Componente principal ───────────────────────────────────────────────────
 export function AdminSizeSystemView() {
-  const [categories, setCategories] = useState<SizeCategory[]>(INITIAL_CATEGORIES);
-  const [saved, setSaved] = useState(false);
+  // ─── Backend data via React Query ───────────────────────────────────────
+  const { data: groups = [], isLoading, isError, error } = useSizeGroups();
+  const createGroup = useCreateSizeGroup();
+  const updateGroup = useUpdateSizeGroup();
+  const toggleSystem = useToggleSizeSystem();
+  const deleteGroup = useDeleteSizeGroup();
+
+  // ─── Modal state ─────────────────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<SizeCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<SizeGroupDto | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   function handleOpenAdd() {
     setEditingCategory(null);
     setIsAddModalOpen(true);
   }
 
-  function handleEditCategory(cat: SizeCategory) {
+  function handleEditCategory(cat: SizeGroupDto) {
     setEditingCategory(cat);
     setIsAddModalOpen(true);
   }
 
-  function handleSaveCategory(savedCat: NewSizeCategory) {
-    if (editingCategory) {
-      setCategories((prev) =>
-        prev.map((c) => (c.id === editingCategory.id ? (savedCat as SizeCategory) : c)),
-      );
-    } else {
-      setCategories((prev) => [...prev, savedCat as SizeCategory]);
+  async function handleSaveCategory(savedCat: NewSizeCategory) {
+    try {
+      const payload = {
+        title: savedCat.title,
+        description: savedCat.description,
+        systems: savedCat.options.map((o) => ({
+          label: o.label,
+          description: o.description,
+          badge: o.badge,
+          badge_variant: o.badgeVariant,
+          sizes: o.sizes,
+          active: o.active,
+        })),
+      };
+
+      if (editingCategory) {
+        await updateGroup.mutateAsync({ id: editingCategory.id, body: payload });
+        showToast("Sistema de talles actualizado correctamente.");
+      } else {
+        await createGroup.mutateAsync(payload);
+        showToast("Nuevo sistema de talles creado correctamente.");
+      }
+    } catch (err) {
+      showToast((err as Error).message ?? "Ocurrió un error al guardar.");
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
   }
 
-  function toggleOption(catId: string, optId: string) {
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === catId
-          ? {
-              ...cat,
-              options: cat.options.map((opt) =>
-                opt.id === optId ? { ...opt, active: !opt.active } : opt,
-              ),
-            }
-          : cat,
-      ),
-    );
+  async function handleToggleSystem(groupId: string, systemId: string, currentActive: boolean) {
+    try {
+      await toggleSystem.mutateAsync({ groupId, systemId, active: !currentActive });
+    } catch {
+      // El hook revierte automáticamente en error
+    }
   }
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  // ─── Mapear SizeGroupDto → SizeCategory para el modal (compatibilidad) ───
+  function groupToCategory(g: SizeGroupDto): SizeCategory {
+    return {
+      id: g.id,
+      title: g.title,
+      description: g.description ?? "",
+      options: g.systems.map((s) => ({
+        id: s.id,
+        label: s.label,
+        badge: s.badge ?? undefined,
+        badgeVariant: (s.badge_variant as SizeOption["badgeVariant"]) ?? undefined,
+        description: s.description ?? "",
+        sizes: s.sizes,
+        active: s.active,
+      })),
+    };
   }
 
-  const totalActive = categories.reduce(
-    (acc, cat) => acc + cat.options.filter((o) => o.active).length,
+  const totalActive = groups.reduce((acc, g) => acc + g.systems.filter((s) => s.active).length, 0);
+  const totalOptions = groups.reduce((acc, g) => acc + g.systems.length, 0);
+  const totalSizes = groups.reduce(
+    (acc, g) => acc + g.systems.reduce((b, s) => b + s.sizes.length, 0),
     0,
   );
-  const totalOptions = categories.reduce((acc, cat) => acc + cat.options.length, 0);
 
   return (
     <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
       {/* Toast */}
-      {saved && (
+      {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-[#c77d2e] font-inter text-[13px] shadow-lg flex items-center gap-3">
           <span className="material-symbols-outlined text-[#c77d2e] text-[18px]">check_circle</span>
-          <span>Sistemas de talles guardados correctamente.</span>
+          <span>{toast}</span>
         </div>
       )}
 
@@ -340,16 +382,6 @@ export function AdminSizeSystemView() {
             </div>
 
             {/* CTA */}
-            <button
-              type="button"
-              onClick={handleSave}
-              className="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary-container text-on-primary transition-all duration-150 shadow-md active:translate-y-px cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              <span className="font-headline text-[18px] uppercase tracking-wider">
-                GUARDAR CAMBIOS
-              </span>
-            </button>
           </div>
 
           {/* Title + description */}
@@ -380,7 +412,7 @@ export function AdminSizeSystemView() {
           {[
             {
               label: "Grupos de Uso",
-              value: categories.length,
+              value: groups.length,
               sub: "Tipos de prenda cubiertos",
               icon: "style",
               color: "text-primary",
@@ -394,10 +426,7 @@ export function AdminSizeSystemView() {
             },
             {
               label: "Talles Totales",
-              value: categories.reduce(
-                (a, c) => a + c.options.reduce((b, o) => b + o.sizes.length, 0),
-                0,
-              ),
+              value: totalSizes,
               sub: "Valores en catálogo",
               icon: "straighten",
               color: "text-[#c77d2e]",
@@ -480,7 +509,7 @@ export function AdminSizeSystemView() {
 
           {/* Category Blocks */}
           <div className="flex flex-col gap-6">
-            {categories.map((cat) => (
+            {groups.map((cat) => (
               <div
                 key={cat.id}
                 className="bg-surface p-6 border border-outline-variant/30 flex flex-col gap-4"
@@ -507,7 +536,7 @@ export function AdminSizeSystemView() {
 
                 {/* Options */}
                 <div className="pt-2 border-t border-outline-variant/20 flex flex-col gap-3">
-                  {cat.options.map((opt) => (
+                  {cat.systems.map((opt) => (
                     <label
                       key={opt.id}
                       className="flex items-start gap-3 p-3 bg-surface-container-low border border-outline-variant/40 hover:border-primary transition-colors cursor-pointer"
@@ -515,7 +544,7 @@ export function AdminSizeSystemView() {
                       <input
                         type="checkbox"
                         checked={opt.active}
-                        onChange={() => toggleOption(cat.id, opt.id)}
+                        onChange={() => handleToggleSystem(cat.id, opt.id, opt.active)}
                         className="mt-1 text-primary focus:ring-0 rounded-none cursor-pointer h-4 w-4 shrink-0"
                       />
                       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -523,8 +552,11 @@ export function AdminSizeSystemView() {
                           <span className="font-inter text-[13px] font-semibold text-on-surface">
                             {opt.label}
                           </span>
-                          {opt.badge && opt.badgeVariant !== "active" && (
-                            <BadgeVariant variant={opt.badgeVariant} text={opt.badge} />
+                          {opt.badge && opt.badge_variant !== "active" && (
+                            <BadgeVariant
+                              variant={opt.badge_variant as SizeOption["badgeVariant"]}
+                              text={opt.badge}
+                            />
                           )}
                           {opt.active ? (
                             <span className="px-1.5 py-0.5 bg-[#33402f] text-[#fff9ed] font-mono text-[9px] uppercase tracking-wider font-bold">
@@ -561,25 +593,15 @@ export function AdminSizeSystemView() {
             ))}
           </div>
 
-          {/* Footer CTA */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-outline-variant/20">
-            <div className="flex items-center gap-2 text-on-surface-variant font-inter text-[12px]">
-              <span className="material-symbols-outlined text-[18px] text-[#c77d2e]">
-                verified_user
-              </span>
-              <span>
-                Las directrices activas se aplican a los filtros de catálogo, fichas y validación de
-                inventario para adultos.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="px-8 py-3 bg-primary hover:bg-primary-container text-on-primary font-headline text-[18px] uppercase tracking-wider transition-all duration-150 active:translate-y-px shadow-sm flex items-center gap-2 self-stretch sm:self-auto justify-center cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[20px]">check_circle</span>
-              <span>GUARDAR SISTEMAS DE TALLES</span>
-            </button>
+          {/* Footer info */}
+          <div className="flex items-center gap-2 text-on-surface-variant font-inter text-[12px] pt-4 border-t border-outline-variant/20">
+            <span className="material-symbols-outlined text-[18px] text-[#c77d2e]">
+              verified_user
+            </span>
+            <span>
+              Las directrices activas se aplican a los filtros de catálogo, fichas y validación de
+              inventario para adultos.
+            </span>
           </div>
         </section>
 
@@ -608,11 +630,11 @@ export function AdminSizeSystemView() {
             setEditingCategory(null);
           }}
           onSave={handleSaveCategory}
-          initialData={editingCategory}
+          initialData={editingCategory ? groupToCategory(editingCategory) : null}
           groupNumber={
             editingCategory
-              ? categories.findIndex((c) => c.id === editingCategory.id) + 1
-              : categories.length + 1
+              ? groups.findIndex((c) => c.id === editingCategory.id) + 1
+              : groups.length + 1
           }
         />
       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 const STATS = [
   {
     label: "Catálogo Completo",
@@ -53,13 +55,13 @@ export function AdminProductsStats() {
             <span className="material-symbols-outlined text-[18px]">file_download</span>
             <span>Exportar CSV</span>
           </button>
-          <button
-            type="button"
+          <Link
+            href="/admin/productos/nuevo"
             className="px-6 py-2.5 bg-primary text-on-primary hover:bg-primary-container transition-colors font-headline text-[20px] tracking-wider uppercase flex items-center gap-1.5 rounded-none shadow-sm"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
             <span>NUEVO PRODUCTO</span>
-          </button>
+          </Link>
         </div>
       </div>
 

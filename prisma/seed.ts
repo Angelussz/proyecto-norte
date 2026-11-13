@@ -240,6 +240,198 @@ async function main() {
     });
   }
 
+  // 7. Sistemas de Talles (SizeGroup + SizeSystem)
+  const SIZE_GROUPS_SEED = [
+    {
+      title: "1. Ropa General (Poleras, Camisetas, Chaquetas, Ropa Deportiva)",
+      description:
+        "Prendas de parte superior, prendas de punto y sobrecamisas con patronaje unisex y calce desestructurado.",
+      systems: [
+        {
+          label: "Sistema Alfa Estándar",
+          badge: "RECOMENDADO",
+          badge_variant: "recommended",
+          description:
+            "Ideal para todo tipo de prendas superiores con calce regular, holgado o relajado.",
+          sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "2. Prendas y Accesorios de Talle Único o Adaptable",
+      description:
+        "Para cualquier prenda o accesorio que maneje un talle único o sea adaptable (sweaters oversize, ponchos, gorras, faldas wrap, bufandas).",
+      systems: [
+        {
+          label: "Talles Únicos",
+          badge: "ACTIVO",
+          badge_variant: "active",
+          description: "Prendas de patronaje flexible o adaptabilidad mediante cierres mecánicos.",
+          sizes: ["Talle Único", "Talle Ajustable"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "3. Pantalones, Jeans y Ropa Formal",
+      description:
+        "Sastrería artesanal, pantalones de vestir con pinzas, denim estructurado y bermudas.",
+      systems: [
+        {
+          label: "Numérico Tipo US / México — Masculino",
+          badge: "Hombres",
+          badge_variant: "gender",
+          description:
+            "Tallas clásicas americanas de tiro y calce masculino para denim y pantalones.",
+          sizes: ["28", "30", "32", "34", "36", "38", "40"],
+          active: true,
+        },
+        {
+          label: "Numérico Tipo US / México — Femenino",
+          badge: "Mujeres",
+          badge_variant: "gender",
+          description:
+            "Numeración estándar americana femenina para vaqueros y pantalones de sastrería.",
+          sizes: ["0", "2", "4", "6", "8", "10", "12", "14", "16", "18"],
+          active: true,
+        },
+        {
+          label: "Numérico Tipo EU / Cono Sur",
+          badge: "Sastrería Taller",
+          badge_variant: "workshop",
+          description: "Patronaje europeo oficial y sastrería de taller.",
+          sizes: ["34", "36", "38", "40", "42", "44", "46", "48"],
+          active: true,
+        },
+        {
+          label: "Medidas en Pulgadas / Cintura",
+          badge: "Denim & Waist",
+          badge_variant: "workshop",
+          description: "Ajuste exacto por contorno de cintura.",
+          sizes: ["30W", "32W", "34W", "36W", "38W"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "4. Calzado (Zapatos, Zapatillas, Sandalias)",
+      description: "Taxonomía y numeración estándar para calzado de confección artesanal.",
+      systems: [
+        {
+          label: "Calzado Adulto",
+          badge: "EU ADULTO",
+          badge_variant: "workshop",
+          description: "Escala unificada de hormas estándar para calzado adulto de atelier.",
+          sizes: ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "5. Accesorios y Complementos",
+      description: "Sombreros, marroquinería, joyería y accesorios de atelier.",
+      systems: [
+        {
+          label: "1. Sombreros, Gorras y Boinas",
+          badge: "ACTIVO",
+          badge_variant: "active",
+          description:
+            "Perímetro craneal en centímetros para sombrerería de fieltro, lino y boinas artesanales.",
+          sizes: [
+            "54 cm",
+            "55 cm",
+            "56 cm",
+            "57 cm",
+            "58 cm",
+            "59 cm",
+            "60 cm",
+            "Talle Único Ajustable",
+          ],
+          active: true,
+        },
+        {
+          label: "2. Cinturones y Marroquinería",
+          badge: "ACTIVO",
+          badge_variant: "active",
+          description:
+            "Longitud en centímetros desde hebilla al agujero central para correas y cinturones de piel artesanal.",
+          sizes: ["80 cm", "85 cm", "90 cm", "95 cm", "100 cm", "105 cm", "110 cm"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "6. Para Pijamas, Ropa Interior, Sweaters Holgados, Sombreros",
+      description:
+        "Opciones de patronaje técnico bajo pedido, ajustes especiales y confección a medida artesanal.",
+      systems: [
+        {
+          label: "Talles Dobles",
+          badge: null,
+          badge_variant: null,
+          description:
+            "Ideal para siluetas fluidas, prendas holgadas o hombros caídos con patronaje versátil.",
+          sizes: ["XS/S", "S/M", "M/L", "L/XL"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "7. Joyería y Accesorios de Metales (Anillos, Cadenas, Pulseras)",
+      description:
+        "Parametrización y normativas de tallaje para orfebrería, sortijas, gargantillas y brazaletes de atelier.",
+      systems: [
+        {
+          label: "A. Anillos y Sortijas",
+          badge: "US / EU RING SIZE",
+          badge_variant: "workshop",
+          description: "Escala milimétrica de diámetro interior para sortijas en metales nobles.",
+          sizes: ["5 US", "6 US", "7 US", "8 US", "9 US", "10 US"],
+          active: true,
+        },
+        {
+          label: "B. Cadenas y Collares",
+          badge: "LONGITUD DE CAÍDA",
+          badge_variant: "workshop",
+          description: "Largos estandarizados para cadenas de plata 925, gargantillas y colgantes.",
+          sizes: ["40 cm (Gargantilla)", "45 cm (Princesa)", "50 cm (Matinée)"],
+          active: true,
+        },
+        {
+          label: "C. Pulseras y Brazaletes",
+          badge: "CONTORNO MUÑECA",
+          badge_variant: "workshop",
+          description: "Perímetro circular de ajuste con cierre de caja o mosquetón de orfebrería.",
+          sizes: ["16 cm (S)", "18 cm (M)", "20 cm (L)"],
+          active: true,
+        },
+      ],
+    },
+  ];
+
+  for (const group of SIZE_GROUPS_SEED) {
+    const existing = await prisma.sizeGroup.findFirst({ where: { title: group.title } });
+    if (!existing) {
+      await prisma.sizeGroup.create({
+        data: {
+          title: group.title,
+          description: group.description,
+          systems: {
+            create: group.systems.map((s) => ({
+              label: s.label,
+              badge: s.badge,
+              badge_variant: s.badge_variant,
+              description: s.description,
+              sizes: s.sizes,
+              active: s.active,
+            })),
+          },
+        },
+      });
+    }
+  }
+
   console.log("¡Seed completado exitosamente!");
 }
 

@@ -204,3 +204,34 @@ model FiscalVouchers {
 
   order Orders @relation(fields: [order_id], references: [id], onDelete: Restrict)
 }
+
+// ── Sistema de Talles ─────────────────────────────────────────────────────────
+// Un SizeGroup representa un "uso" (ej: "Ropa General", "Calzado").
+// Cada SizeGroup puede tener varios SizeSystem (ej: "Sistema Alfa Estándar").
+
+model SizeGroup {
+  id          String   @id @default(uuid())
+  title       String                        // Título del grupo (ej: "1. Ropa General")
+  description String?  @db.Text             // Descripción del tipo de prenda
+  sort_order  Int      @default(0)          // Orden de aparición en la lista
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  systems SizeSystem[]
+}
+
+model SizeSystem {
+  id           String   @id @default(uuid())
+  group_id     String
+  label        String                        // Nombre del sistema (ej: "Sistema Alfa Estándar")
+  description  String?  @db.Text
+  badge        String?                       // Texto del badge (ej: "RECOMENDADO")
+  badge_variant String? // "recommended" | "active" | "gender" | "workshop"
+  sizes        String[]                      // Array de talles (ej: ["XS","S","M","L"])
+  active       Boolean  @default(true)
+  sort_order   Int      @default(0)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  group SizeGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
+}
