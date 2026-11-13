@@ -57,6 +57,16 @@ async function deleteGroup(id: string): Promise<void> {
   }
 }
 
+async function deleteSystem(groupId: string, systemId: string): Promise<void> {
+  const res = await fetch(`${BASE}/${groupId}/systems/${systemId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? "Error al eliminar el sistema.");
+  }
+}
+
 async function toggleSystem(
   groupId: string,
   systemId: string,
@@ -104,6 +114,14 @@ export function useDeleteSizeGroup() {
   const qc = useQueryClient();
   return useMutation<void, Error, string>({
     mutationFn: deleteGroup,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "size-groups"] }),
+  });
+}
+
+export function useDeleteSizeSystem() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, { groupId: string; systemId: string }>({
+    mutationFn: ({ groupId, systemId }) => deleteSystem(groupId, systemId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "size-groups"] }),
   });
 }

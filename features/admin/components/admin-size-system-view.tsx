@@ -10,6 +10,7 @@ import {
   useCreateSizeGroup,
   useUpdateSizeGroup,
   useDeleteSizeGroup,
+  useDeleteSizeSystem,
   useToggleSizeSystem,
 } from "@/features/admin/hooks/useSizeGroups";
 import type { SizeGroupDto } from "@/features/admin/types/size-system.interface";
@@ -256,10 +257,17 @@ export function AdminSizeSystemView() {
   const updateGroup = useUpdateSizeGroup();
   const toggleSystem = useToggleSizeSystem();
   const deleteGroup = useDeleteSizeGroup();
+  const deleteSystem = useDeleteSizeSystem();
 
   // ─── Modal state ─────────────────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<SizeGroupDto | null>(null);
+  const [groupToDelete, setGroupToDelete] = useState<SizeGroupDto | null>(null);
+  const [systemToDelete, setSystemToDelete] = useState<{
+    groupId: string;
+    systemId: string;
+    label: string;
+  } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   function showToast(msg: string) {
@@ -275,6 +283,31 @@ export function AdminSizeSystemView() {
   function handleEditCategory(cat: SizeGroupDto) {
     setEditingCategory(cat);
     setIsAddModalOpen(true);
+  }
+
+  async function handleConfirmDeleteGroup() {
+    if (!groupToDelete) return;
+    try {
+      await deleteGroup.mutateAsync(groupToDelete.id);
+      showToast(`Grupo "${groupToDelete.title}" eliminado correctamente.`);
+      setGroupToDelete(null);
+    } catch (err) {
+      showToast((err as Error).message ?? "Error al eliminar el grupo.");
+    }
+  }
+
+  async function handleConfirmDeleteSystem() {
+    if (!systemToDelete) return;
+    try {
+      await deleteSystem.mutateAsync({
+        groupId: systemToDelete.groupId,
+        systemId: systemToDelete.systemId,
+      });
+      showToast(`Sistema "${systemToDelete.label}" eliminado correctamente.`);
+      setSystemToDelete(null);
+    } catch (err) {
+      showToast((err as Error).message ?? "Error al eliminar el sistema.");
+    }
   }
 
   async function handleSaveCategory(savedCat: NewSizeCategory) {
@@ -520,14 +553,26 @@ export function AdminSizeSystemView() {
                     <h3 className="font-headline text-[20px] uppercase tracking-wider text-on-surface">
                       {cat.title}
                     </h3>
-                    <button
-                      type="button"
-                      onClick={() => handleEditCategory(cat)}
-                      className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-highest transition-colors cursor-pointer"
-                      title={`Editar sistema de talles: ${cat.title}`}
-                    >
-                      <span className="material-symbols-outlined text-[18px] block">edit_note</span>
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleEditCategory(cat)}
+                        className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-highest transition-colors cursor-pointer"
+                        title={`Editar grupo: ${cat.title}`}
+                      >
+                        <span className="material-symbols-outlined text-[18px] block">
+                          edit_note
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGroupToDelete(cat)}
+                        className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
+                        title={`Eliminar grupo completo: ${cat.title}`}
+                      >
+                        <span className="material-symbols-outlined text-[18px] block">delete</span>
+                      </button>
+                    </div>
                   </div>
                   <p className="font-inter text-[12px] text-on-surface-variant">
                     {cat.description}
@@ -539,53 +584,73 @@ export function AdminSizeSystemView() {
                   {cat.systems.map((opt) => (
                     <label
                       key={opt.id}
-                      className="flex items-start gap-3 p-3 bg-surface-container-low border border-outline-variant/40 hover:border-primary transition-colors cursor-pointer"
+                      className="group relative flex items-start justify-between gap-3 p-3 bg-surface-container-low border border-outline-variant/40 hover:border-primary transition-colors cursor-pointer"
                     >
-                      <input
-                        type="checkbox"
-                        checked={opt.active}
-                        onChange={() => handleToggleSystem(cat.id, opt.id, opt.active)}
-                        className="mt-1 text-primary focus:ring-0 rounded-none cursor-pointer h-4 w-4 shrink-0"
-                      />
-                      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-inter text-[13px] font-semibold text-on-surface">
-                            {opt.label}
-                          </span>
-                          {opt.badge && opt.badge_variant !== "active" && (
-                            <BadgeVariant
-                              variant={opt.badge_variant as SizeOption["badgeVariant"]}
-                              text={opt.badge}
-                            />
-                          )}
-                          {opt.active ? (
-                            <span className="px-1.5 py-0.5 bg-[#33402f] text-[#fff9ed] font-mono text-[9px] uppercase tracking-wider font-bold">
-                              ACTIVO
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={opt.active}
+                          onChange={() => handleToggleSystem(cat.id, opt.id, opt.active)}
+                          className="mt-1 text-primary focus:ring-0 rounded-none cursor-pointer h-4 w-4 shrink-0"
+                        />
+                        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-inter text-[13px] font-semibold text-on-surface">
+                              {opt.label}
                             </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold">
-                              INACTIVO
-                            </span>
-                          )}
-                        </div>
-                        <p className="font-inter text-[12px] text-on-surface-variant">
-                          {opt.description}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 mt-0.5">
-                          {opt.sizes.map((size) => (
-                            <span
-                              key={size}
-                              className={`px-2.5 py-1 font-mono text-[11px] font-semibold border ${
-                                opt.active
-                                  ? "bg-surface-container-highest text-on-surface border-outline-variant/40"
-                                  : "bg-surface-container text-on-surface-variant/50 border-outline-variant/20"
-                              }`}
-                            >
-                              {size}
-                            </span>
-                          ))}
+                            {opt.badge && opt.badge_variant !== "active" && (
+                              <BadgeVariant
+                                variant={opt.badge_variant as SizeOption["badgeVariant"]}
+                                text={opt.badge}
+                              />
+                            )}
+                            {opt.active ? (
+                              <span className="px-1.5 py-0.5 bg-[#33402f] text-[#fff9ed] font-mono text-[9px] uppercase tracking-wider font-bold">
+                                ACTIVO
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold">
+                                INACTIVO
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-inter text-[12px] text-on-surface-variant">
+                            {opt.description}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 mt-0.5">
+                            {opt.sizes.map((size) => (
+                              <span
+                                key={size}
+                                className={`px-2.5 py-1 font-mono text-[11px] font-semibold border ${
+                                  opt.active
+                                    ? "bg-surface-container-highest text-on-surface border-outline-variant/40"
+                                    : "bg-surface-container text-on-surface-variant/50 border-outline-variant/20"
+                                }`}
+                              >
+                                {size}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
+
+                      {/* Botón Eliminar Sistema en el lado derecho, visible al hacer hover en el rectángulo */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSystemToDelete({
+                            groupId: cat.id,
+                            systemId: opt.id,
+                            label: opt.label,
+                          });
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 transition-all cursor-pointer self-start shrink-0"
+                        title={`Eliminar sistema: ${opt.label}`}
+                      >
+                        <span className="material-symbols-outlined text-[18px] block">delete</span>
+                      </button>
                     </label>
                   ))}
                 </div>
@@ -637,6 +702,123 @@ export function AdminSizeSystemView() {
               : groups.length + 1
           }
         />
+        {/* ── Modal Confirmar Eliminar Grupo Completo ── */}
+        {groupToDelete && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          >
+            <div
+              className="fixed inset-0 bg-[#1e1c13]/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setGroupToDelete(null)}
+            />
+            <div className="relative bg-[#fff9ed] border border-[#d8c3b2]/60 shadow-2xl max-w-md w-full p-6 z-10 flex flex-col gap-5">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-error/10 text-error flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[24px]">delete_forever</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="px-2 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold w-fit">
+                    ACCIÓN IRREVERSIBLE
+                  </span>
+                  <h3 className="font-headline text-[22px] uppercase tracking-wide text-[#1e1c13] leading-tight">
+                    ¿ELIMINAR GRUPO COMPLETO?
+                  </h3>
+                </div>
+              </div>
+
+              <div className="font-inter text-[13px] text-[#524438] leading-relaxed flex flex-col gap-2 bg-[#faf3e4] p-3 border border-[#d8c3b2]/40">
+                <p>
+                  Estás a punto de eliminar el grupo:{" "}
+                  <strong className="text-[#1e1c13] font-semibold">{groupToDelete.title}</strong>
+                </p>
+                <p className="text-[12px] text-error font-medium">
+                  Se eliminarán permanentemente este grupo y todos los{" "}
+                  <strong>{groupToDelete.systems.length} sistemas de talles</strong> que contiene.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setGroupToDelete(null)}
+                  className="px-4 py-2 bg-white text-[#524438] hover:text-[#1e1c13] font-headline text-[15px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors cursor-pointer"
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteGroup}
+                  disabled={deleteGroup.isPending}
+                  className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  <span>{deleteGroup.isPending ? "ELIMINANDO..." : "SÍ, ELIMINAR GRUPO"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal Confirmar Eliminar Sistema Individual ── */}
+        {systemToDelete && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          >
+            <div
+              className="fixed inset-0 bg-[#1e1c13]/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setSystemToDelete(null)}
+            />
+            <div className="relative bg-[#fff9ed] border border-[#d8c3b2]/60 shadow-2xl max-w-md w-full p-6 z-10 flex flex-col gap-5">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-error/10 text-error flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[24px]">delete</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="px-2 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold w-fit">
+                    CONFIRMAR ELIMINACIÓN
+                  </span>
+                  <h3 className="font-headline text-[22px] uppercase tracking-wide text-[#1e1c13] leading-tight">
+                    ¿ELIMINAR SISTEMA DE TALLES?
+                  </h3>
+                </div>
+              </div>
+
+              <div className="font-inter text-[13px] text-[#524438] leading-relaxed bg-[#faf3e4] p-3 border border-[#d8c3b2]/40">
+                <p>
+                  ¿Deseas eliminar el sistema{" "}
+                  <strong className="text-[#1e1c13] font-semibold">{systemToDelete.label}</strong>?
+                </p>
+                <p className="text-[12px] text-on-surface-variant mt-1">
+                  Esta escala de medidas ya no estará disponible para asignar a prendas del
+                  catálogo.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSystemToDelete(null)}
+                  className="px-4 py-2 bg-white text-[#524438] hover:text-[#1e1c13] font-headline text-[15px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors cursor-pointer"
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteSystem}
+                  disabled={deleteSystem.isPending}
+                  className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  <span>{deleteSystem.isPending ? "ELIMINANDO..." : "SÍ, ELIMINAR"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

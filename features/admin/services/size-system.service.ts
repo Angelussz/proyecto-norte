@@ -160,3 +160,11 @@ export async function toggleSizeSystem(
   });
   return updated;
 }
+
+// ─── Eliminar un sistema de talles individual ───────────────────────────────
+export async function deleteSizeSystem(systemId: string): Promise<boolean> {
+  const existing = await prisma.sizeSystem.findUnique({ where: { id: systemId } });
+  if (!existing) return false;
+  await prisma.sizeSystem.delete({ where: { id: systemId } });
+  return true;
+}
