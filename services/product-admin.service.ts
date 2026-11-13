@@ -335,6 +335,20 @@ export async function deleteProduct(id: string) {
 
 import type { ProductListItem } from "@/features/admin/types/product.interface";
 
+// ─── Tipos de variante ────────────────────────────────────────────────────────
+
+export interface CreateVariantBody {
+  sku?: string;
+  size: string;
+  /** Nombre del color (se guarda en la columna `color`) */
+  color: string;
+  /** Hex del color (ej: "#4F583D") — se guarda en un campo de nombre `color` del seed original  */
+  colorHex: string;
+  price?: number;
+  unitCost?: number;
+  stock: number;
+}
+
 /** Lista todos los productos con nombre de categoría y conteos de variantes */
 export async function listProducts(): Promise<ProductListItem[]> {
   const products = await prisma.products.findMany({
@@ -393,4 +407,56 @@ export async function getProductById(id: string) {
       imageUrl: v.image_url,
     })),
   };
+}
+
+/**
+ * Crea una variante para el producto `productId`.
+ *
+ * La columna `color` almacena el HEX (convención del seed existente).
+ * El campo `sku` es UNIQUE: si no se envía se genera uno automático.
+ * Los campos `price` y `unit_cost` son NOT NULL en el schema; se usa 0 por defecto.
+ */
+export async function createProductVariant(productId: string, body: CreateVariantBody) {
+  // Verificar que el producto existe
+  const product = await prisma.products.findUnique({
+    where: { id: productId },
+    select: { id: true, base_price: true },
+  });
+  if (!product) {
+    throw new ProductAdminError("NOT_FOUND", `No existe el producto ${productId}`);
+  }
+
+  // Generar un SKU único si no se proporciona
+  const sku =
+    body.sku?.trim() || `${productId.slice(0, 8)}-${body.size}-${Date.now()}`.toUpperCase();
+
+  // La columna `color` guarda el hex (convención del seed)
+  const data = {
+    product_id: productId,
+    sku,
+    size: body.size,
+    color: body.colorHex, // columna "color" = hex
+    price: body.price ?? Number(product.base_price),
+    unit_cost: body.unitCost ?? 0,
+    stock: body.stock,
+  };
+
+  try {
+    const variant = await prisma.productVariants.create({ data });
+    return {
+      id: variant.id,
+      sku: variant.sku,
+      size: variant.size,
+      color: variant.color,
+      price: Number(variant.price),
+      unitCost: Number(variant.unit_cost),
+      stock: variant.stock,
+      active: variant.active,
+    };
+  } catch (error) {
+    if (prismaErrorCode(error) === "P2002") {
+      throw new ProductAdminError("SLUG_NOT_UNIQUE", `El SKU "${sku}" ya está en uso`);
+    }
+    throw error;
+  }
 }

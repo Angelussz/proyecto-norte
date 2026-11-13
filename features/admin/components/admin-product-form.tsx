@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdminInventoryVariantsSection } from "@/features/admin/components/admin-inventory-variants-section";
+import {
+  AdminInventoryVariantsSection,
+  type VariantRow,
+} from "@/features/admin/components/admin-inventory-variants-section";
 import { useCategories } from "@/features/category/hooks/useCategories";
 import { useBrands } from "@/features/admin/hooks/useBrands";
 import { useCreateProduct } from "@/features/admin/hooks/useProducts";
@@ -38,6 +41,9 @@ export function AdminProductForm() {
   const [unitCost, setUnitCost] = useState<string>("");
   const [active, setActive] = useState(true);
   const [notification, setNotification] = useState<Notification>(null);
+
+  // ── Variantes ─────────────────────────────────────────────────────────────
+  const [variants, setVariants] = useState<VariantRow[]>([]);
 
   // ── Derivados en tiempo real ──────────────────────────────────────────────
   const slug = slugify(name);
@@ -83,7 +89,29 @@ export function AdminProductForm() {
     form.set("active", String(active));
 
     try {
-      await createProduct.mutateAsync(form);
+      const created = await createProduct.mutateAsync(form);
+      // `created` es el DTO del producto con `id` (ver fetchCreateProduct en useProducts.ts)
+      const productId: string = (created as { id: string }).id;
+
+      // Guardar variantes con stock > 0
+      const variantsToSave = variants.filter((v) => v.stock > 0);
+      if (variantsToSave.length > 0) {
+        await Promise.all(
+          variantsToSave.map((v) =>
+            fetch(`/api/admin/products/${productId}/variants`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                size: v.size,
+                color: v.colorName,
+                colorHex: v.colorHex,
+                stock: v.stock,
+              }),
+            }),
+          ),
+        );
+      }
+
       setNotification({ type: "success", message: "¡Producto publicado correctamente!" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido al guardar.";
@@ -667,7 +695,7 @@ export function AdminProductForm() {
           </section>
 
           {/* ── CARD 2: INVENTARIO, TALLES Y COLORES ── */}
-          <AdminInventoryVariantsSection />
+          <AdminInventoryVariantsSection onVariantsChange={setVariants} />
         </aside>
       </div>
 
