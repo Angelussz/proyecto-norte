@@ -153,6 +153,12 @@ export function AdminAddBrandModal({
               <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold flex items-center gap-1">
                 <span>CÓDIGO (3 LETRAS)</span>
                 <span className="text-[#673900] font-bold">*</span>
+                <span
+                  className="material-symbols-outlined text-[15px] text-[#857466] hover:text-[#673900] cursor-help transition-colors ml-0.5"
+                  title="Código único de 3 letras que identifica la marca al inicio del SKU de cada prenda."
+                >
+                  info
+                </span>
               </label>
               <input
                 type="text"
