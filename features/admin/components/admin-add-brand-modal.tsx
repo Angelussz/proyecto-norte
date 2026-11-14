@@ -183,7 +183,7 @@ export function AdminAddBrandModal({
 
           {/* Bloque: Prendas Asignadas / Visibilidad */}
           <div className="p-4 bg-[#faf3e4] border border-[#d8c3b2]/40 flex flex-col gap-3">
-            <div className="flex items-center justify-between pb-2 border-b border-[#d8c3b2]/20 flex-wrap gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#33402f] text-[18px]">
                   checkroom
@@ -195,21 +195,6 @@ export function AdminAddBrandModal({
               <span className="font-mono font-semibold text-[11px] text-[#33402f] bg-[#eee8d9] px-2 py-0.5 border border-[#d8c3b2]/30">
                 {assignedItems} prendas vinculadas en catálogo
               </span>
-            </div>
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                id="modal-brand-active"
-                type="checkbox"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
-                className="h-4 w-4 rounded-none border-[#d8c3b2] text-[#673900] focus:ring-0 focus:outline-none cursor-pointer"
-              />
-              <label
-                htmlFor="modal-brand-active"
-                className="font-inter text-[11px] uppercase tracking-wider text-[#1e1c13] font-medium cursor-pointer"
-              >
-                Línea activa y visible en tienda online
-              </label>
             </div>
           </div>
 
