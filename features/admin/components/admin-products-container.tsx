@@ -69,7 +69,8 @@ export function AdminProductsContainer() {
       if (filterCat) {
         if (!p.categoryName.toLowerCase().includes(filterCat.toLowerCase())) return false;
       }
-      // Status: stock-based
+      // Status: active-based or stock-based
+      if (filterStatus === "active" && !p.active) return false;
       if (filterStatus === "in_stock" && p.totalStock <= 5) return false;
       if (filterStatus === "low_stock" && !(p.totalStock >= 1 && p.totalStock <= 5)) return false;
       if (filterStatus === "out_of_stock" && p.totalStock !== 0) return false;
@@ -99,6 +100,8 @@ export function AdminProductsContainer() {
         active={kpis.active}
         lowStock={kpis.lowStock}
         outOfStock={kpis.outOfStock}
+        activeFilterStatus={filterStatus}
+        onSelectFilterStatus={handleStatusChange}
       />
       <AdminProductsFilters
         search={search}

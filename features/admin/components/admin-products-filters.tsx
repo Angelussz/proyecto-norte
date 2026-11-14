@@ -65,9 +65,10 @@ export function AdminProductsFilters({
                 className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Estado: Todos</option>
+                <option value="active">Piezas Activas</option>
                 <option value="in_stock">En stock</option>
-                <option value="low_stock">Stock bajo</option>
-                <option value="out_of_stock">Agotado</option>
+                <option value="low_stock">Atención Reposición</option>
+                <option value="out_of_stock">Agotados</option>
               </select>
               <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 keyboard_arrow_down
