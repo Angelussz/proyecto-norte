@@ -100,7 +100,6 @@ export function AdminProductsContainer() {
         active={kpis.active}
         lowStock={kpis.lowStock}
         outOfStock={kpis.outOfStock}
-        activeFilterStatus={filterStatus}
         onSelectFilterStatus={handleStatusChange}
       />
       <AdminProductsFilters

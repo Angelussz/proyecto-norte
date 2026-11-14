@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 interface Props {
   total: number;
   active: number;
   lowStock: number;
   outOfStock: number;
-  activeFilterStatus?: string;
   onSelectFilterStatus?: (status: string) => void;
 }
 
@@ -17,7 +15,6 @@ export function AdminProductsStats({
   active,
   lowStock,
   outOfStock,
-  activeFilterStatus,
   onSelectFilterStatus,
 }: Props) {
   return (
@@ -52,7 +49,7 @@ export function AdminProductsStats({
         </div>
       </div>
 
-      {/* ── KPI Cards (Interactivos con filtro automático de estado) ── */}
+      {/* ── KPI Cards (Estilo Inventario) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* KPI 1: Catálogo Completo */}
         <div
@@ -60,16 +57,10 @@ export function AdminProductsStats({
           tabIndex={0}
           onClick={() => onSelectFilterStatus?.("")}
           onKeyDown={(e) => e.key === "Enter" && onSelectFilterStatus?.("")}
-          title="Ver todo el catálogo (sin filtro de estado)"
-          className={cn(
-            "bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border shadow-sm cursor-pointer transition-all duration-200 select-none group",
-            !activeFilterStatus
-              ? "ring-2 ring-primary border-primary shadow-md"
-              : "border-outline-variant/30 hover:border-primary/60 hover:shadow-md",
-          )}
+          className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
         >
           <div className="flex items-start justify-between relative z-10">
-            <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold group-hover:text-primary transition-colors">
+            <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
               Catálogo Completo
             </span>
             <span className="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
@@ -79,7 +70,7 @@ export function AdminProductsStats({
               {total}
             </span>
             <span className="font-inter text-[11px] text-secondary font-bold uppercase tracking-wider block mt-1">
-              {!activeFilterStatus ? "● Filtro aplicado" : "100% auditable"}
+              100% auditable
             </span>
           </div>
           <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -96,18 +87,9 @@ export function AdminProductsStats({
         <div
           role="button"
           tabIndex={0}
-          onClick={() => onSelectFilterStatus?.(activeFilterStatus === "active" ? "" : "active")}
-          onKeyDown={(e) =>
-            e.key === "Enter" &&
-            onSelectFilterStatus?.(activeFilterStatus === "active" ? "" : "active")
-          }
-          title="Filtrar por piezas activas"
-          className={cn(
-            "bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border shadow-sm cursor-pointer transition-all duration-200 select-none group",
-            activeFilterStatus === "active"
-              ? "ring-2 ring-secondary border-secondary shadow-md"
-              : "border-outline-variant/30 hover:border-secondary/60 hover:shadow-md",
-          )}
+          onClick={() => onSelectFilterStatus?.("active")}
+          onKeyDown={(e) => e.key === "Enter" && onSelectFilterStatus?.("active")}
+          className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
         >
           <div className="flex items-start justify-between relative z-10">
             <span className="font-inter text-[10px] text-secondary uppercase tracking-widest font-semibold">
@@ -120,9 +102,7 @@ export function AdminProductsStats({
               {active}
             </span>
             <span className="font-inter text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
-              {activeFilterStatus === "active"
-                ? "● Filtro aplicado"
-                : `${total > 0 ? Math.round((active / total) * 100) : 0}% en vitrina`}
+              {total > 0 ? Math.round((active / total) * 100) : 0}% en vitrina
             </span>
           </div>
           <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -139,20 +119,9 @@ export function AdminProductsStats({
         <div
           role="button"
           tabIndex={0}
-          onClick={() =>
-            onSelectFilterStatus?.(activeFilterStatus === "low_stock" ? "" : "low_stock")
-          }
-          onKeyDown={(e) =>
-            e.key === "Enter" &&
-            onSelectFilterStatus?.(activeFilterStatus === "low_stock" ? "" : "low_stock")
-          }
-          title="Filtrar por piezas que requieren reposición (stock bajo)"
-          className={cn(
-            "bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border shadow-sm cursor-pointer transition-all duration-200 select-none group",
-            activeFilterStatus === "low_stock"
-              ? "ring-2 ring-mustard border-mustard shadow-md"
-              : "border-outline-variant/30 hover:border-mustard/60 hover:shadow-md",
-          )}
+          onClick={() => onSelectFilterStatus?.("low_stock")}
+          onKeyDown={(e) => e.key === "Enter" && onSelectFilterStatus?.("low_stock")}
+          className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
         >
           <div className="flex items-start justify-between relative z-10">
             <span className="font-inter text-[10px] text-mustard uppercase tracking-widest font-semibold">
@@ -167,7 +136,7 @@ export function AdminProductsStats({
               {String(lowStock).padStart(2, "0")}
             </span>
             <span className="font-inter text-[11px] bg-mustard/15 text-primary px-2 py-0.5 uppercase font-semibold inline-block mt-1">
-              {activeFilterStatus === "low_stock" ? "● Filtro aplicado" : "Stock bajo"}
+              Stock bajo
             </span>
           </div>
           <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -184,20 +153,9 @@ export function AdminProductsStats({
         <div
           role="button"
           tabIndex={0}
-          onClick={() =>
-            onSelectFilterStatus?.(activeFilterStatus === "out_of_stock" ? "" : "out_of_stock")
-          }
-          onKeyDown={(e) =>
-            e.key === "Enter" &&
-            onSelectFilterStatus?.(activeFilterStatus === "out_of_stock" ? "" : "out_of_stock")
-          }
-          title="Filtrar por piezas agotadas (stock 0)"
-          className={cn(
-            "bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border shadow-sm cursor-pointer transition-all duration-200 select-none group",
-            activeFilterStatus === "out_of_stock"
-              ? "ring-2 ring-error border-error shadow-md"
-              : "border-outline-variant/30 hover:border-error/60 hover:shadow-md",
-          )}
+          onClick={() => onSelectFilterStatus?.("out_of_stock")}
+          onKeyDown={(e) => e.key === "Enter" && onSelectFilterStatus?.("out_of_stock")}
+          className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
         >
           <div className="flex items-start justify-between relative z-10">
             <span className="font-inter text-[10px] text-error uppercase tracking-widest font-semibold">
@@ -210,7 +168,7 @@ export function AdminProductsStats({
               {String(outOfStock).padStart(2, "0")}
             </span>
             <span className="font-inter text-[11px] bg-error-container text-on-error-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
-              {activeFilterStatus === "out_of_stock" ? "● Filtro aplicado" : "Edición Atelier"}
+              Edición Atelier
             </span>
           </div>
           <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
