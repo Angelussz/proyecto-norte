@@ -435,11 +435,11 @@ export function AdminColorsBrandsView() {
                 />
               </div>
               <div className="sm:col-span-2 relative flex flex-col gap-1">
-                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center gap-1">
-                  <span>CÓDIGO (3 LETRAS)</span>
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center justify-between">
+                  <span>SKU</span>
                   <span
                     className="material-symbols-outlined text-[14px] text-outline hover:text-primary cursor-help transition-colors"
-                    title="Código único de 3 letras que identifica la marca al inicio del SKU."
+                    title="Código de 3 letras que identifica a la marca."
                   >
                     info
                   </span>
@@ -602,11 +602,11 @@ export function AdminColorsBrandsView() {
                 />
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1">
-                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center gap-1">
-                  <span>CÓDIGO (3 LETRAS)</span>
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center justify-between">
+                  <span>SKU</span>
                   <span
                     className="material-symbols-outlined text-[14px] text-outline hover:text-primary cursor-help transition-colors"
-                    title="Código único de 3 letras que identifica el color en el medio del SKU."
+                    title="Código de 3 letras que identifica al color."
                   >
                     info
                   </span>

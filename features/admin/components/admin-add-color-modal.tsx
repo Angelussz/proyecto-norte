@@ -174,12 +174,14 @@ export function AdminAddColorModal({
 
             {/* Código SKU */}
             <div className="flex flex-col gap-1">
-              <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold flex items-center gap-1">
-                <span>CÓDIGO (3 LETRAS)</span>
-                <span className="text-[#673900] font-bold">*</span>
+              <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <span>SKU</span>
+                  <span className="text-[#673900] font-bold">*</span>
+                </span>
                 <span
-                  className="material-symbols-outlined text-[15px] text-[#857466] hover:text-[#673900] cursor-help transition-colors ml-0.5"
-                  title="Código único de 3 letras que identifica la tintura o color en el medio del SKU de cada prenda."
+                  className="material-symbols-outlined text-[15px] text-[#857466] hover:text-[#673900] cursor-help transition-colors"
+                  title="Código de 3 letras que identifica al color."
                 >
                   info
                 </span>
