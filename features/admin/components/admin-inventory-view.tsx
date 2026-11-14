@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AdminAddInventoryColorModal } from "./admin-add-inventory-color-modal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -194,6 +195,42 @@ export function AdminInventoryView() {
   const [activeColorGroups, setActiveColorGroups] = useState<Record<string, number>>({});
   const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [colorModalProduct, setColorModalProduct] = useState<ProductCard | null>(null);
+
+  function handleSaveColors(productId: string, newColors: ColorVariant[]) {
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+
+        const updatedStock: StockMatrix = {};
+        p.sizes.forEach((talle) => {
+          const currentTalleStock = p.stock[talle] ?? {};
+          updatedStock[talle] = {};
+          newColors.forEach((c) => {
+            const prevVal = currentTalleStock[c.name];
+            updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
+          });
+        });
+
+        const newTotalStock = calcTotal(updatedStock);
+        const newLevel: "healthy" | "low" | "critical" =
+          newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
+
+        return {
+          ...p,
+          colors: newColors,
+          stock: updatedStock,
+          totalStock: newTotalStock,
+          stockLevel: newLevel,
+        };
+      }),
+    );
+
+    const targetProduct = products.find((x) => x.id === productId);
+    const prodName = targetProduct?.name || "el producto";
+    setToast(`Matriz de colores actualizada para "${prodName}".`);
+    setTimeout(() => setToast(null), 3500);
+  }
 
   function handleColorGroupSelect(productId: string, group: number) {
     setActiveColorGroups((prev) => ({ ...prev, [productId]: group }));
@@ -727,6 +764,7 @@ export function AdminInventoryView() {
                             ))}
                             <button
                               type="button"
+                              onClick={() => setColorModalProduct(product)}
                               className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1.5"
                             >
                               <span className="material-symbols-outlined text-[18px] font-bold leading-none">
@@ -996,6 +1034,13 @@ export function AdminInventoryView() {
           </div>
         </section>
       </div>
+
+      <AdminAddInventoryColorModal
+        isOpen={Boolean(colorModalProduct)}
+        onClose={() => setColorModalProduct(null)}
+        product={colorModalProduct}
+        onSaveColors={handleSaveColors}
+      />
     </main>
   );
 }
