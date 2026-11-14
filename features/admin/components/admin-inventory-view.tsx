@@ -386,6 +386,10 @@ function StockCell({ value, onChange }: { value: number; onChange: (v: number) =
 
 export function AdminInventoryView() {
   const [products, setProducts] = useState<ProductCard[]>(INITIAL_PRODUCTS);
+  // Snapshot del stock "guardado" (antes de editar en la tabla). Permite Descartar.
+  const [savedStocks, setSavedStocks] = useState<Record<string, StockMatrix>>(() =>
+    Object.fromEntries(INITIAL_PRODUCTS.map((p) => [p.id, structuredClone(p.stock)])),
+  );
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -421,6 +425,8 @@ export function AdminInventoryView() {
   }
 
   function handleSaveSizes(productId: string, newSizes: string[]) {
+    let updatedStockSnapshot: StockMatrix = {};
+
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;
@@ -434,6 +440,8 @@ export function AdminInventoryView() {
             updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
           });
         });
+
+        updatedStockSnapshot = structuredClone(updatedStock);
 
         const newTotalStock = calcTotal(updatedStock);
         const newLevel: "healthy" | "low" | "critical" =
@@ -449,6 +457,9 @@ export function AdminInventoryView() {
       }),
     );
 
+    // Sincronizar snapshot para que "Descartar" no revierta a talles viejos
+    setSavedStocks((prev) => ({ ...prev, [productId]: updatedStockSnapshot }));
+
     const targetProduct = products.find((x) => x.id === productId);
     const prodName = targetProduct?.name || "el producto";
     setToast(`Curva de talles actualizada para "${prodName}".`);
@@ -456,6 +467,8 @@ export function AdminInventoryView() {
   }
 
   function handleSaveColors(productId: string, newColors: ColorVariant[]) {
+    let updatedStockSnapshot: StockMatrix = {};
+
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;
@@ -470,6 +483,8 @@ export function AdminInventoryView() {
           });
         });
 
+        updatedStockSnapshot = structuredClone(updatedStock);
+
         const newTotalStock = calcTotal(updatedStock);
         const newLevel: "healthy" | "low" | "critical" =
           newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
@@ -483,6 +498,9 @@ export function AdminInventoryView() {
         };
       }),
     );
+
+    // Sincronizar snapshot
+    setSavedStocks((prev) => ({ ...prev, [productId]: updatedStockSnapshot }));
 
     const targetProduct = products.find((x) => x.id === productId);
     const prodName = targetProduct?.name || "el producto";
@@ -513,10 +531,51 @@ export function AdminInventoryView() {
   }
 
   function saveMatrix(productId: string) {
-    const p = products.find((x) => x.id === productId);
-    if (!p) return;
-    setToast(`Stock de "${p.name}" actualizado correctamente.`);
+    // Capturar el stock actual antes de cualquier setState (evita closure stale)
+    const current = products.find((x) => x.id === productId);
+    if (!current) return;
+
+    const snapshotStock = structuredClone(current.stock);
+    const newTotal = calcTotal(snapshotStock);
+    const newLevel: "healthy" | "low" | "critical" =
+      newTotal === 0 ? "critical" : newTotal < 15 ? "low" : "healthy";
+
+    // 1. Actualizar totalStock y stockLevel en products
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id !== productId ? p : { ...p, totalStock: newTotal, stockLevel: newLevel },
+      ),
+    );
+
+    // 2. Guardar snapshot del stock actual
+    setSavedStocks((prev) => ({ ...prev, [productId]: snapshotStock }));
+
+    setToast(`Stock de "${current.name}" guardado correctamente.`);
     setTimeout(() => setToast(null), 3000);
+  }
+
+  function discardMatrix(productId: string) {
+    const snapshot = savedStocks[productId];
+    if (!snapshot) return;
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+        const restoredStock = structuredClone(snapshot);
+        const restoredTotal = calcTotal(restoredStock);
+        const restoredLevel: "healthy" | "low" | "critical" =
+          restoredTotal === 0 ? "critical" : restoredTotal < 15 ? "low" : "healthy";
+        return { ...p, stock: restoredStock, totalStock: restoredTotal, stockLevel: restoredLevel };
+      }),
+    );
+    const p = products.find((x) => x.id === productId);
+    setToast(`Cambios en "${p?.name}" descartados.`);
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  function hasUnsavedChanges(productId: string): boolean {
+    const current = products.find((x) => x.id === productId);
+    if (!current) return false;
+    return JSON.stringify(current.stock) !== JSON.stringify(savedStocks[productId] ?? {});
   }
 
   const filteredProducts = products.filter((p) => {
@@ -1250,30 +1309,52 @@ export function AdminInventoryView() {
                       </div>
 
                       {/* Footer Actions */}
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-outline-variant/20">
-                        <div className="flex items-center gap-2 font-inter text-[11px] text-on-surface-variant">
-                          <span className="material-symbols-outlined text-[16px] text-secondary">
-                            sync
-                          </span>
-                          <span>Última sincronización con Taller Jorge Juan: Hace 14 minutos</span>
-                        </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                          <button
-                            type="button"
-                            className="px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-variant font-inter text-[11px] uppercase tracking-wider transition-colors"
-                          >
-                            Descartar Cambios
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => saveMatrix(product.id)}
-                            className="px-5 py-2 bg-primary text-white font-headline text-[14px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-colors hover:bg-primary-container"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">check</span>
-                            Actualizar Stock
-                          </button>
-                        </div>
-                      </div>
+                      {(() => {
+                        const dirty = hasUnsavedChanges(product.id);
+                        return (
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-outline-variant/20">
+                            <div className="flex items-center gap-2 font-inter text-[11px] text-on-surface-variant">
+                              {dirty ? (
+                                <>
+                                  <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d97706]" />
+                                  </span>
+                                  <span className="text-[#d97706] font-semibold">
+                                    Cambios pendientes — no guardados
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="material-symbols-outlined text-[16px] text-secondary">
+                                    check_circle
+                                  </span>
+                                  <span>Stock guardado</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                              <button
+                                type="button"
+                                disabled={!dirty}
+                                onClick={() => discardMatrix(product.id)}
+                                className="px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-variant font-inter text-[11px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                Descartar Cambios
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!dirty}
+                                onClick={() => saveMatrix(product.id)}
+                                className="px-5 py-2 bg-primary text-white font-headline text-[14px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-colors hover:bg-primary-container disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">check</span>
+                                Actualizar Stock
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
