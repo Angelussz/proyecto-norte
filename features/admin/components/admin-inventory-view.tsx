@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AdminAddInventoryColorModal } from "./admin-add-inventory-color-modal";
+import { AdminAddInventorySizeModal } from "./admin-add-inventory-size-modal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -196,6 +197,42 @@ export function AdminInventoryView() {
   const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [colorModalProduct, setColorModalProduct] = useState<ProductCard | null>(null);
+  const [sizeModalProduct, setSizeModalProduct] = useState<ProductCard | null>(null);
+
+  function handleSaveSizes(productId: string, newSizes: string[]) {
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+
+        const updatedStock: StockMatrix = {};
+        newSizes.forEach((talle) => {
+          const currentTalleStock = p.stock[talle] ?? {};
+          updatedStock[talle] = {};
+          p.colors.forEach((c) => {
+            const prevVal = currentTalleStock[c.name];
+            updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
+          });
+        });
+
+        const newTotalStock = calcTotal(updatedStock);
+        const newLevel: "healthy" | "low" | "critical" =
+          newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
+
+        return {
+          ...p,
+          sizes: newSizes,
+          stock: updatedStock,
+          totalStock: newTotalStock,
+          stockLevel: newLevel,
+        };
+      }),
+    );
+
+    const targetProduct = products.find((x) => x.id === productId);
+    const prodName = targetProduct?.name || "el producto";
+    setToast(`Curva de talles actualizada para "${prodName}".`);
+    setTimeout(() => setToast(null), 3500);
+  }
 
   function handleSaveColors(productId: string, newColors: ColorVariant[]) {
     setProducts((prev) =>
@@ -735,10 +772,16 @@ export function AdminInventoryView() {
                             ))}
                             <button
                               type="button"
-                              className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1"
+                              onClick={() => setSizeModalProduct(product)}
+                              className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1.5"
                             >
-                              <span className="material-symbols-outlined text-[14px]">add</span>
-                              Talla
+                              <span className="material-symbols-outlined text-[18px] font-bold leading-none">
+                                add
+                              </span>
+                              <span className="material-symbols-outlined text-[15px]">
+                                straighten
+                              </span>
+                              <span>Talla</span>
                             </button>
                           </div>
                         </div>
@@ -1040,6 +1083,13 @@ export function AdminInventoryView() {
         onClose={() => setColorModalProduct(null)}
         product={colorModalProduct}
         onSaveColors={handleSaveColors}
+      />
+
+      <AdminAddInventorySizeModal
+        isOpen={Boolean(sizeModalProduct)}
+        onClose={() => setSizeModalProduct(null)}
+        product={sizeModalProduct}
+        onSaveSizes={handleSaveSizes}
       />
     </main>
   );

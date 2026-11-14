@@ -230,11 +230,7 @@ export function AdminAddInventoryColorModal({
                 <div
                   key={c.name}
                   onClick={() => toggleColor(c.name)}
-                  className={`flex items-center justify-between p-3 bg-white hover:bg-[#faf7f0] border cursor-pointer select-none transition-all ${
-                    isChecked
-                      ? "border-[#c77d2e] shadow-2xs"
-                      : "border-[#e8dfcf] hover:border-[#d9cdb8]"
-                  }`}
+                  className="flex items-center justify-between p-3 bg-white hover:bg-[#faf7f0] border border-[#e8dfcf] hover:border-[#d9cdb8] cursor-pointer select-none transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     {/* Checkbox cuadrado */}
