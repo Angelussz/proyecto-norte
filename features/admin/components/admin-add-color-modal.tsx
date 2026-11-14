@@ -125,14 +125,9 @@ export function AdminAddColorModal({
         {/* ── Modal Header ── */}
         <div className="px-6 sm:px-8 pt-6 pb-4 border-b border-[#d8c3b2]/30 bg-[#faf3e4] flex flex-col gap-1.5 relative">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 bg-[#d8e7cf] text-[#121f10] font-inter text-[10px] uppercase font-bold tracking-widest">
-                ATELIER NORTE · PALETA CROMÁTICA
-              </span>
-              <span className="px-2 py-0.5 bg-[#e8e2d4] text-[#524438] font-mono text-[11px] uppercase tracking-wider font-semibold">
-                {isEdit ? `MODO EDICIÓN · ID: ${initialData?.id || "CLR"}` : "NUEVA TINTURA"}
-              </span>
-            </div>
+            <span className="px-2 py-0.5 bg-[#d8e7cf] text-[#121f10] font-inter text-[10px] uppercase font-bold tracking-widest">
+              ATELIER NORTE · PALETA CROMÁTICA
+            </span>
             <button
               type="button"
               onClick={onClose}
