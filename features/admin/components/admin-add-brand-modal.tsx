@@ -183,7 +183,7 @@ export function AdminAddBrandModal({
 
           {/* Bloque: Prendas Asignadas / Visibilidad */}
           <div className="p-4 bg-[#faf3e4] border border-[#d8c3b2]/40 flex flex-col gap-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center justify-between pb-2 border-b border-[#d8c3b2]/20 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#33402f] text-[18px]">
                   checkroom
@@ -195,6 +195,21 @@ export function AdminAddBrandModal({
               <span className="font-mono font-semibold text-[11px] text-[#33402f] bg-[#eee8d9] px-2 py-0.5 border border-[#d8c3b2]/30">
                 {assignedItems} prendas vinculadas en catálogo
               </span>
+            </div>
+
+            {/* Advertencia de impacto */}
+            <div className="flex items-start gap-2.5 p-3 bg-[#fff3e0] border border-[#f5c28e] text-[#7a3300]">
+              <span className="material-symbols-outlined text-[18px] text-[#c77d2e] shrink-0 mt-0.5">
+                warning
+              </span>
+              <p className="font-inter text-[12px] leading-relaxed">
+                <strong className="font-bold uppercase tracking-wider block text-[11px] mb-0.5 text-[#6b2c00]">
+                  Atención:
+                </strong>
+                Los cambios se aplicarán a todas las prendas que usan esta marca. Cualquier
+                modificación en el nombre o prefijo SKU actualizará automáticamente las prendas
+                vinculadas en el catálogo.
+              </p>
             </div>
           </div>
 

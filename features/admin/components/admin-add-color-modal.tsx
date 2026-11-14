@@ -248,9 +248,20 @@ export function AdminAddColorModal({
                 {assignedItems} prendas vinculadas en catálogo
               </span>
             </div>
-            <p className="font-inter text-[12px] text-[#524438] leading-relaxed">
-              Las modificaciones se propagarán a la matriz de inventario y fichas técnicas.
-            </p>
+            {/* Advertencia de impacto */}
+            <div className="flex items-start gap-2.5 p-3 bg-[#fff3e0] border border-[#f5c28e] text-[#7a3300]">
+              <span className="material-symbols-outlined text-[18px] text-[#c77d2e] shrink-0 mt-0.5">
+                warning
+              </span>
+              <p className="font-inter text-[12px] leading-relaxed">
+                <strong className="font-bold uppercase tracking-wider block text-[11px] mb-0.5 text-[#6b2c00]">
+                  Atención:
+                </strong>
+                Los cambios se aplicarán a todas las prendas que usan este color. Cualquier
+                modificación en el nombre, código o tono actualizará automáticamente las prendas
+                vinculadas en el catálogo y su matriz de inventario.
+              </p>
+            </div>
           </div>
 
           {/* ── Modal Footer ── */}
