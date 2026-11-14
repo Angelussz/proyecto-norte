@@ -224,6 +224,21 @@ export function AdminInventoryView() {
     setTimeout(() => setToast(null), 3000);
   }
 
+  const filteredProducts = products.filter((p) => {
+    if (search) {
+      const q = search.toLowerCase();
+      const matches = p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+      if (!matches) return false;
+    }
+    if (filterCat && p.category.toLowerCase() !== filterCat.toLowerCase()) {
+      return false;
+    }
+    if (filterStatus && p.stockLevel !== filterStatus) {
+      return false;
+    }
+    return true;
+  });
+
   const totalColorClass = (level: ProductCard["stockLevel"]) =>
     level === "healthy" ? "text-secondary" : level === "low" ? "text-mustard" : "text-error";
 
@@ -283,7 +298,13 @@ export function AdminInventoryView() {
         {/* ── KPI Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {/* KPI 1 */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setFilterStatus("")}
+            onKeyDown={(e) => e.key === "Enter" && setFilterStatus("")}
+            className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
+          >
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
                 Total Unidades Físicas
@@ -309,7 +330,13 @@ export function AdminInventoryView() {
           </div>
 
           {/* KPI 2 */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setFilterStatus("healthy")}
+            onKeyDown={(e) => e.key === "Enter" && setFilterStatus("healthy")}
+            className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
+          >
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-secondary uppercase tracking-widest font-semibold">
                 Stock Saludable
@@ -335,7 +362,13 @@ export function AdminInventoryView() {
           </div>
 
           {/* KPI 3 */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setFilterStatus("low")}
+            onKeyDown={(e) => e.key === "Enter" && setFilterStatus("low")}
+            className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
+          >
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-mustard uppercase tracking-widest font-semibold">
                 Bajo Stock / Reposición
@@ -363,7 +396,13 @@ export function AdminInventoryView() {
           </div>
 
           {/* KPI 4 */}
-          <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setFilterStatus("critical")}
+            onKeyDown={(e) => e.key === "Enter" && setFilterStatus("critical")}
+            className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm cursor-pointer hover:border-outline-variant/60 transition-colors select-none"
+          >
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-error uppercase tracking-widest font-semibold">
                 Rotura de Stock
@@ -434,9 +473,9 @@ export function AdminInventoryView() {
                   className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
                 >
                   <option value="">Estado: Todos</option>
-                  <option>Activo</option>
-                  <option>Borrador</option>
-                  <option>Agotado</option>
+                  <option value="healthy">Stock Saludable</option>
+                  <option value="low">Bajo Stock / Reposición</option>
+                  <option value="critical">Rotura de Stock</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">
                   keyboard_arrow_down
@@ -502,7 +541,9 @@ export function AdminInventoryView() {
           {/* Paginación */}
           <div className="flex items-center justify-between pb-2 border-b border-outline-variant/30">
             <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant">
-              Página 1 de 4 • 38 prendas registradas
+              Página 1 de 1 • {filteredProducts.length} prenda
+              {filteredProducts.length !== 1 ? "s" : ""} registrada
+              {filteredProducts.length !== 1 ? "s" : ""}
             </span>
             <nav className="flex items-center gap-1.5">
               <button
@@ -514,388 +555,391 @@ export function AdminInventoryView() {
               <button className="px-2.5 py-1 font-inter text-[11px] font-bold bg-primary text-white shadow-sm">
                 1
               </button>
-              {[2, 3, 4].map((n) => (
-                <button
-                  key={n}
-                  className="px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 bg-white text-on-surface hover:bg-surface-container"
-                >
-                  {n}
-                </button>
-              ))}
-              <button className="px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 bg-white text-on-surface hover:bg-surface-container">
+              <button
+                disabled
+                className="px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 text-on-surface-variant/50 cursor-not-allowed bg-white"
+              >
                 Sig →
               </button>
             </nav>
           </div>
 
           {/* Product Cards */}
-          {products.map((product) => (
-            <article
-              key={product.id}
-              className="bg-surface-container-low border border-outline-variant/30 shadow-sm"
-            >
-              {/* Header */}
-              <div className="p-4 bg-surface-container flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  {/* Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(product.id)}
-                    className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors shrink-0"
-                    title="Expandir / Contraer Matriz"
-                  >
-                    <span
-                      className={`material-symbols-outlined text-[20px] transition-transform duration-300 ${
-                        product.expanded ? "rotate-180" : "rotate-0"
-                      }`}
-                    >
-                      keyboard_arrow_down
-                    </span>
-                  </button>
-                  {/* Thumbnail */}
-                  <div className="w-16 h-20 bg-surface-container-highest shrink-0 overflow-hidden shadow-sm">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {/* Info */}
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-inter text-[10px] px-2 py-0.5 bg-[#33402f] text-[#fff9ed] uppercase font-semibold tracking-wider">
-                        {product.category}
-                      </span>
-                      <span className="font-inter text-[11px] text-on-surface-variant uppercase tracking-wider font-mono">
-                        SKU: {product.sku}
-                      </span>
-                    </div>
-                    <h2 className="font-headline text-[22px] tracking-wide text-on-surface uppercase leading-tight">
-                      {product.name}
-                    </h2>
-                    <div className="flex items-center gap-3 font-inter text-[12px] text-on-surface-variant flex-wrap">
-                      {product.pvp && (
-                        <>
-                          <span>
-                            PVP: <strong className="text-on-surface">{product.pvp}</strong>
-                          </span>
-                          <span>•</span>
-                        </>
-                      )}
-                      <span>
-                        Talles:{" "}
-                        <strong className="text-on-surface">
-                          {product.sizes.map((s) => s.replace(/ \([A-Z]+\)/, "")).join(", ")}
-                        </strong>
-                      </span>
-                      <span>•</span>
-                      <div className="flex items-center gap-1.5">
-                        <span>Colores:</span>
-                        {product.colors.map((c) => (
-                          <span
-                            key={c.name}
-                            className="inline-flex items-center p-1 bg-white border border-outline-variant/50 shadow-sm"
-                            title={c.name}
-                          >
-                            <span
-                              className="w-2.5 h-2.5 inline-block shrink-0"
-                              style={{ backgroundColor: c.hex }}
-                            />
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Total */}
-                <div className="flex items-center gap-4 self-end md:self-auto">
-                  <div className="text-right">
-                    <span className="block font-inter text-[10px] uppercase tracking-widest text-on-surface-variant">
-                      Stock Total
-                    </span>
-                    <span
-                      className={`font-headline text-[28px] leading-none ${totalColorClass(product.stockLevel)}`}
-                    >
-                      {product.totalStock} UDS
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="p-2 text-on-surface-variant hover:text-on-surface bg-white shadow-sm self-start"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Expandable Matrix */}
-              <div
-                className={`grid transition-all duration-300 ease-in-out ${
-                  product.expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                }`}
+          {filteredProducts.length === 0 ? (
+            <div className="bg-surface-container-low border border-outline-variant/30 p-12 text-center">
+              <span className="font-inter text-[13px] text-on-surface-variant">
+                No se encontraron prendas con los filtros aplicados.
+              </span>
+            </div>
+          ) : (
+            filteredProducts.map((product) => (
+              <article
+                key={product.id}
+                className="bg-surface-container-low border border-outline-variant/30 shadow-sm"
               >
-                <div className="overflow-hidden">
-                  <div className="p-5 flex flex-col gap-5">
-                    {/* Config Strip */}
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                      {/* Talles */}
-                      <div className="flex flex-col gap-2">
-                        <span className="font-inter text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">
-                          TALLES ACTIVOS
+                {/* Header */}
+                <div className="p-4 bg-surface-container flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    {/* Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(product.id)}
+                      className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors shrink-0"
+                      title="Expandir / Contraer Matriz"
+                    >
+                      <span
+                        className={`material-symbols-outlined text-[20px] transition-transform duration-300 ${
+                          product.expanded ? "rotate-180" : "rotate-0"
+                        }`}
+                      >
+                        keyboard_arrow_down
+                      </span>
+                    </button>
+                    {/* Thumbnail */}
+                    <div className="w-16 h-20 bg-surface-container-highest shrink-0 overflow-hidden shadow-sm">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {/* Info */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-inter text-[10px] px-2 py-0.5 bg-[#33402f] text-[#fff9ed] uppercase font-semibold tracking-wider">
+                          {product.category}
                         </span>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {product.sizes.map((s) => (
-                            <span
-                              key={s}
-                              className="px-2.5 py-1 bg-white text-on-surface font-inter text-[12px] shadow-sm font-semibold border border-outline-variant/40"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                          <button
-                            type="button"
-                            className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">add</span>
-                            Talla
-                          </button>
-                        </div>
+                        <span className="font-inter text-[11px] text-on-surface-variant uppercase tracking-wider font-mono">
+                          SKU: {product.sku}
+                        </span>
                       </div>
-                      {/* Colores */}
-                      <div className="flex flex-col gap-2">
-                        <span className="font-inter text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">
-                          VARIANTES DE COLOR ASIGNADAS
+                      <h2 className="font-headline text-[22px] tracking-wide text-on-surface uppercase leading-tight">
+                        {product.name}
+                      </h2>
+                      <div className="flex items-center gap-3 font-inter text-[12px] text-on-surface-variant flex-wrap">
+                        {product.pvp && (
+                          <>
+                            <span>
+                              PVP: <strong className="text-on-surface">{product.pvp}</strong>
+                            </span>
+                            <span>•</span>
+                          </>
+                        )}
+                        <span>
+                          Talles:{" "}
+                          <strong className="text-on-surface">
+                            {product.sizes.map((s) => s.replace(/ \([A-Z]+\)/, "")).join(", ")}
+                          </strong>
                         </span>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <span>•</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>Colores:</span>
                           {product.colors.map((c) => (
-                            <div
+                            <span
                               key={c.name}
-                              className="flex items-center gap-1.5 px-2 py-1 bg-white shadow-sm border border-outline-variant/40"
+                              className="inline-flex items-center p-1 bg-white border border-outline-variant/50 shadow-sm"
+                              title={c.name}
                             >
                               <span
-                                className="w-3.5 h-3.5 inline-block shrink-0"
+                                className="w-2.5 h-2.5 inline-block shrink-0"
                                 style={{ backgroundColor: c.hex }}
                               />
-                              <span className="font-inter text-[12px] font-medium text-on-surface">
-                                {c.name}
-                              </span>
-                            </div>
+                            </span>
                           ))}
-                          <button
-                            type="button"
-                            className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">palette</span>
-                            Color
-                          </button>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Matrix Bar Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 pb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[20px] text-primary">
-                          apps
-                        </span>
-                        <h4 className="font-inter text-[12px] font-bold uppercase tracking-wider text-on-surface">
-                          MATRIZ DE EXISTENCIAS POR TALLA Y COLOR
-                        </h4>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="font-inter text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
-                          GRUPO COLORES:
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {/* Botón 1 */}
-                          <button
-                            type="button"
-                            onClick={() => handleColorGroupSelect(product.id, 1)}
-                            className={`w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
-                              (activeColorGroups[product.id] ?? 1) === 1
-                                ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
-                                : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
-                            }`}
-                          >
-                            1
-                          </button>
-
-                          {/* Botón 2 con alerta roja titilante (desaparece al hacer click) */}
-                          <button
-                            type="button"
-                            onClick={() => handleColorGroupSelect(product.id, 2)}
-                            className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
-                              (activeColorGroups[product.id] ?? 1) === 2
-                                ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
-                                : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
-                            }`}
-                          >
-                            2{/* Titilante Rojo */}
-                            {!dismissedAlerts[`${product.id}-2`] && (
-                              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                              </span>
-                            )}
-                          </button>
-
-                          {/* Botón 3 con alerta naranja / mostaza titilante (desaparece al hacer click) */}
-                          <button
-                            type="button"
-                            onClick={() => handleColorGroupSelect(product.id, 3)}
-                            className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
-                              (activeColorGroups[product.id] ?? 1) === 3
-                                ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
-                                : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
-                            }`}
-                          >
-                            3{/* Titilante Ámbar / Mostaza */}
-                            {!dismissedAlerts[`${product.id}-3`] && (
-                              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d97706]"></span>
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                  {/* Total */}
+                  <div className="flex items-center gap-4 self-end md:self-auto">
+                    <div className="text-right">
+                      <span className="block font-inter text-[10px] uppercase tracking-widest text-on-surface-variant">
+                        Stock Total
+                      </span>
+                      <span
+                        className={`font-headline text-[28px] leading-none ${totalColorClass(product.stockLevel)}`}
+                      >
+                        {product.totalStock} UDS
+                      </span>
                     </div>
+                    <button
+                      type="button"
+                      className="p-2 text-on-surface-variant hover:text-on-surface bg-white shadow-sm self-start"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                  </div>
+                </div>
 
-                    {/* Matrix Table */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left bg-white shadow-sm border-collapse">
-                        <thead>
-                          <tr className="bg-surface-container text-on-surface">
-                            <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold">
-                              TALLA
-                            </th>
-                            {product.colors.map((c) => (
-                              <th
-                                key={c.name}
-                                className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold"
+                {/* Expandable Matrix */}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    product.expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="p-5 flex flex-col gap-5">
+                      {/* Config Strip */}
+                      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                        {/* Talles */}
+                        <div className="flex flex-col gap-2">
+                          <span className="font-inter text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">
+                            TALLES ACTIVOS
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {product.sizes.map((s) => (
+                              <span
+                                key={s}
+                                className="px-2.5 py-1 bg-white text-on-surface font-inter text-[12px] shadow-sm font-semibold border border-outline-variant/40"
                               >
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className="w-2.5 h-2.5 inline-block shrink-0"
-                                    style={{ backgroundColor: c.hex }}
-                                  />
-                                  {c.name.toUpperCase()}
-                                </div>
-                              </th>
+                                {s}
+                              </span>
                             ))}
-                            <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold text-center">
-                              SUBTOTAL
-                            </th>
-                            <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold text-center">
-                              ACCIONES
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-surface-container">
-                          {product.sizes.map((talle) => {
-                            const rowData = product.stock[talle] ?? {};
-                            const rowTotal = Object.values(rowData).reduce<number>(
-                              (s, v) => s + (typeof v === "number" ? v : 0),
-                              0,
-                            );
-                            return (
-                              <tr
-                                key={talle}
-                                className="hover:bg-surface-container-low transition-colors"
+                            <button
+                              type="button"
+                              className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">add</span>
+                              Talla
+                            </button>
+                          </div>
+                        </div>
+                        {/* Colores */}
+                        <div className="flex flex-col gap-2">
+                          <span className="font-inter text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">
+                            VARIANTES DE COLOR ASIGNADAS
+                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {product.colors.map((c) => (
+                              <div
+                                key={c.name}
+                                className="flex items-center gap-1.5 px-2 py-1 bg-white shadow-sm border border-outline-variant/40"
                               >
-                                <td className="py-3 px-4">
-                                  <div className="flex flex-col">
-                                    <span className="font-inter text-[13px] font-bold text-on-surface">
-                                      {talle}
-                                    </span>
-                                    <span className="font-mono text-[10px] text-on-surface-variant tracking-wider uppercase">
-                                      {getSizeSku(product.sku, talle)}
-                                    </span>
-                                  </div>
-                                </td>
-                                {product.colors.map((c) => {
-                                  const cellVal = rowData[c.name];
-                                  return (
-                                    <td key={c.name} className="py-3 px-4">
-                                      {cellVal === null || cellVal === undefined ? (
-                                        <span className="font-inter text-[12px] text-on-surface-variant/70 italic">
-                                          No fabricado
-                                        </span>
-                                      ) : (
-                                        <StockCell
-                                          value={cellVal}
-                                          onChange={(v) =>
-                                            updateStock(product.id, talle, c.name, v)
-                                          }
-                                        />
-                                      )}
-                                    </td>
-                                  );
-                                })}
-                                <td className="py-3 px-4 text-center font-inter text-[13px] font-bold text-on-surface">
-                                  {rowTotal} uds
-                                </td>
-                                <td className="py-3 px-4 text-center">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <button
-                                      type="button"
-                                      title="Editar variante"
-                                      className="p-1 text-on-surface-variant hover:text-primary transition-colors"
-                                    >
-                                      <span className="material-symbols-outlined text-[18px]">
-                                        edit
-                                      </span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      title="Eliminar fila"
-                                      className="p-1 text-on-surface-variant hover:text-error transition-colors"
-                                    >
-                                      <span className="material-symbols-outlined text-[18px]">
-                                        delete_outline
-                                      </span>
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-outline-variant/20">
-                      <div className="flex items-center gap-2 font-inter text-[11px] text-on-surface-variant">
-                        <span className="material-symbols-outlined text-[16px] text-secondary">
-                          sync
-                        </span>
-                        <span>Última sincronización con Taller Jorge Juan: Hace 14 minutos</span>
+                                <span
+                                  className="w-3.5 h-3.5 inline-block shrink-0"
+                                  style={{ backgroundColor: c.hex }}
+                                />
+                                <span className="font-inter text-[12px] font-medium text-on-surface">
+                                  {c.name}
+                                </span>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">palette</span>
+                              Color
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                        <button
-                          type="button"
-                          className="px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-variant font-inter text-[11px] uppercase tracking-wider transition-colors"
-                        >
-                          Descartar Cambios
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => saveMatrix(product.id)}
-                          className="px-5 py-2 bg-primary text-white font-headline text-[14px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-colors hover:bg-primary-container"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">check</span>
-                          Actualizar Stock
-                        </button>
+
+                      {/* Matrix Bar Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 pb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[20px] text-primary">
+                            apps
+                          </span>
+                          <h4 className="font-inter text-[12px] font-bold uppercase tracking-wider text-on-surface">
+                            MATRIZ DE EXISTENCIAS POR TALLA Y COLOR
+                          </h4>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="font-inter text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
+                            GRUPO COLORES:
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {/* Botón 1 */}
+                            <button
+                              type="button"
+                              onClick={() => handleColorGroupSelect(product.id, 1)}
+                              className={`w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
+                                (activeColorGroups[product.id] ?? 1) === 1
+                                  ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
+                                  : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
+                              }`}
+                            >
+                              1
+                            </button>
+
+                            {/* Botón 2 con alerta roja titilante (desaparece al hacer click) */}
+                            <button
+                              type="button"
+                              onClick={() => handleColorGroupSelect(product.id, 2)}
+                              className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
+                                (activeColorGroups[product.id] ?? 1) === 2
+                                  ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
+                                  : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
+                              }`}
+                            >
+                              2{/* Titilante Rojo */}
+                              {!dismissedAlerts[`${product.id}-2`] && (
+                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                                </span>
+                              )}
+                            </button>
+
+                            {/* Botón 3 con alerta naranja / mostaza titilante (desaparece al hacer click) */}
+                            <button
+                              type="button"
+                              onClick={() => handleColorGroupSelect(product.id, 3)}
+                              className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
+                                (activeColorGroups[product.id] ?? 1) === 3
+                                  ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
+                                  : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
+                              }`}
+                            >
+                              3{/* Titilante Ámbar / Mostaza */}
+                              {!dismissedAlerts[`${product.id}-3`] && (
+                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d97706]"></span>
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Matrix Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left bg-white shadow-sm border-collapse">
+                          <thead>
+                            <tr className="bg-surface-container text-on-surface">
+                              <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold">
+                                TALLA
+                              </th>
+                              {product.colors.map((c) => (
+                                <th
+                                  key={c.name}
+                                  className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className="w-2.5 h-2.5 inline-block shrink-0"
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                    {c.name.toUpperCase()}
+                                  </div>
+                                </th>
+                              ))}
+                              <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold text-center">
+                                SUBTOTAL
+                              </th>
+                              <th className="py-3 px-4 font-inter text-[11px] uppercase tracking-wider font-bold text-center">
+                                ACCIONES
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-surface-container">
+                            {product.sizes.map((talle) => {
+                              const rowData = product.stock[talle] ?? {};
+                              const rowTotal = Object.values(rowData).reduce<number>(
+                                (s, v) => s + (typeof v === "number" ? v : 0),
+                                0,
+                              );
+                              return (
+                                <tr
+                                  key={talle}
+                                  className="hover:bg-surface-container-low transition-colors"
+                                >
+                                  <td className="py-3 px-4">
+                                    <div className="flex flex-col">
+                                      <span className="font-inter text-[13px] font-bold text-on-surface">
+                                        {talle}
+                                      </span>
+                                      <span className="font-mono text-[10px] text-on-surface-variant tracking-wider uppercase">
+                                        {getSizeSku(product.sku, talle)}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  {product.colors.map((c) => {
+                                    const cellVal = rowData[c.name];
+                                    return (
+                                      <td key={c.name} className="py-3 px-4">
+                                        {cellVal === null || cellVal === undefined ? (
+                                          <span className="font-inter text-[12px] text-on-surface-variant/70 italic">
+                                            No fabricado
+                                          </span>
+                                        ) : (
+                                          <StockCell
+                                            value={cellVal}
+                                            onChange={(v) =>
+                                              updateStock(product.id, talle, c.name, v)
+                                            }
+                                          />
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="py-3 px-4 text-center font-inter text-[13px] font-bold text-on-surface">
+                                    {rowTotal} uds
+                                  </td>
+                                  <td className="py-3 px-4 text-center">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <button
+                                        type="button"
+                                        title="Editar variante"
+                                        className="p-1 text-on-surface-variant hover:text-primary transition-colors"
+                                      >
+                                        <span className="material-symbols-outlined text-[18px]">
+                                          edit
+                                        </span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        title="Eliminar fila"
+                                        className="p-1 text-on-surface-variant hover:text-error transition-colors"
+                                      >
+                                        <span className="material-symbols-outlined text-[18px]">
+                                          delete_outline
+                                        </span>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-outline-variant/20">
+                        <div className="flex items-center gap-2 font-inter text-[11px] text-on-surface-variant">
+                          <span className="material-symbols-outlined text-[16px] text-secondary">
+                            sync
+                          </span>
+                          <span>Última sincronización con Taller Jorge Juan: Hace 14 minutos</span>
+                        </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          <button
+                            type="button"
+                            className="px-4 py-2 bg-surface-container text-on-surface hover:bg-surface-variant font-inter text-[11px] uppercase tracking-wider transition-colors"
+                          >
+                            Descartar Cambios
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => saveMatrix(product.id)}
+                            className="px-5 py-2 bg-primary text-white font-headline text-[14px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-colors hover:bg-primary-container"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">check</span>
+                            Actualizar Stock
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          )}
         </div>
 
         {/* ── Últimos Movimientos (Ancho Completo) ── */}
