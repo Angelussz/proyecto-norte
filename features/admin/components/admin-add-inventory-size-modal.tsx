@@ -315,25 +315,14 @@ export function AdminAddInventorySizeModal({
                       )}
                     </div>
 
-                    {/* Muestra de talle */}
-                    <div className="min-w-[42px] px-2 py-1 bg-[#f7f2e7] border border-[#e4dbcc] flex items-center justify-center shrink-0">
-                      <span className="font-inter text-[12px] font-bold text-[#1e1c13]">
-                        {item.size}
-                      </span>
-                    </div>
-
-                    {/* Nombre y sistema */}
-                    <div className="flex flex-col text-left">
-                      <span className="font-inter text-[13px] font-bold text-[#1e1c13] leading-tight">
-                        {item.size}
-                      </span>
-                      <span className="font-inter text-[11px] text-[#786c5e]">
-                        {item.groupTitle} · {item.systemLabel}
-                      </span>
-                    </div>
+                    {/* Talle + sistema en una sola línea */}
+                    <span className="font-inter text-[13px] font-bold text-[#1e1c13]">
+                      {item.size}{" "}
+                      <span className="font-normal text-[#786c5e]">({item.systemLabel})</span>
+                    </span>
                   </div>
 
-                  {/* Badge */}
+                  {/* Badge: verde si ya está en la matriz, gris si disponible */}
                   {isInMatrix ? (
                     <span className="bg-[#dce9d5] text-[#3b5e28] border border-[#c4dcba] text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 shrink-0">
                       EN MATRIZ
