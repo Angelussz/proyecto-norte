@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 
-export function AdminProductsStats() {
+interface Props {
+  total: number;
+  active: number;
+  lowStock: number;
+  outOfStock: number;
+}
+
+export function AdminProductsStats({ total, active, lowStock, outOfStock }: Props) {
   return (
     <section className="w-full px-8 py-6 flex flex-col gap-6">
       {/* Title row */}
@@ -47,7 +54,7 @@ export function AdminProductsStats() {
           </div>
           <div className="mt-4 relative z-10">
             <span className="font-headline text-[42px] text-on-surface tracking-wide block leading-none">
-              48
+              {total}
             </span>
             <span className="font-inter text-[11px] text-secondary font-bold uppercase tracking-wider block mt-1">
               100% auditable
@@ -73,10 +80,10 @@ export function AdminProductsStats() {
           </div>
           <div className="mt-4 relative z-10">
             <span className="font-headline text-[42px] text-secondary tracking-wide block leading-none">
-              42
+              {active}
             </span>
             <span className="font-inter text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
-              87.5% en vitrina
+              {total > 0 ? Math.round((active / total) * 100) : 0}% en vitrina
             </span>
           </div>
           <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -101,7 +108,7 @@ export function AdminProductsStats() {
           </div>
           <div className="mt-4 relative z-10">
             <span className="font-headline text-[42px] text-mustard tracking-wide block leading-none">
-              05
+              {String(lowStock).padStart(2, "0")}
             </span>
             <span className="font-inter text-[11px] bg-mustard/15 text-primary px-2 py-0.5 uppercase font-semibold inline-block mt-1">
               Stock bajo
@@ -127,7 +134,7 @@ export function AdminProductsStats() {
           </div>
           <div className="mt-4 relative z-10">
             <span className="font-headline text-[42px] text-error tracking-wide block leading-none">
-              01
+              {String(outOfStock).padStart(2, "0")}
             </span>
             <span className="font-inter text-[11px] bg-error-container text-on-error-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
               Edición Atelier

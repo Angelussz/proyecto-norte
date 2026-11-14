@@ -82,3 +82,17 @@ export function useDeleteProduct() {
     onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
   });
 }
+
+export function useToggleProductActive() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const form = new FormData();
+      form.set("active", String(active));
+      const res = await fetch(`/api/admin/products/${id}`, { method: "PUT", body: form });
+      if (!res.ok) throw new Error("Error al actualizar estado del producto");
+      return res.json();
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+  });
+}

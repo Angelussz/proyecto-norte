@@ -1,22 +1,24 @@
 "use client";
 
-import { useState } from "react";
+interface Props {
+  search: string;
+  onSearchChange: (v: string) => void;
+  filterCat: string;
+  onCatChange: (v: string) => void;
+  filterStatus: string;
+  onStatusChange: (v: string) => void;
+  onClear: () => void;
+}
 
-export function AdminProductsFilters() {
-  const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterBrand, setFilterBrand] = useState("");
-  const [filterGender, setFilterGender] = useState("");
-
-  const handleClear = () => {
-    setSearch("");
-    setFilterCat("");
-    setFilterStatus("");
-    setFilterBrand("");
-    setFilterGender("");
-  };
-
+export function AdminProductsFilters({
+  search,
+  onSearchChange,
+  filterCat,
+  onCatChange,
+  filterStatus,
+  onStatusChange,
+  onClear,
+}: Props) {
   return (
     <section className="w-full px-8 py-4">
       <div className="flex flex-col gap-2 w-full">
@@ -30,7 +32,7 @@ export function AdminProductsFilters() {
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Buscar por nombre, SKU"
                 className="w-full pl-9 pr-3 py-2 bg-white text-on-surface placeholder:text-outline/70 font-inter text-[13px] outline-none shadow-sm focus:ring-1 focus:ring-primary"
               />
@@ -40,7 +42,7 @@ export function AdminProductsFilters() {
             <div className="relative w-full">
               <select
                 value={filterCat}
-                onChange={(e) => setFilterCat(e.target.value)}
+                onChange={(e) => onCatChange(e.target.value)}
                 className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Categoría: Todas</option>
@@ -59,7 +61,7 @@ export function AdminProductsFilters() {
             <div className="relative w-full">
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => onStatusChange(e.target.value)}
                 className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Estado: Todos</option>
@@ -72,12 +74,11 @@ export function AdminProductsFilters() {
               </span>
             </div>
 
-            {/* Brand filter */}
+            {/* Brand filter — decorativo (ProductListItem no tiene campo brand) */}
             <div className="relative w-full">
               <select
-                value={filterBrand}
-                onChange={(e) => setFilterBrand(e.target.value)}
                 className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
+                defaultValue=""
               >
                 <option value="">Marca: Todas</option>
                 <option value="atelier">NORTE Atelier</option>
@@ -89,12 +90,11 @@ export function AdminProductsFilters() {
               </span>
             </div>
 
-            {/* Gender filter */}
+            {/* Gender filter — decorativo */}
             <div className="relative w-full">
               <select
-                value={filterGender}
-                onChange={(e) => setFilterGender(e.target.value)}
                 className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
+                defaultValue=""
               >
                 <option value="">Sexo: Todos</option>
                 <option value="hombre">Hombre</option>
@@ -112,7 +112,7 @@ export function AdminProductsFilters() {
         <div className="flex items-center justify-end px-1 pt-1">
           <button
             type="button"
-            onClick={handleClear}
+            onClick={onClear}
             className="inline-flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-inter text-[11px] uppercase tracking-wider font-semibold"
           >
             <span className="material-symbols-outlined text-[15px]">filter_alt_off</span>
