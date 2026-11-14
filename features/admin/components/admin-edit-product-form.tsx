@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminInventoryVariantsSection } from "@/features/admin/components/admin-inventory-variants-section";
+import { useCategories } from "@/features/category/hooks/useCategories";
 
 /* ─── Mock data: producto existente ─── */
 const MOCK_PRODUCT = {
   id: "NRT-LNO-12",
   name: "Sobrecamisa Lino Rústico Arena",
-  category: "Sobrecamisas & Chaquetillas",
+  category: "Camisas",
   sku: "NRT-LNO-12",
   brand: "NORTE Atelier",
   gender: "Unisex",
@@ -30,6 +31,26 @@ const MOCK_PRODUCT = {
 export function AdminEditProductForm() {
   const p = MOCK_PRODUCT;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // ── Categorías desde la DB ───────────────────────────────────────────────
+  const { data: categories, isLoading: catsLoading, isError: catsError } = useCategories();
+  const [categoryId, setCategoryId] = useState("");
+
+  useEffect(() => {
+    if (!categoryId && categories && categories.length > 0) {
+      const match =
+        categories.find((c) => c.name.toLowerCase() === p.category.toLowerCase()) ||
+        categories.find((c) => p.category.toLowerCase().includes(c.name.toLowerCase())) ||
+        categories.find((c) => c.name.toLowerCase().includes("camisa")) ||
+        categories[0];
+      if (match) {
+        setCategoryId(match.id);
+      }
+    }
+  }, [categories, categoryId, p.category]);
+
+  const selectedCategoryName =
+    categories?.find((c) => c.id === categoryId)?.name ?? (categoryId ? "" : p.category);
 
   const margin = (((p.priceRetail - p.priceCost) / p.priceRetail) * 100).toFixed(1);
 
@@ -118,18 +139,28 @@ export function AdminEditProductForm() {
                     Categoría
                   </label>
                   <div className="relative">
-                    <select
-                      id="prod-category"
-                      defaultValue={p.category}
-                      className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                    >
-                      <option>Sobrecamisas &amp; Chaquetillas</option>
-                      <option>Sastrería Desestructurada</option>
-                      <option>Camisería Clásica</option>
-                      <option>Pantalones &amp; Bermudas</option>
-                      <option>Calzado &amp; Babuchas</option>
-                      <option>Accesorios en Piel</option>
-                    </select>
+                    {catsError ? (
+                      <p className="font-inter text-[13px] text-red-600">
+                        Error al cargar categorías
+                      </p>
+                    ) : (
+                      <select
+                        id="prod-category"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                        disabled={catsLoading}
+                        className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] disabled:opacity-60"
+                      >
+                        <option value="">
+                          {catsLoading ? "Cargando categorías…" : "Seleccionar categoría"}
+                        </option>
+                        {categories?.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
                       keyboard_arrow_down
                     </span>
@@ -537,7 +568,7 @@ export function AdminEditProductForm() {
             </section>
 
             {/* ── CARD 2: INVENTARIO, TALLES Y COLORES ── */}
-            <AdminInventoryVariantsSection categoryName={p.category} />
+            <AdminInventoryVariantsSection categoryName={selectedCategoryName} />
           </aside>
         </div>
 
