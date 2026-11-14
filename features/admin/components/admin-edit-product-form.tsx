@@ -537,7 +537,7 @@ export function AdminEditProductForm() {
             </section>
 
             {/* ── CARD 2: INVENTARIO, TALLES Y COLORES ── */}
-            <AdminInventoryVariantsSection />
+            <AdminInventoryVariantsSection categoryName={p.category} />
           </aside>
         </div>
 

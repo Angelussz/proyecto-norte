@@ -29,11 +29,77 @@ export interface SizeConfig {
 
 interface Props {
   onVariantsChange?: (variants: VariantRow[]) => void;
+  categoryName?: string;
+}
+
+// ─── Mapa de keywords: nombre de categoría → palabras clave del título del grupo ─
+// Si la categoría contiene alguna de las claves del lado izquierdo,
+// se muestran solo los grupos cuyo título contenga alguna de las keywords del lado derecho.
+const CATEGORY_KEYWORDS: { match: string[]; groupKeywords: string[] }[] = [
+  {
+    match: [
+      "camisa",
+      "polera",
+      "camiseta",
+      "remera",
+      "blusa",
+      "chomba",
+      "chaqueta",
+      "abrigo",
+      "sweater",
+      "suéter",
+      "sobrecamisa",
+      "top",
+    ],
+    groupKeywords: ["ropa general", "prendas"],
+  },
+  {
+    match: ["pantalon", "jean", "bermuda", "short", "falda", "vestido"],
+    groupKeywords: ["pantalon", "jean", "formal"],
+  },
+  {
+    match: ["calzado", "zapato", "zapatilla", "bota", "sandalia", "mocasin"],
+    groupKeywords: ["calzado"],
+  },
+  {
+    match: [
+      "accesorio",
+      "joya",
+      "joyeria",
+      "anillo",
+      "collar",
+      "pulsera",
+      "cinturon",
+      "bufanda",
+      "gorra",
+      "bolso",
+      "cartera",
+    ],
+    groupKeywords: ["accesorio", "talle único", "joyería", "joya", "cinturón", "bufanda", "poncho"],
+  },
+];
+
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+/** Dado el nombre de una categoría, retorna las keywords de grupo que debe mostrar (o null si muestra todo) */
+function getGroupKeywordsForCategory(categoryName: string): string[] | null {
+  const norm = normalize(categoryName);
+  for (const rule of CATEGORY_KEYWORDS) {
+    if (rule.match.some((kw) => norm.includes(normalize(kw)))) {
+      return rule.groupKeywords;
+    }
+  }
+  return null; // sin filtro → muestra todos
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
+export function AdminInventoryVariantsSection({ onVariantsChange, categoryName }: Props) {
   // ── Catálogos desde la DB ─────────────────────────────────────────────────
   const { data: colorsData } = useColors();
   const { data: sizeGroupsData } = useSizeGroups();
@@ -43,20 +109,29 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
     .filter((c) => c.active)
     .map((c) => ({ name: c.name, hex: c.hex }));
 
-  // Aplanar todas las tallas activas de todos los grupos/sistemas
-  const catalogSizes: { size: string; label: string; full: string }[] = (
-    sizeGroupsData ?? []
-  ).flatMap((group) =>
-    group.systems
-      .filter((s) => s.active)
-      .flatMap((sys) =>
-        sys.sizes.map((size) => ({
-          size,
-          label: size,
-          full: `${size} (${sys.label})`,
-        })),
-      ),
-  );
+  // Filtrar grupos según la categoría seleccionada
+  const groupKeywords = categoryName ? getGroupKeywordsForCategory(categoryName) : null;
+
+  const filteredGroups = (sizeGroupsData ?? []).filter((group) => {
+    if (!groupKeywords) return true; // sin filtro → todos
+    const normTitle = normalize(group.title);
+    return groupKeywords.some((kw) => normTitle.includes(normalize(kw)));
+  });
+
+  // Aplanar todas las tallas activas de los grupos filtrados
+  const catalogSizes: { size: string; label: string; full: string; groupTitle: string }[] =
+    filteredGroups.flatMap((group) =>
+      group.systems
+        .filter((s) => s.active)
+        .flatMap((sys) =>
+          sys.sizes.map((size) => ({
+            size,
+            label: size,
+            full: `${size} (${sys.label})`,
+            groupTitle: group.title,
+          })),
+        ),
+    );
 
   // De-duplicar tallas (mismo valor de size puede aparecer en varios sistemas)
   const uniqueSizes = catalogSizes.reduce(
@@ -97,6 +172,16 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
 
   // ── Estado de tallas configuradas ─────────────────────────────────────────
   const [sizes, setSizes] = useState<SizeConfig[]>([]);
+
+  // Cuando cambia la categoría, limpiar las tallas ya agregadas que no pertenezcan
+  // a los grupos válidos para esa categoría
+  useEffect(() => {
+    if (!groupKeywords) return; // sin filtro, no limpiamos nada
+    const validSizeValues = new Set(uniqueSizes.map((s) => s.size));
+    setSizes((prev) => prev.filter((s) => validSizeValues.has(s.size)));
+    setSelectedSizeKeys((prev) => prev.filter((key) => validSizeValues.has(key)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryName]);
 
   // ── Callback: notificar variantes al padre ─────────────────────────────────
   const buildVariantRows = useCallback(

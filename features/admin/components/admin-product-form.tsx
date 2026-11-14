@@ -694,7 +694,10 @@ export function AdminProductForm() {
           </section>
 
           {/* ── CARD 2: INVENTARIO, TALLES Y COLORES ── */}
-          <AdminInventoryVariantsSection onVariantsChange={setVariants} />
+          <AdminInventoryVariantsSection
+            onVariantsChange={setVariants}
+            categoryName={categories?.find((c) => c.id === categoryId)?.name ?? ""}
+          />
         </aside>
       </div>
 
