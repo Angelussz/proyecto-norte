@@ -436,14 +436,14 @@ export function AdminColorsBrandsView() {
               </div>
               <div className="sm:col-span-2 relative flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
-                  SKU (3 letras)
+                  CÓDIGO (3 LETRAS)
                 </label>
                 <input
                   type="text"
                   maxLength={3}
                   value={newBrandSku}
                   onChange={(e) => setNewBrandSku(e.target.value.toUpperCase())}
-                  placeholder="NRT-???-01"
+                  placeholder="NRT-???-LNO"
                   className="w-full bg-surface-container-lowest px-3 py-2 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
@@ -597,14 +597,14 @@ export function AdminColorsBrandsView() {
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
-                  SKU (3 letras)
+                  CÓDIGO (3 LETRAS)
                 </label>
                 <input
                   type="text"
                   maxLength={3}
                   value={newColorSku}
                   onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
-                  placeholder="NRT-01-???"
+                  placeholder="NRT-LNO-???"
                   className="w-full bg-surface-container-lowest px-3 py-2.5 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>

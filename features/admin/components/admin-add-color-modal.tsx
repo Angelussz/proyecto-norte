@@ -175,7 +175,7 @@ export function AdminAddColorModal({
             {/* Código SKU */}
             <div className="flex flex-col gap-1">
               <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold flex items-center gap-1">
-                <span>CÓDIGO / PREFIJO SKU (3 LETRAS)</span>
+                <span>CÓDIGO (3 LETRAS)</span>
                 <span className="text-[#673900] font-bold">*</span>
               </label>
               <input
@@ -187,8 +187,7 @@ export function AdminAddColorModal({
                 className="w-full bg-white px-4 py-2 text-[#1e1c13] font-mono text-[13px] uppercase border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none placeholder:text-[#857466]/70 transition-colors"
               />
               <span className="font-inter text-[11px] text-[#524438] mt-0.5">
-                Posición en el SKU: <strong className="font-mono text-[#673900]">NRT-01-???</strong>{" "}
-                (las 3 letras van al final).
+                Posición en SKU: <strong className="font-mono text-[#673900]">NRT-LNO-???</strong>
               </span>
             </div>
           </div>
