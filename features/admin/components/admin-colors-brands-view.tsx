@@ -644,11 +644,7 @@ export function AdminColorsBrandsView() {
               </div>
               <div className="sm:col-span-3 flex flex-col justify-end">
                 <button
-                  type="button"
-                  onClick={() => {
-                    setEditingColor(null);
-                    setIsAddColorModalOpen(true);
-                  }}
+                  type="submit"
                   className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer h-[42px]"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
