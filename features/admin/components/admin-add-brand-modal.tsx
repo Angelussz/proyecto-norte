@@ -152,7 +152,7 @@ export function AdminAddBrandModal({
             <div className="flex flex-col gap-1">
               <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold flex items-center justify-between">
                 <span className="flex items-center gap-1">
-                  <span>SKU</span>
+                  <span>SKU (3 LETRAS)</span>
                   <span className="text-[#673900] font-bold">*</span>
                 </span>
                 <span
