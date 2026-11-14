@@ -142,11 +142,7 @@ export function AdminColorsBrandsView() {
 
   function handleInlineAddBrand(e: React.FormEvent) {
     e.preventDefault();
-    if (!newBrandName.trim()) {
-      setEditingBrand(null);
-      setIsAddBrandModalOpen(true);
-      return;
-    }
+    if (!newBrandName.trim()) return;
     const autoSku = newBrandSku.trim()
       ? newBrandSku.trim().toUpperCase().slice(0, 3)
       : newBrandName
@@ -210,11 +206,7 @@ export function AdminColorsBrandsView() {
 
   function handleInlineAddColor(e: React.FormEvent) {
     e.preventDefault();
-    if (!newColorName.trim()) {
-      setEditingColor(null);
-      setIsAddColorModalOpen(true);
-      return;
-    }
+    if (!newColorName.trim()) return;
     const autoSku = newColorSku.trim()
       ? newColorSku.trim().toUpperCase().slice(0, 3)
       : newColorName
@@ -472,6 +464,7 @@ export function AdminColorsBrandsView() {
                   type="submit"
                   className="w-full py-2 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
                 >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
                   <span>AÑADIR MARCA</span>
                 </button>
               </div>
@@ -658,6 +651,7 @@ export function AdminColorsBrandsView() {
                   }}
                   className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer h-[42px]"
                 >
+                  <span className="material-symbols-outlined text-[18px]">add</span>
                   <span>AÑADIR COLOR</span>
                 </button>
               </div>
