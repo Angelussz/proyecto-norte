@@ -57,10 +57,10 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     stock: {
       "38 (S)": { "Arena Natural": 8, "Verde Oliva": 4, Terracota: 0 },
       "40 (M)": { "Arena Natural": 10, "Verde Oliva": 5, Terracota: 3 },
-      "42 (L)": { "Arena Natural": 3, "Verde Oliva": 5, Terracota: null },
+      "42 (L)": { "Arena Natural": 3, "Verde Oliva": 5, Terracota: 1 },
       "44 (XL)": { "Arena Natural": 2, "Verde Oliva": 1, Terracota: 1 },
     },
-    totalStock: 39,
+    totalStock: 42,
     stockLevel: "healthy",
     expanded: true,
     image:
@@ -71,17 +71,19 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-TRJ-02",
     category: "PANTALONES",
     name: "Pantalón Traje Sastre Arena",
-    sizes: ["40 (M)", "42 (L)", "44 (XL)"],
+    pvp: "145,00 €",
+    sizes: ["38 (S)", "40 (M)", "42 (L)", "44 (XL)"],
     colors: [
       { name: "Arena Natural", hex: "#E4D5B7" },
-      { name: "Negro Carbón", hex: "#222222" },
+      { name: "Negro Carbón", hex: "#1A1A1A" },
     ],
     stock: {
+      "38 (S)": { "Arena Natural": 2, "Negro Carbón": 1 },
       "40 (M)": { "Arena Natural": 4, "Negro Carbón": 2 },
-      "42 (L)": { "Arena Natural": 3, "Negro Carbón": 2 },
+      "42 (L)": { "Arena Natural": 3, "Negro Carbón": 1 },
       "44 (XL)": { "Arena Natural": 1, "Negro Carbón": 0 },
     },
-    totalStock: 12,
+    totalStock: 14,
     stockLevel: "low",
     expanded: false,
     image:
@@ -92,15 +94,210 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-ZAP-01",
     category: "CALZADO",
     name: "Zapatillas Esenciales Blancas",
-    sizes: ["41", "42", "43", "44"],
-    colors: [{ name: "Blanco Puro", hex: "#FDFBF7" }],
+    pvp: "120,00 €",
+    sizes: ["40", "41", "42", "43", "44", "45"],
+    colors: [
+      { name: "Blanco Puro", hex: "#FDFBF7" },
+      { name: "Negro Carbón", hex: "#1A1A1A" },
+    ],
     stock: {
-      "41": { "Blanco Puro": 12 },
-      "42": { "Blanco Puro": 14 },
-      "43": { "Blanco Puro": 11 },
-      "44": { "Blanco Puro": 8 },
+      "40": { "Blanco Puro": 6, "Negro Carbón": 4 },
+      "41": { "Blanco Puro": 8, "Negro Carbón": 5 },
+      "42": { "Blanco Puro": 12, "Negro Carbón": 7 },
+      "43": { "Blanco Puro": 10, "Negro Carbón": 6 },
+      "44": { "Blanco Puro": 5, "Negro Carbón": 3 },
+      "45": { "Blanco Puro": 3, "Negro Carbón": 1 },
     },
-    totalStock: 45,
+    totalStock: 70,
+    stockLevel: "healthy",
+    expanded: false,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBZeBmio3o_7iHY68IFRh4YJkpJ6dehe1HbVT_rqug0UVScWoWjenj8I8S9nHmOt1Ye9-u1JDG5K1g5T-JUO1LvSgrotmyhDvkBLkCDOp5-475u-AdHGM57j7OKeDA3Q1yAM1EZfeF4a3z-_zr08XOzVewwPGkOaKob_Cn4u4E_sl5uGvkUCqYdZKaajixnTtxcRakQQ_PaWut2qXiyhoKeMrKvaNdqt0WNZjv9vLUyp-YspDXNRp2W",
+  },
+  {
+    id: "p4",
+    sku: "NRT-CMS-04",
+    category: "CAMISAS",
+    name: "Camisa Lino Cuello Mao",
+    pvp: "135,00 €",
+    sizes: ["38 (S)", "40 (M)", "42 (L)"],
+    colors: [
+      { name: "Blanco Puro", hex: "#FDFBF7" },
+      { name: "Azul Marino", hex: "#1E2A38" },
+      { name: "Verde Oliva", hex: "#4F583D" },
+      { name: "Arena Natural", hex: "#E4D5B7" },
+    ],
+    stock: {
+      "38 (S)": { "Blanco Puro": 5, "Azul Marino": 4, "Verde Oliva": 3, "Arena Natural": 2 },
+      "40 (M)": { "Blanco Puro": 7, "Azul Marino": 5, "Verde Oliva": 4, "Arena Natural": 3 },
+      "42 (L)": { "Blanco Puro": 4, "Azul Marino": 3, "Verde Oliva": 2, "Arena Natural": 1 },
+    },
+    totalStock: 43,
+    stockLevel: "healthy",
+    expanded: false,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCe8G22N74E_A_vF_DFLb4Pr4WDTtE7F2om8PrfNlWfz5WiX_o5_V6-jurTcLfOXDu_a67jizLGLsqEHAuGkoesszXs4Sc6wdjeHVvSK22IxmA8MJmcoOdR2AVRX1DK1mJDs5V4THnUWKod-MbakZTLqlArzILiTpFKYiISLsFDiiFEsK6n7oUs9eewAVSFrc0ealoxTmYyl1hkLZUshqLAgDcnq8nVfQbspdsTS0rGnSVimYSVlQQs",
+  },
+  {
+    id: "p5",
+    sku: "NRT-SWT-07",
+    category: "SUÉTERES",
+    name: "Suéter Punto Grueso Merino",
+    pvp: "195,00 €",
+    sizes: ["S", "M", "L", "XL"],
+    colors: [
+      { name: "Cacao Tostado", hex: "#5C4033" },
+      { name: "Gris Mineral", hex: "#7E7F83" },
+      { name: "Arena Natural", hex: "#E4D5B7" },
+    ],
+    stock: {
+      S: { "Cacao Tostado": 1, "Gris Mineral": 0, "Arena Natural": 0 },
+      M: { "Cacao Tostado": 2, "Gris Mineral": 1, "Arena Natural": 1 },
+      L: { "Cacao Tostado": 1, "Gris Mineral": 0, "Arena Natural": 0 },
+      XL: { "Cacao Tostado": 0, "Gris Mineral": 0, "Arena Natural": 0 },
+    },
+    totalStock: 6,
+    stockLevel: "low",
+    expanded: false,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBd-YsR-XNfNdYYiIB9pddWYzQC4GRRh3DinlyIPQEjXj4Qo5lD3hjDLANrRM_0GaTR_NjueqE0fduw4-W_Po0s9oVjba9rP0-abr2-VthEqyRv2aeSKUAIrZCp1k_79XQITX-fp8ukMAj9bowci6xAx3A4srU1PDwAPDITKOtfKJazc7Bx5Lh18jBtmts8nffQhSbfPXfBs24Ur0AeKvf--Wdr4PZFFYJXKI5OO9eyFxRJ46_9hMHh",
+  },
+  {
+    id: "p6",
+    sku: "NRT-CHQ-09",
+    category: "CHAQUETAS",
+    name: "Chaqueta Oversize Espiga",
+    pvp: "230,00 €",
+    sizes: ["40 (M)", "42 (L)"],
+    colors: [
+      { name: "Gris Mineral", hex: "#7E7F83" },
+      { name: "Negro Carbón", hex: "#1A1A1A" },
+    ],
+    stock: {
+      "40 (M)": { "Gris Mineral": 0, "Negro Carbón": 0 },
+      "42 (L)": { "Gris Mineral": 0, "Negro Carbón": 0 },
+    },
+    totalStock: 0,
+    stockLevel: "critical",
+    expanded: false,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBMn1DJnKYB5FMQoR7oSs53BpdsFlVDrZSBSzM6Gc9KnBY9Hf8iwcsi8nHXY7BJAG_xlyStcYz6qyhpeqo5yCHvmmyGv_wGsXpEKCfB0IrbKzGufd9raZGSL07Bz8boWB3FwFxLkaUrFROOd4NrA_07soH9StsyQizJ8_WN5jS_SpJ5nYLei3dqXGArKy3btgyKderS1R8Ebnuoas11Ss1iB0AKKJzD3bDUebP5bfC90vYRXKmCcR24",
+  },
+  {
+    id: "p7",
+    sku: "NRT-BRM-03",
+    category: "BERMUDAS",
+    name: "Bermuda Lino Plisada",
+    pvp: "98,00 €",
+    sizes: ["38 (S)", "40 (M)", "42 (L)", "44 (XL)", "46 (XXL)"],
+    colors: [
+      { name: "Terracota", hex: "#9E472A" },
+      { name: "Verde Oliva", hex: "#4F583D" },
+      { name: "Arena Natural", hex: "#E4D5B7" },
+      { name: "Azul Marino", hex: "#1E2A38" },
+      { name: "Blanco Puro", hex: "#FDFBF7" },
+    ],
+    stock: {
+      "38 (S)": {
+        Terracota: 3,
+        "Verde Oliva": 4,
+        "Arena Natural": 5,
+        "Azul Marino": 2,
+        "Blanco Puro": 3,
+      },
+      "40 (M)": {
+        Terracota: 6,
+        "Verde Oliva": 5,
+        "Arena Natural": 8,
+        "Azul Marino": 4,
+        "Blanco Puro": 5,
+      },
+      "42 (L)": {
+        Terracota: 4,
+        "Verde Oliva": 3,
+        "Arena Natural": 6,
+        "Azul Marino": 3,
+        "Blanco Puro": 4,
+      },
+      "44 (XL)": {
+        Terracota: 2,
+        "Verde Oliva": 2,
+        "Arena Natural": 3,
+        "Azul Marino": 1,
+        "Blanco Puro": 2,
+      },
+      "46 (XXL)": {
+        Terracota: 1,
+        "Verde Oliva": 1,
+        "Arena Natural": 2,
+        "Azul Marino": 0,
+        "Blanco Puro": 1,
+      },
+    },
+    totalStock: 75,
+    stockLevel: "healthy",
+    expanded: false,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuB7PzReJ2qcvlMj8hQMGCxwKDhPVVgSu9EJ6JfuycbYYJ4X1AoAy6X5n6M3Nc5vrh7LVk_BLkvidPtryUopotyrDCV-MzrBfqA6Fcbq0G94S0mgTVtkzfEy6Di3-sZI3YnV7ClVFuQ9rCXB-KP2sduxQqtEQ90jhiFgEh2UPSBIU5dzuEz9rzYStMvl-fvY0sUVskrUXSF8rhFUWMVYdBMsfYSwh5aOJdXOo3fzFWJx8-38d9ypcDBc",
+  },
+  {
+    id: "p8",
+    sku: "NRT-ACC-01",
+    category: "ACCESORIOS",
+    name: "Gorra Algodón Orgánico Lavado",
+    pvp: "45,00 €",
+    sizes: ["TALLE ÚNICO"],
+    colors: [
+      { name: "Ocre Tierra", hex: "#C68B45" },
+      { name: "Verde Oliva", hex: "#4F583D" },
+      { name: "Negro Carbón", hex: "#1A1A1A" },
+    ],
+    stock: {
+      "TALLE ÚNICO": { "Ocre Tierra": 12, "Verde Oliva": 15, "Negro Carbón": 8 },
+    },
+    totalStock: 35,
+    stockLevel: "healthy",
+    expanded: false,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDWdSprNGTgxBlN1l9XC3OYy2Oh9D7yMcVUDeG7098zFWsDT3HpL2B92bDQuAR6zwyXjt6uehYRC3mOqaYa9tm-gwm52bUyUhBunu7Jv3yL1MEMgCao2LskNiehlHjnxJ5kYSLOKg23F5F-G_azHETjahQZybCEz2y-14GEJY_w7yGO3KhJ6t1zyuxXnyaeOiilK2ALXNmKq4q20ze7q4J2eBVvwTrEyBWf74wAWzfkZidYNSWIFGPp",
+  },
+  {
+    id: "p9",
+    sku: "NRT-PLR-05",
+    category: "CAMISAS",
+    name: "Remera Manga Larga Ribbed",
+    pvp: "78,00 €",
+    sizes: ["S", "M", "L"],
+    colors: [{ name: "Arena Natural", hex: "#E4D5B7" }],
+    stock: {
+      S: { "Arena Natural": 1 },
+      M: { "Arena Natural": 2 },
+      L: { "Arena Natural": 0 },
+    },
+    totalStock: 3,
+    stockLevel: "critical",
+    expanded: false,
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCfieGQB4Efr4bdZTlNGrS1HU9H8T3levaOx4Cy8WmMqna1XPL0DGhR5AGWZRkMm2-gNiyKir8Y5xZLyw4l5i0VC8qL8IYmCdi57qLKjcYEykLcG9BSIjQmoRSFnx6sauTr9Hzvq-gUvoug1BVMW1oErR8zkgk8jyL-W3IJRrV2awr3Z-IClgYvfUc1acL4dsRQm2_wfqGrpnpZL0OE8AGucOwxmEZmiJ7bOVutuejz2EZhVCDiBKES",
+  },
+  {
+    id: "p10",
+    sku: "NRT-BOT-02",
+    category: "CALZADO",
+    name: "Botines Chelsea Cuero Nobuk",
+    pvp: "210,00 €",
+    sizes: ["41", "42", "43", "44"],
+    colors: [
+      { name: "Cacao Tostado", hex: "#5C4033" },
+      { name: "Negro Carbón", hex: "#1A1A1A" },
+    ],
+    stock: {
+      "41": { "Cacao Tostado": 3, "Negro Carbón": 2 },
+      "42": { "Cacao Tostado": 4, "Negro Carbón": 3 },
+      "43": { "Cacao Tostado": 2, "Negro Carbón": 1 },
+      "44": { "Cacao Tostado": 1, "Negro Carbón": 0 },
+    },
+    totalStock: 16,
     stockLevel: "healthy",
     expanded: false,
     image:
@@ -313,6 +510,12 @@ export function AdminInventoryView() {
     return true;
   });
 
+  const totalPhysicalUnits = products.reduce((acc, p) => acc + p.totalStock, 0);
+  const healthyCount = products.filter((p) => p.stockLevel === "healthy").length;
+  const lowCount = products.filter((p) => p.stockLevel === "low").length;
+  const criticalCount = products.filter((p) => p.stockLevel === "critical").length;
+  const availableCategories = Array.from(new Set(products.map((p) => p.category)));
+
   const totalColorClass = (level: ProductCard["stockLevel"]) =>
     level === "healthy" ? "text-secondary" : level === "low" ? "text-mustard" : "text-error";
 
@@ -387,10 +590,10 @@ export function AdminInventoryView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[42px] text-on-surface tracking-wide block leading-none">
-                1,420
+                {totalPhysicalUnits.toLocaleString("es-ES")}
               </span>
               <span className="font-inter text-[11px] text-secondary font-bold uppercase tracking-wider block mt-1">
-                +42 esta semana
+                {products.length} prendas registradas
               </span>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -419,7 +622,7 @@ export function AdminInventoryView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[42px] text-secondary tracking-wide block leading-none">
-                38
+                {String(healthyCount).padStart(2, "0")}
               </span>
               <span className="font-inter text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
                 Nivel Óptimo
@@ -453,7 +656,7 @@ export function AdminInventoryView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[42px] text-mustard tracking-wide block leading-none">
-                06
+                {String(lowCount).padStart(2, "0")}
               </span>
               <span className="font-inter text-[11px] bg-mustard/15 text-primary px-2 py-0.5 uppercase font-semibold inline-block mt-1">
                 Prioridad Media
@@ -485,7 +688,7 @@ export function AdminInventoryView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[42px] text-error tracking-wide block leading-none">
-                02
+                {String(criticalCount).padStart(2, "0")}
               </span>
               <span className="font-inter text-[11px] bg-error-container text-on-error-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
                 Acción Crítica
@@ -528,11 +731,11 @@ export function AdminInventoryView() {
                   className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
                 >
                   <option value="">Categoría: Todas</option>
-                  <option>Sobrecamisas</option>
-                  <option>Pantalones</option>
-                  <option>Calzado</option>
-                  <option>Prendas Exteriores</option>
-                  <option>Accesorios</option>
+                  {availableCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat.charAt(0) + cat.slice(1).toLowerCase()}
+                    </option>
+                  ))}
                 </select>
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">
                   keyboard_arrow_down
