@@ -180,14 +180,15 @@ export function AdminAddColorModal({
               </label>
               <input
                 type="text"
-                maxLength={4}
+                maxLength={3}
                 value={skuCode}
                 onChange={(e) => setSkuCode(e.target.value.toUpperCase())}
-                placeholder="Ej: VRD, ARN, NEG"
+                placeholder="Ej: VRD"
                 className="w-full bg-white px-4 py-2 text-[#1e1c13] font-mono text-[13px] uppercase border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none placeholder:text-[#857466]/70 transition-colors"
               />
               <span className="font-inter text-[11px] text-[#524438] mt-0.5">
-                Código para variantes (ej: NRT-VRD-S).
+                Posición en el SKU: <strong className="font-mono text-[#673900]">NRT-01-???</strong>{" "}
+                (las 3 letras van al final).
               </span>
             </div>
           </div>
