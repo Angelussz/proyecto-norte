@@ -179,7 +179,7 @@ export function AdminAddColorModal({
                 <span className="text-[#673900] font-bold">*</span>
                 <span
                   className="material-symbols-outlined text-[15px] text-[#857466] hover:text-[#673900] cursor-help transition-colors ml-0.5"
-                  title="Código único de 3 letras que identifica la tintura o color al final del SKU de cada prenda."
+                  title="Código único de 3 letras que identifica la tintura o color en el medio del SKU de cada prenda."
                 >
                   info
                 </span>
@@ -193,7 +193,7 @@ export function AdminAddColorModal({
                 className="w-full bg-white px-4 py-2 text-[#1e1c13] font-mono text-[13px] uppercase border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none placeholder:text-[#857466]/70 transition-colors"
               />
               <span className="font-inter text-[11px] text-[#524438] mt-0.5">
-                Posición en SKU: <strong className="font-mono text-[#673900]">NRT-LNO-???</strong>
+                Posición en SKU: <strong className="font-mono text-[#673900]">NRT-???-LNO</strong>
               </span>
             </div>
           </div>

@@ -606,7 +606,7 @@ export function AdminColorsBrandsView() {
                   <span>CÓDIGO (3 LETRAS)</span>
                   <span
                     className="material-symbols-outlined text-[14px] text-outline hover:text-primary cursor-help transition-colors"
-                    title="Código único de 3 letras que identifica el color al final del SKU."
+                    title="Código único de 3 letras que identifica el color en el medio del SKU."
                   >
                     info
                   </span>
@@ -616,7 +616,7 @@ export function AdminColorsBrandsView() {
                   maxLength={3}
                   value={newColorSku}
                   onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
-                  placeholder="NRT-LNO-???"
+                  placeholder="NRT-???-LNO"
                   className="w-full bg-surface-container-lowest px-3 py-2.5 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
