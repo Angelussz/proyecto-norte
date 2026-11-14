@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { AdminAddInventoryColorModal } from "./admin-add-inventory-color-modal";
 import { AdminAddInventorySizeModal } from "./admin-add-inventory-size-modal";
 
@@ -395,6 +396,29 @@ export function AdminInventoryView() {
   const [toast, setToast] = useState<string | null>(null);
   const [colorModalProduct, setColorModalProduct] = useState<ProductCard | null>(null);
   const [sizeModalProduct, setSizeModalProduct] = useState<ProductCard | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar menú al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    if (openMenuId) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openMenuId]);
+
+  function handleDeleteProduct(productId: string) {
+    const p = products.find((x) => x.id === productId);
+    setProducts((prev) => prev.filter((x) => x.id !== productId));
+    setOpenMenuId(null);
+    setToast(`"${p?.name}" eliminado del inventario.`);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   function handleSaveSizes(productId: string, newSizes: string[]) {
     setProducts((prev) =>
@@ -562,13 +586,13 @@ export function AdminInventoryView() {
               <span className="material-symbols-outlined text-[18px]">tune</span>
               Ajuste Masivo
             </button>
-            <button
-              type="button"
+            <Link
+              href="/admin/productos/nuevo"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-headline text-[16px] uppercase tracking-wider transition-colors shadow-sm hover:bg-primary-container"
             >
               <span className="material-symbols-outlined text-[20px]">add</span>
-              Asignar Variante
-            </button>
+              AGREGAR PRODUCTO
+            </Link>
           </div>
         </div>
 
@@ -940,12 +964,43 @@ export function AdminInventoryView() {
                         {product.totalStock} UDS
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="p-2 text-on-surface-variant hover:text-on-surface bg-white shadow-sm self-start"
+                    {/* Kebab menu */}
+                    <div
+                      className="relative self-start"
+                      ref={openMenuId === product.id ? menuRef : null}
                     >
-                      <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === product.id ? null : product.id);
+                        }}
+                        className="p-2 text-on-surface-variant hover:text-on-surface bg-white shadow-sm transition-colors"
+                        aria-label="Opciones del producto"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                      </button>
+                      {openMenuId === product.id && (
+                        <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-outline-variant/40 shadow-lg min-w-[180px]">
+                          <Link
+                            href={`/admin/productos/editar/${product.id}`}
+                            onClick={() => setOpenMenuId(null)}
+                            className="flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-on-surface hover:bg-surface-container transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                            Editar producto
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-error hover:bg-error-container transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                            Eliminar
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
