@@ -581,10 +581,11 @@ export function AdminProductsTable({
                       >
                         <div className="inline-flex items-center justify-end gap-2">
                           <Link
-                            href={`/admin/productos/editar/${product.id}`}
-                            className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface hover:text-primary hover:bg-surface-container transition-colors rounded-none"
+                            href={`/admin/productos/editar?id=${product.id}`}
+                            className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface hover:text-primary hover:bg-surface-container transition-colors rounded-none flex items-center gap-1"
                           >
-                            Editar
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                            <span>Editar</span>
                           </Link>
                           <button
                             type="button"
