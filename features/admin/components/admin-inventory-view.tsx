@@ -727,10 +727,13 @@ export function AdminInventoryView() {
                             ))}
                             <button
                               type="button"
-                              className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1"
+                              className="px-2.5 py-1 bg-surface-container hover:bg-surface-variant text-primary font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors flex items-center gap-1.5"
                             >
-                              <span className="material-symbols-outlined text-[14px]">palette</span>
-                              Color
+                              <span className="material-symbols-outlined text-[18px] font-bold leading-none">
+                                add
+                              </span>
+                              <span className="material-symbols-outlined text-[15px]">palette</span>
+                              <span>Color</span>
                             </button>
                           </div>
                         </div>
