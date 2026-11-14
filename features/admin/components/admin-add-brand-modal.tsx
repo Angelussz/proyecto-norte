@@ -150,26 +150,26 @@ export function AdminAddBrandModal({
 
             {/* Prefijo SKU */}
             <div className="flex flex-col gap-1">
-              <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <span>SKU (3 LETRAS)</span>
-                  <span className="text-[#673900] font-bold">*</span>
-                </span>
+              <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438] font-semibold flex items-center gap-1">
+                <span>SKU (3 LETRAS)</span>
+                <span className="text-[#673900] font-bold">*</span>
+              </label>
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  maxLength={3}
+                  value={skuPrefix}
+                  onChange={(e) => setSkuPrefix(e.target.value.toUpperCase())}
+                  placeholder="Ej: ESS"
+                  className="w-full bg-white pl-4 pr-9 py-2 text-[#1e1c13] font-mono text-[13px] uppercase border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none placeholder:text-[#857466]/70 transition-colors"
+                />
                 <span
-                  className="material-symbols-outlined text-[15px] text-[#857466] hover:text-[#673900] cursor-help transition-colors"
+                  className="material-symbols-outlined absolute right-2.5 text-[#857466] hover:text-[#673900] text-[16px] cursor-help transition-colors select-none"
                   title="Código de 3 letras que identifica a la marca."
                 >
                   info
                 </span>
-              </label>
-              <input
-                type="text"
-                maxLength={3}
-                value={skuPrefix}
-                onChange={(e) => setSkuPrefix(e.target.value.toUpperCase())}
-                placeholder="Ej: ESS"
-                className="w-full bg-white px-4 py-2 text-[#1e1c13] font-mono text-[13px] uppercase border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none placeholder:text-[#857466]/70 transition-colors"
-              />
+              </div>
               <span className="font-inter text-[11px] text-[#524438] mt-0.5">
                 Posición en SKU: <strong className="font-mono text-[#673900]">???-NRT-LNO</strong>
               </span>

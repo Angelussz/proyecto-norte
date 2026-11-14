@@ -435,23 +435,25 @@ export function AdminColorsBrandsView() {
                 />
               </div>
               <div className="sm:col-span-2 relative flex flex-col gap-1">
-                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center justify-between">
-                  <span>SKU (3 LETRAS)</span>
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  SKU (3 LETRAS)
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    maxLength={3}
+                    value={newBrandSku}
+                    onChange={(e) => setNewBrandSku(e.target.value.toUpperCase())}
+                    placeholder="???-NRT-LNO"
+                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                  />
                   <span
-                    className="material-symbols-outlined text-[14px] text-outline hover:text-primary cursor-help transition-colors"
+                    className="material-symbols-outlined absolute right-2 text-outline hover:text-primary text-[15px] cursor-help transition-colors select-none"
                     title="Código de 3 letras que identifica a la marca."
                   >
                     info
                   </span>
-                </label>
-                <input
-                  type="text"
-                  maxLength={3}
-                  value={newBrandSku}
-                  onChange={(e) => setNewBrandSku(e.target.value.toUpperCase())}
-                  placeholder="???-NRT-LNO"
-                  className="w-full bg-surface-container-lowest px-3 py-2 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
-                />
+                </div>
               </div>
               <div className="sm:col-span-4 relative flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
@@ -602,23 +604,25 @@ export function AdminColorsBrandsView() {
                 />
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1">
-                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center justify-between">
-                  <span>SKU (3 LETRAS)</span>
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  SKU (3 LETRAS)
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    maxLength={3}
+                    value={newColorSku}
+                    onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
+                    placeholder="NRT-???-LNO"
+                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2.5 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                  />
                   <span
-                    className="material-symbols-outlined text-[14px] text-outline hover:text-primary cursor-help transition-colors"
+                    className="material-symbols-outlined absolute right-2 text-outline hover:text-primary text-[15px] cursor-help transition-colors select-none"
                     title="Código de 3 letras que identifica al color."
                   >
                     info
                   </span>
-                </label>
-                <input
-                  type="text"
-                  maxLength={3}
-                  value={newColorSku}
-                  onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
-                  placeholder="NRT-???-LNO"
-                  className="w-full bg-surface-container-lowest px-3 py-2.5 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
-                />
+                </div>
               </div>
               <div className="sm:col-span-3 flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
