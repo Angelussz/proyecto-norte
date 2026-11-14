@@ -465,7 +465,7 @@ export function AdminColorsBrandsView() {
                   className="w-full py-2 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
-                  <span>+ AÑADIR MARCA</span>
+                  <span>AÑADIR MARCA</span>
                 </button>
               </div>
             </form>
@@ -644,7 +644,7 @@ export function AdminColorsBrandsView() {
                   className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer h-[42px]"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
-                  <span>+ AÑADIR COLOR</span>
+                  <span>AÑADIR COLOR</span>
                 </button>
               </div>
             </form>
