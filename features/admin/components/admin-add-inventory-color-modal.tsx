@@ -20,63 +20,23 @@ interface AdminAddInventoryColorModalProps {
   onSaveColors: (productId: string, selectedColors: ColorVariant[]) => void;
 }
 
-// Paleta base de respaldo con los colores clásicos de NORTE
-const DEFAULT_PALETTE: ColorVariant[] = [
-  { name: "Verde Oliva", hex: "#4F583D" },
-  { name: "Terracota", hex: "#9E472A" },
-  { name: "Arena Natural", hex: "#E4D5B7" },
-  { name: "Negro Carbón", hex: "#1A1A1A" },
-  { name: "Blanco Puro", hex: "#FDFBF7" },
-  { name: "Gris Mineral", hex: "#7E7F83" },
-  { name: "Azul Marino", hex: "#1E2A38" },
-  { name: "Cacao Tostado", hex: "#5C4033" },
-  { name: "Ocre Tierra", hex: "#C68B45" },
-];
-
 export function AdminAddInventoryColorModal({
   isOpen,
   onClose,
   product,
   onSaveColors,
 }: AdminAddInventoryColorModalProps) {
-  const { data: colorsData } = useColors();
+  const { data: colorsData, isLoading } = useColors();
 
-  // Consolidar todos los colores del catálogo (DB + base + los que ya tenga el producto)
-  const fullPalette = useMemo(() => {
-    const map = new Map<string, ColorVariant>();
-
-    // 1. Agregar los que ya tiene el producto
-    if (product?.colors) {
-      product.colors.forEach((c) => {
-        map.set(c.name.toLowerCase().trim(), { name: c.name, hex: c.hex });
-      });
-    }
-
-    // 2. Agregar paleta por defecto
-    DEFAULT_PALETTE.forEach((c) => {
-      const key = c.name.toLowerCase().trim();
-      if (!map.has(key)) {
-        map.set(key, c);
-      }
-    });
-
-    // 3. Agregar colores activos desde la base de datos si existen
-    if (colorsData && Array.isArray(colorsData)) {
-      colorsData
-        .filter((c) => c.active)
-        .forEach((c) => {
-          const key = c.name.toLowerCase().trim();
-          map.set(key, { name: c.name, hex: c.hex });
-        });
-    }
-
-    return Array.from(map.values());
-  }, [colorsData, product?.colors]);
+  // Solo colores activos del catálogo real de la DB
+  const catalogColors = useMemo<ColorVariant[]>(() => {
+    return (colorsData ?? []).filter((c) => c.active).map((c) => ({ name: c.name, hex: c.hex }));
+  }, [colorsData]);
 
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [search, setSearch] = useState("");
 
-  // Sincronizar colores seleccionados cuando se abre el modal para un producto
+  // Inicializar con los colores ya asignados al producto
   useEffect(() => {
     if (isOpen && product) {
       setSelectedNames(product.colors.map((c) => c.name));
@@ -86,50 +46,46 @@ export function AdminAddInventoryColorModal({
 
   if (!isOpen || !product) return null;
 
-  // Filtrado por buscador
-  const filteredPalette = fullPalette.filter(
+  // Set de colores ya en la matriz del producto
+  const currentAssignedNames = new Set(product.colors.map((c) => c.name.toLowerCase().trim()));
+
+  // Filtrado por buscador sobre el catálogo real
+  const filtered = catalogColors.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.hex.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // Ordenar: primero los que ya están en la matriz del producto, luego los demás
-  const currentAssignedNames = new Set(product.colors.map((c) => c.name.toLowerCase().trim()));
-
-  const sortedList = [...filteredPalette].sort((a, b) => {
-    const aInMatrix = currentAssignedNames.has(a.name.toLowerCase().trim());
-    const bInMatrix = currentAssignedNames.has(b.name.toLowerCase().trim());
-    if (aInMatrix && !bInMatrix) return -1;
-    if (!aInMatrix && bInMatrix) return 1;
+  // Ordenar: primero los que ya están EN MATRIZ, luego disponibles
+  const sortedList = [...filtered].sort((a, b) => {
+    const aIn = currentAssignedNames.has(a.name.toLowerCase().trim());
+    const bIn = currentAssignedNames.has(b.name.toLowerCase().trim());
+    if (aIn && !bIn) return -1;
+    if (!aIn && bIn) return 1;
     return a.name.localeCompare(b.name);
   });
 
   function toggleColor(name: string) {
     setSelectedNames((prev) => {
       const exists = prev.some((n) => n.toLowerCase().trim() === name.toLowerCase().trim());
-      if (exists) {
-        return prev.filter((n) => n.toLowerCase().trim() !== name.toLowerCase().trim());
-      } else {
-        return [...prev, name];
-      }
+      return exists
+        ? prev.filter((n) => n.toLowerCase().trim() !== name.toLowerCase().trim())
+        : [...prev, name];
     });
   }
 
   function handleSave() {
-    if (!product) return;
-
-    // Mapear nombres seleccionados a objetos ColorVariant completos
     const updatedColors: ColorVariant[] = selectedNames.map((name) => {
-      const match = fullPalette.find(
+      const match = catalogColors.find(
         (c) => c.name.toLowerCase().trim() === name.toLowerCase().trim(),
       );
-      return {
-        name,
-        hex: match ? match.hex : "#999999",
-      };
+      // Fallback al color original del producto si ya existía
+      const fromProduct = product?.colors.find(
+        (c) => c.name.toLowerCase().trim() === name.toLowerCase().trim(),
+      );
+      return { name, hex: match?.hex ?? fromProduct?.hex ?? "#999999" };
     });
-
-    onSaveColors(product.id, updatedColors);
+    onSaveColors(product!.id, updatedColors);
     onClose();
   }
 
@@ -158,7 +114,7 @@ export function AdminAddInventoryColorModal({
               {product.name} • <span className="font-mono text-[#786c5e]">SKU: {product.sku}</span>
             </p>
 
-            {/* Muestra de los cuadritos de colores que ya tiene seleccionados el producto */}
+            {/* Colores ya asignados */}
             <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-[#e8dfcf]">
               <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#786c5e]">
                 COLORES EN MATRIZ:
@@ -182,7 +138,6 @@ export function AdminAddInventoryColorModal({
             </div>
           </div>
 
-          {/* Botón Cerrar */}
           <button
             type="button"
             onClick={onClose}
@@ -207,17 +162,26 @@ export function AdminAddInventoryColorModal({
           />
         </div>
 
-        {/* ── Conteo y estado ── */}
+        {/* ── Contadores ── */}
         <div className="flex items-center justify-between font-inter text-[10px] font-bold uppercase tracking-wider text-[#524438] px-0.5">
-          <span>PALETA DISPONIBLE ({filteredPalette.length} OPCIONES)</span>
+          <span>PALETA DISPONIBLE ({filtered.length} OPCIONES)</span>
           <span className="text-[#673900]">{selectedNames.length} SELECCIONADOS</span>
         </div>
 
-        {/* ── Lista de colores ── */}
-        <div className="max-h-[260px] overflow-y-auto space-y-2 pr-1 divide-y-0">
-          {sortedList.length === 0 ? (
+        {/* ── Lista ── */}
+        <div className="max-h-[260px] overflow-y-auto space-y-2 pr-1">
+          {isLoading ? (
             <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
-              No se encontraron colores que coincidan con &quot;{search}&quot;.
+              Cargando colores del catálogo…
+            </div>
+          ) : sortedList.length === 0 && search ? (
+            <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
+              No se encontraron colores para &quot;{search}&quot;.
+            </div>
+          ) : sortedList.length === 0 ? (
+            <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
+              No hay colores activos en el catálogo. Agregalos desde{" "}
+              <strong>Categorías → Colores</strong>.
             </div>
           ) : (
             sortedList.map((c) => {
@@ -235,7 +199,7 @@ export function AdminAddInventoryColorModal({
                   <div className="flex items-center gap-3">
                     {/* Checkbox cuadrado */}
                     <div
-                      className={`w-4 h-4 border flex items-center justify-center transition-colors ${
+                      className={`w-4 h-4 border flex items-center justify-center transition-colors shrink-0 ${
                         isChecked
                           ? "bg-[#673900] border-[#673900] text-white"
                           : "bg-white border-[#ccc]"
@@ -248,7 +212,7 @@ export function AdminAddInventoryColorModal({
                       )}
                     </div>
 
-                    {/* Muestra de color (swatch) */}
+                    {/* Swatch de color */}
                     <span
                       className="w-5 h-5 inline-block shrink-0 border border-black/15 shadow-2xs"
                       style={{ backgroundColor: c.hex }}
@@ -265,13 +229,13 @@ export function AdminAddInventoryColorModal({
                     </div>
                   </div>
 
-                  {/* Badge de estado */}
+                  {/* Badge */}
                   {isInMatrix ? (
-                    <span className="bg-[#dce9d5] text-[#3b5e28] border border-[#c4dcba] text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5">
+                    <span className="bg-[#dce9d5] text-[#3b5e28] border border-[#c4dcba] text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 shrink-0">
                       EN MATRIZ
                     </span>
                   ) : (
-                    <span className="text-[#8a7b6e] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5">
+                    <span className="text-[#8a7b6e] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 shrink-0">
                       DISPONIBLE
                     </span>
                   )}
@@ -293,7 +257,8 @@ export function AdminAddInventoryColorModal({
           <button
             type="button"
             onClick={handleSave}
-            className="px-6 py-2.5 bg-[#673900] hover:bg-[#7e4600] text-white font-headline text-[15px] sm:text-[16px] uppercase tracking-wider flex items-center gap-2 transition-colors shadow-sm"
+            disabled={selectedNames.length === 0}
+            className="px-6 py-2.5 bg-[#673900] hover:bg-[#7e4600] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[15px] sm:text-[16px] uppercase tracking-wider flex items-center gap-2 transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">palette</span>
             <span>+ AGREGAR COLORES SELECCIONADOS</span>

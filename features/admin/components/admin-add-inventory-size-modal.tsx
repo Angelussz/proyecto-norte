@@ -3,9 +3,74 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSizeGroups } from "@/features/admin/hooks/useSizeGroups";
 
-export interface SizeOption {
+// ─── Mismo mapa de keywords que usa AdminInventoryVariantsSection ─────────────
+const CATEGORY_KEYWORDS: { match: string[]; groupKeywords: string[] }[] = [
+  {
+    match: [
+      "camisa",
+      "polera",
+      "camiseta",
+      "remera",
+      "blusa",
+      "chomba",
+      "chaqueta",
+      "abrigo",
+      "sweater",
+      "suéter",
+      "sobrecamisa",
+      "top",
+    ],
+    groupKeywords: ["ropa general", "prendas"],
+  },
+  {
+    match: ["pantalon", "jean", "bermuda", "short", "falda", "vestido"],
+    groupKeywords: ["pantalon", "jean", "formal"],
+  },
+  {
+    match: ["calzado", "zapato", "zapatilla", "bota", "sandalia", "mocasin"],
+    groupKeywords: ["calzado"],
+  },
+  {
+    match: [
+      "accesorio",
+      "joya",
+      "joyeria",
+      "anillo",
+      "collar",
+      "pulsera",
+      "cinturon",
+      "bufanda",
+      "gorra",
+      "bolso",
+      "cartera",
+    ],
+    groupKeywords: ["accesorio", "talle único", "joyería", "joya", "cinturón", "bufanda", "poncho"],
+  },
+];
+
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getGroupKeywordsForCategory(categoryName: string): string[] | null {
+  const norm = normalize(categoryName);
+  for (const rule of CATEGORY_KEYWORDS) {
+    if (rule.match.some((kw) => norm.includes(normalize(kw)))) {
+      return rule.groupKeywords;
+    }
+  }
+  return null; // sin filtro → muestra todos los grupos
+}
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface SizeOption {
   size: string;
-  system: string;
+  systemLabel: string;
+  groupTitle: string;
 }
 
 interface AdminAddInventorySizeModalProps {
@@ -15,36 +80,14 @@ interface AdminAddInventorySizeModalProps {
     id: string;
     name: string;
     sku: string;
-    category?: string;
+    category: string;
     sizes: string[];
     colors: { name: string; hex: string }[];
   } | null;
   onSaveSizes: (productId: string, selectedSizes: string[]) => void;
 }
 
-// Curva de talles de respaldo por defecto
-const DEFAULT_SIZES: SizeOption[] = [
-  { size: "36 (XS)", system: "Indumentaria General" },
-  { size: "38 (S)", system: "Indumentaria General" },
-  { size: "40 (M)", system: "Indumentaria General" },
-  { size: "42 (L)", system: "Indumentaria General" },
-  { size: "44 (XL)", system: "Indumentaria General" },
-  { size: "46 (XXL)", system: "Indumentaria General" },
-  { size: "XS", system: "Letras Internacionales" },
-  { size: "S", system: "Letras Internacionales" },
-  { size: "M", system: "Letras Internacionales" },
-  { size: "L", system: "Letras Internacionales" },
-  { size: "XL", system: "Letras Internacionales" },
-  { size: "XXL", system: "Letras Internacionales" },
-  { size: "39", system: "Calzado Europeo" },
-  { size: "40", system: "Calzado Europeo" },
-  { size: "41", system: "Calzado Europeo" },
-  { size: "42", system: "Calzado Europeo" },
-  { size: "43", system: "Calzado Europeo" },
-  { size: "44", system: "Calzado Europeo" },
-  { size: "45", system: "Calzado Europeo" },
-  { size: "TALLE ÚNICO", system: "Accesorios" },
-];
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function AdminAddInventorySizeModal({
   isOpen,
@@ -52,56 +95,48 @@ export function AdminAddInventorySizeModal({
   product,
   onSaveSizes,
 }: AdminAddInventorySizeModalProps) {
-  const { data: sizeGroupsData } = useSizeGroups();
+  const { data: sizeGroupsData, isLoading } = useSizeGroups();
 
-  // Consolidar todos los talles disponibles (DB + base + los que ya tenga el producto)
-  const fullSizeList = useMemo(() => {
-    const map = new Map<string, SizeOption>();
+  // Filtrar y aplanar talles del catálogo según la categoría del producto
+  const catalogSizes = useMemo<SizeOption[]>(() => {
+    if (!sizeGroupsData) return [];
 
-    // 1. Agregar los talles que ya tiene asignados el producto
-    if (product?.sizes) {
-      product.sizes.forEach((s) => {
-        map.set(s.toLowerCase().trim(), {
-          size: s,
-          system: product.category ? `${product.category} (Actual)` : "Matriz Actual",
-        });
-      });
-    }
+    const groupKeywords = product?.category ? getGroupKeywordsForCategory(product.category) : null;
 
-    // 2. Agregar grupos y sistemas de la base de datos si existen
-    if (sizeGroupsData && Array.isArray(sizeGroupsData)) {
-      sizeGroupsData.forEach((group) => {
-        group.systems
-          .filter((sys) => sys.active)
-          .forEach((sys) => {
-            sys.sizes.forEach((sz) => {
-              const key = sz.toLowerCase().trim();
-              if (!map.has(key)) {
-                map.set(key, {
-                  size: sz,
-                  system: `${group.title} • ${sys.label}`,
-                });
-              }
-            });
-          });
-      });
-    }
-
-    // 3. Agregar talles por defecto
-    DEFAULT_SIZES.forEach((s) => {
-      const key = s.size.toLowerCase().trim();
-      if (!map.has(key)) {
-        map.set(key, s);
-      }
+    const filteredGroups = sizeGroupsData.filter((group) => {
+      if (!groupKeywords) return true;
+      const normTitle = normalize(group.title);
+      return groupKeywords.some((kw) => normTitle.includes(normalize(kw)));
     });
 
-    return Array.from(map.values());
-  }, [sizeGroupsData, product?.sizes, product?.category]);
+    // Aplanar con de-duplicación por valor de talla
+    const seen = new Set<string>();
+    const result: SizeOption[] = [];
+
+    filteredGroups.forEach((group) => {
+      group.systems
+        .filter((sys) => sys.active)
+        .forEach((sys) => {
+          sys.sizes.forEach((size) => {
+            const key = size.toLowerCase().trim();
+            if (!seen.has(key)) {
+              seen.add(key);
+              result.push({
+                size,
+                systemLabel: sys.label,
+                groupTitle: group.title,
+              });
+            }
+          });
+        });
+    });
+
+    return result;
+  }, [sizeGroupsData, product?.category]);
 
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [search, setSearch] = useState("");
 
-  // Sincronizar tallas seleccionadas al abrir el modal para un producto
   useEffect(() => {
     if (isOpen && product) {
       setSelectedSizes([...product.sizes]);
@@ -111,32 +146,31 @@ export function AdminAddInventorySizeModal({
 
   if (!isOpen || !product) return null;
 
-  // Filtrado por buscador
-  const filteredSizes = fullSizeList.filter(
-    (s) =>
-      s.size.toLowerCase().includes(search.toLowerCase()) ||
-      s.system.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  // Ordenar: primero los que ya están en la matriz del producto
   const currentAssignedSizes = new Set(product.sizes.map((s) => s.toLowerCase().trim()));
 
-  const sortedList = [...filteredSizes].sort((a, b) => {
-    const aInMatrix = currentAssignedSizes.has(a.size.toLowerCase().trim());
-    const bInMatrix = currentAssignedSizes.has(b.size.toLowerCase().trim());
-    if (aInMatrix && !bInMatrix) return -1;
-    if (!aInMatrix && bInMatrix) return 1;
+  // Filtrar por buscador
+  const filtered = catalogSizes.filter(
+    (s) =>
+      s.size.toLowerCase().includes(search.toLowerCase()) ||
+      s.systemLabel.toLowerCase().includes(search.toLowerCase()) ||
+      s.groupTitle.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  // Ordenar: primero EN MATRIZ, luego disponibles
+  const sortedList = [...filtered].sort((a, b) => {
+    const aIn = currentAssignedSizes.has(a.size.toLowerCase().trim());
+    const bIn = currentAssignedSizes.has(b.size.toLowerCase().trim());
+    if (aIn && !bIn) return -1;
+    if (!aIn && bIn) return 1;
     return a.size.localeCompare(b.size, undefined, { numeric: true });
   });
 
   function toggleSize(size: string) {
     setSelectedSizes((prev) => {
       const exists = prev.some((s) => s.toLowerCase().trim() === size.toLowerCase().trim());
-      if (exists) {
-        return prev.filter((s) => s.toLowerCase().trim() !== size.toLowerCase().trim());
-      } else {
-        return [...prev, size];
-      }
+      return exists
+        ? prev.filter((s) => s.toLowerCase().trim() !== size.toLowerCase().trim())
+        : [...prev, size];
     });
   }
 
@@ -171,9 +205,21 @@ export function AdminAddInventorySizeModal({
               {product.name} • <span className="font-mono text-[#786c5e]">SKU: {product.sku}</span>
             </p>
 
-            {/* Muestra de los talles que ya tiene asignados el producto */}
-            <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-[#e8dfcf]">
-              <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#786c5e]">
+            {/* Badge de categoría */}
+            {product.category && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#786c5e]">
+                  CATEGORÍA:
+                </span>
+                <span className="px-2 py-0.5 bg-[#f0ead9] text-[#524438] font-inter text-[10px] font-bold uppercase tracking-wider border border-[#e3dac9]">
+                  {product.category}
+                </span>
+              </div>
+            )}
+
+            {/* Talles ya asignados */}
+            <div className="flex items-start gap-2 mt-2 pt-1.5 border-t border-[#e8dfcf]">
+              <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#786c5e] mt-0.5 shrink-0">
                 TALLES EN MATRIZ:
               </span>
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -195,7 +241,6 @@ export function AdminAddInventorySizeModal({
             </div>
           </div>
 
-          {/* Botón Cerrar */}
           <button
             type="button"
             onClick={onClose}
@@ -220,17 +265,26 @@ export function AdminAddInventorySizeModal({
           />
         </div>
 
-        {/* ── Conteo y estado ── */}
+        {/* ── Contadores ── */}
         <div className="flex items-center justify-between font-inter text-[10px] font-bold uppercase tracking-wider text-[#524438] px-0.5">
-          <span>TALLES DISPONIBLES ({filteredSizes.length} OPCIONES)</span>
+          <span>TALLES DISPONIBLES ({filtered.length} OPCIONES)</span>
           <span className="text-[#673900]">{selectedSizes.length} SELECCIONADOS</span>
         </div>
 
-        {/* ── Lista de talles ── */}
-        <div className="max-h-[260px] overflow-y-auto space-y-2 pr-1 divide-y-0">
-          {sortedList.length === 0 ? (
+        {/* ── Lista ── */}
+        <div className="max-h-[260px] overflow-y-auto space-y-2 pr-1">
+          {isLoading ? (
             <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
-              No se encontraron talles que coincidan con &quot;{search}&quot;.
+              Cargando talles del catálogo…
+            </div>
+          ) : sortedList.length === 0 && search ? (
+            <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
+              No se encontraron talles para &quot;{search}&quot;.
+            </div>
+          ) : sortedList.length === 0 ? (
+            <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
+              No hay talles configurados para esta categoría. Agregalos desde{" "}
+              <strong>Categorías → Talles</strong>.
             </div>
           ) : (
             sortedList.map((item) => {
@@ -246,9 +300,9 @@ export function AdminAddInventorySizeModal({
                   className="flex items-center justify-between p-3 bg-white hover:bg-[#faf7f0] border border-[#e8dfcf] hover:border-[#d9cdb8] cursor-pointer select-none transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    {/* Checkbox cuadrado */}
+                    {/* Checkbox */}
                     <div
-                      className={`w-4 h-4 border flex items-center justify-center transition-colors ${
+                      className={`w-4 h-4 border flex items-center justify-center transition-colors shrink-0 ${
                         isChecked
                           ? "bg-[#673900] border-[#673900] text-white"
                           : "bg-white border-[#ccc]"
@@ -262,28 +316,30 @@ export function AdminAddInventorySizeModal({
                     </div>
 
                     {/* Muestra de talle */}
-                    <div className="min-w-[38px] px-2 py-1 bg-[#f7f2e7] border border-[#e4dbcc] flex items-center justify-center">
+                    <div className="min-w-[42px] px-2 py-1 bg-[#f7f2e7] border border-[#e4dbcc] flex items-center justify-center shrink-0">
                       <span className="font-inter text-[12px] font-bold text-[#1e1c13]">
                         {item.size}
                       </span>
                     </div>
 
-                    {/* Nombre y Sistema */}
+                    {/* Nombre y sistema */}
                     <div className="flex flex-col text-left">
                       <span className="font-inter text-[13px] font-bold text-[#1e1c13] leading-tight">
-                        Talle {item.size}
+                        {item.size}
                       </span>
-                      <span className="font-inter text-[11px] text-[#786c5e]">{item.system}</span>
+                      <span className="font-inter text-[11px] text-[#786c5e]">
+                        {item.groupTitle} · {item.systemLabel}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Badge de estado */}
+                  {/* Badge */}
                   {isInMatrix ? (
-                    <span className="bg-[#dce9d5] text-[#3b5e28] border border-[#c4dcba] text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5">
+                    <span className="bg-[#dce9d5] text-[#3b5e28] border border-[#c4dcba] text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 shrink-0">
                       EN MATRIZ
                     </span>
                   ) : (
-                    <span className="text-[#8a7b6e] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5">
+                    <span className="text-[#8a7b6e] text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 shrink-0">
                       DISPONIBLE
                     </span>
                   )}
@@ -305,7 +361,8 @@ export function AdminAddInventorySizeModal({
           <button
             type="button"
             onClick={handleSave}
-            className="px-6 py-2.5 bg-[#673900] hover:bg-[#7e4600] text-white font-headline text-[15px] sm:text-[16px] uppercase tracking-wider flex items-center gap-2 transition-colors shadow-sm"
+            disabled={selectedSizes.length === 0}
+            className="px-6 py-2.5 bg-[#673900] hover:bg-[#7e4600] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[15px] sm:text-[16px] uppercase tracking-wider flex items-center gap-2 transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">straighten</span>
             <span>+ AGREGAR TALLES SELECCIONADOS</span>
