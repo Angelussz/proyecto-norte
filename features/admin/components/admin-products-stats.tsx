@@ -2,39 +2,9 @@
 
 import Link from "next/link";
 
-const STATS = [
-  {
-    label: "Catálogo Completo",
-    value: "48",
-    sub: "100% auditable",
-    subColor: "text-secondary",
-  },
-  {
-    label: "Piezas Activas",
-    value: "42",
-    sub: "87.5% en vitrina",
-    subColor: "text-on-surface-variant",
-    valueColor: "text-primary",
-  },
-  {
-    label: "Atención Reposición",
-    value: "05",
-    sub: "Stock bajo",
-    subColor: "text-[#c77d2e]",
-    valueColor: "text-[#c77d2e]",
-  },
-  {
-    label: "Agotados",
-    value: "01",
-    sub: "Edición Atelier",
-    subColor: "text-error",
-    valueColor: "text-tertiary",
-  },
-];
-
 export function AdminProductsStats() {
   return (
-    <section className="w-full bg-surface-container-low px-8 py-6 flex flex-col gap-4">
+    <section className="w-full px-8 py-6 flex flex-col gap-6">
       {/* Title row */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="flex flex-col">
@@ -65,25 +35,113 @@ export function AdminProductsStats() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
-        {STATS.map((stat) => (
-          <div key={stat.label} className="bg-surface-container p-4 flex flex-col justify-between">
-            <span className="text-[10px] font-inter font-medium text-on-surface-variant uppercase tracking-widest">
-              {stat.label}
+      {/* ── KPI Cards (Estilo Inventario) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* KPI 1: Catálogo Completo */}
+        <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div className="flex items-start justify-between relative z-10">
+            <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
+              Catálogo Completo
             </span>
-            <div className="flex items-baseline justify-between mt-1.5">
-              <span
-                className={`font-headline text-[36px] text-on-surface leading-none ${stat.valueColor ?? "text-on-surface"}`}
-              >
-                {stat.value}
-              </span>
-              <span className={`text-[10px] font-inter font-medium ${stat.subColor}`}>
-                {stat.sub}
-              </span>
-            </div>
+            <span className="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
           </div>
-        ))}
+          <div className="mt-4 relative z-10">
+            <span className="font-headline text-[42px] text-on-surface tracking-wide block leading-none">
+              48
+            </span>
+            <span className="font-inter text-[11px] text-secondary font-bold uppercase tracking-wider block mt-1">
+              100% auditable
+            </span>
+          </div>
+          <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
+            <span
+              className="material-symbols-outlined text-on-surface leading-none block"
+              style={{ fontSize: "95px" }}
+            >
+              inventory_2
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 2: Piezas Activas */}
+        <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div className="flex items-start justify-between relative z-10">
+            <span className="font-inter text-[10px] text-secondary uppercase tracking-widest font-semibold">
+              Piezas Activas
+            </span>
+            <span className="material-symbols-outlined text-secondary text-[20px]">verified</span>
+          </div>
+          <div className="mt-4 relative z-10">
+            <span className="font-headline text-[42px] text-secondary tracking-wide block leading-none">
+              42
+            </span>
+            <span className="font-inter text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
+              87.5% en vitrina
+            </span>
+          </div>
+          <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
+            <span
+              className="material-symbols-outlined text-on-surface leading-none block"
+              style={{ fontSize: "95px" }}
+            >
+              verified
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 3: Atención Reposición */}
+        <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div className="flex items-start justify-between relative z-10">
+            <span className="font-inter text-[10px] text-mustard uppercase tracking-widest font-semibold">
+              Atención Reposición
+            </span>
+            <span className="material-symbols-outlined text-mustard text-[20px]">
+              warning_amber
+            </span>
+          </div>
+          <div className="mt-4 relative z-10">
+            <span className="font-headline text-[42px] text-mustard tracking-wide block leading-none">
+              05
+            </span>
+            <span className="font-inter text-[11px] bg-mustard/15 text-primary px-2 py-0.5 uppercase font-semibold inline-block mt-1">
+              Stock bajo
+            </span>
+          </div>
+          <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
+            <span
+              className="material-symbols-outlined text-on-surface leading-none block"
+              style={{ fontSize: "95px" }}
+            >
+              warning_amber
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 4: Agotados */}
+        <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden border border-outline-variant/30 shadow-sm">
+          <div className="flex items-start justify-between relative z-10">
+            <span className="font-inter text-[10px] text-error uppercase tracking-widest font-semibold">
+              Agotados
+            </span>
+            <span className="material-symbols-outlined text-error text-[20px]">block</span>
+          </div>
+          <div className="mt-4 relative z-10">
+            <span className="font-headline text-[42px] text-error tracking-wide block leading-none">
+              01
+            </span>
+            <span className="font-inter text-[11px] bg-error-container text-on-error-container px-2 py-0.5 uppercase font-semibold inline-block mt-1">
+              Edición Atelier
+            </span>
+          </div>
+          <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
+            <span
+              className="material-symbols-outlined text-on-surface leading-none block"
+              style={{ fontSize: "95px" }}
+            >
+              block
+            </span>
+          </div>
+        </div>
       </div>
     </section>
   );
