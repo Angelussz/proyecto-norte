@@ -308,7 +308,7 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
 
       {/* ── 1. Color Selection Section ── */}
       <div ref={colorContainerRef} className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div className="flex flex-col">
             <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#524438] leading-tight">
               COLORES
@@ -317,14 +317,9 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
               DISPONIBLES
             </span>
           </div>
-          <div className="flex flex-col items-end text-right">
-            <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#c77d2e] leading-tight">
-              {(isColorOpen ? selectedColorNames : appliedColorNames).length}
-            </span>
-            <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#c77d2e] leading-tight">
-              SELECCIONADOS
-            </span>
-          </div>
+          <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#c77d2e] leading-tight">
+            {(isColorOpen ? selectedColorNames : appliedColorNames).length} SELECCIONADOS
+          </span>
         </div>
 
         {/* Search input & toggle */}
@@ -433,7 +428,7 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
 
       {/* ── 2. Size (Talle) Selection Section ── */}
       <div ref={sizeContainerRef} className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div className="flex flex-col">
             <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#524438] leading-tight">
               TALLES
@@ -442,14 +437,9 @@ export function AdminInventoryVariantsSection({ onVariantsChange }: Props) {
               DISPONIBLES
             </span>
           </div>
-          <div className="flex flex-col items-end text-right">
-            <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#c77d2e] leading-tight">
-              {(isSizeOpen ? selectedSizeKeys : sizes.map((s) => s.size)).length}
-            </span>
-            <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#c77d2e] leading-tight">
-              SELECCIONADAS
-            </span>
-          </div>
+          <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#c77d2e] leading-tight">
+            {(isSizeOpen ? selectedSizeKeys : sizes.map((s) => s.size)).length} SELECCIONADAS
+          </span>
         </div>
 
         {/* Search input & toggle */}
