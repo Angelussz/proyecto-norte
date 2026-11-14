@@ -251,21 +251,6 @@ export function AdminAddColorModal({
             <p className="font-inter text-[12px] text-[#524438] leading-relaxed">
               Las modificaciones se propagarán a la matriz de inventario y fichas técnicas.
             </p>
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                id="modal-color-active"
-                type="checkbox"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
-                className="h-4 w-4 rounded-none border-[#d8c3b2] text-[#673900] focus:ring-0 focus:outline-none cursor-pointer"
-              />
-              <label
-                htmlFor="modal-color-active"
-                className="font-inter text-[11px] uppercase tracking-wider text-[#1e1c13] font-medium cursor-pointer"
-              >
-                Tono activo y disponible para asignación en producción
-              </label>
-            </div>
           </div>
 
           {/* ── Modal Footer ── */}
