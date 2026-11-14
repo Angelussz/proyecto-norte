@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AdminInventoryVariantsSection } from "@/features/admin/components/admin-inventory-variants-section";
 import { useCategories } from "@/features/category/hooks/useCategories";
+import { useBrands } from "@/features/admin/hooks/useBrands";
 
 /* ─── Mock data: producto existente ─── */
 const MOCK_PRODUCT = {
@@ -51,6 +52,23 @@ export function AdminEditProductForm() {
 
   const selectedCategoryName =
     categories?.find((c) => c.id === categoryId)?.name ?? (categoryId ? "" : p.category);
+
+  // ── Marcas desde la DB ───────────────────────────────────────────────────
+  const { data: brands, isLoading: brandsLoading, isError: brandsError } = useBrands();
+  const [brandId, setBrandId] = useState("");
+
+  useEffect(() => {
+    if (!brandId && brands && brands.length > 0) {
+      const match =
+        brands.find((b) => b.name.toLowerCase() === p.brand.toLowerCase()) ||
+        brands.find((b) => b.name.toLowerCase().includes(p.brand.toLowerCase())) ||
+        brands.find((b) => p.brand.toLowerCase().includes(b.name.toLowerCase())) ||
+        brands[0];
+      if (match) {
+        setBrandId(match.id);
+      }
+    }
+  }, [brands, brandId, p.brand]);
 
   const margin = (((p.priceRetail - p.priceCost) / p.priceRetail) * 100).toFixed(1);
 
@@ -193,6 +211,7 @@ export function AdminEditProductForm() {
 
                 {/* Marca + Género */}
                 <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Marca */}
                   <div className="flex flex-col gap-1.5">
                     <label
                       className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
@@ -200,12 +219,33 @@ export function AdminEditProductForm() {
                     >
                       Marca / Firma
                     </label>
-                    <input
-                      id="prod-brand"
-                      type="text"
-                      defaultValue={p.brand}
-                      className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                    />
+                    <div className="relative">
+                      {brandsError ? (
+                        <p className="font-inter text-[13px] text-red-600">
+                          Error al cargar marcas
+                        </p>
+                      ) : (
+                        <select
+                          id="prod-brand"
+                          value={brandId}
+                          onChange={(e) => setBrandId(e.target.value)}
+                          disabled={brandsLoading}
+                          className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] disabled:opacity-60"
+                        >
+                          <option value="">
+                            {brandsLoading ? "Cargando marcas…" : "Seleccionar marca"}
+                          </option>
+                          {brands?.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
+                        keyboard_arrow_down
+                      </span>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label
