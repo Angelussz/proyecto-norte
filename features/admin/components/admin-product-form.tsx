@@ -642,7 +642,6 @@ export function AdminProductForm() {
               <span className="font-headline text-[24px] text-[#1e1c13] tracking-wider uppercase">
                 ESTADO &amp; VISIBILIDAD
               </span>
-              <span className="material-symbols-outlined text-[#673900] text-[20px]">tune</span>
             </div>
             <div className="flex flex-col gap-4">
               {/* Estado de Venta */}
