@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ProductListItem } from "@/features/admin/types/product.interface";
+import type { ProductDto, ProductListItem } from "@/features/admin/types/product.interface";
 
 const PRODUCTS_KEY = ["admin-products"] as const;
 
@@ -12,6 +12,13 @@ async function fetchProducts(): Promise<ProductListItem[]> {
   if (!res.ok) throw new Error("Error al obtener los productos.");
   const json = await res.json();
   return json.data as ProductListItem[];
+}
+
+async function fetchProduct(id: string): Promise<ProductDto> {
+  const res = await fetch(`/api/admin/products/${id}`);
+  if (!res.ok) throw new Error("Error al obtener el producto.");
+  const json = await res.json();
+  return json.data as ProductDto;
 }
 
 async function fetchCreateProduct(form: FormData): Promise<{ id: string }> {
@@ -57,6 +64,14 @@ async function fetchDeleteProduct(id: string): Promise<void> {
 
 export function useProducts() {
   return useQuery({ queryKey: PRODUCTS_KEY, queryFn: fetchProducts });
+}
+
+export function useProduct(id: string | null) {
+  return useQuery({
+    queryKey: ["admin-product", id],
+    queryFn: () => (id ? fetchProduct(id) : null),
+    enabled: Boolean(id),
+  });
 }
 
 export function useCreateProduct() {

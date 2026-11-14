@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { ProductListItem } from "@/features/admin/types/product.interface";
+import type { ColorDto } from "@/features/admin/types/brand-color.interface";
+import { useProduct } from "@/features/admin/hooks/useProducts";
+import { useColors } from "@/features/admin/hooks/useColors";
 
 // ─── Stock badge ──────────────────────────────────────────────────────────────
 function StockBadge({ stock }: { stock: number }) {
@@ -64,49 +67,171 @@ function ActiveToggle({
   );
 }
 
-// ─── Variants summary row ─────────────────────────────────────────────────────
-function VariantsSummaryRow({
-  variantCount,
-  totalStock,
-  isOpen,
-}: {
-  variantCount: number;
-  totalStock: number;
-  isOpen: boolean;
-}) {
+// ─── Color resolver helper ────────────────────────────────────────────────────
+function resolveColor(colorVal: string, colorsList?: ColorDto[]) {
+  const isHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorVal);
+  if (isHex) {
+    const found = colorsList?.find((c) => c.hex.toLowerCase() === colorVal.toLowerCase());
+    return { hex: colorVal, name: found?.name ?? colorVal };
+  }
+  const byName = colorsList?.find((c) => c.name.toLowerCase() === colorVal.toLowerCase());
+  if (byName) {
+    return { hex: byName.hex, name: byName.name };
+  }
+  return { hex: "#D4C3A3", name: colorVal || "Estándar" };
+}
+
+// ─── Variants animated row con datos reales ───────────────────────────────────
+function VariantsRow({ productId, isOpen }: { productId: string; isOpen: boolean }) {
+  const { data: product, isLoading, isError } = useProduct(isOpen ? productId : null);
+  const { data: globalColors = [] } = useColors();
+
+  const groupedVariants = useMemo(() => {
+    if (!product?.variants) return [];
+
+    const map = new Map<
+      string,
+      {
+        size: string;
+        sku: string;
+        total: number;
+        colors: Array<{ hex: string; name: string; stock: number }>;
+        alert: boolean;
+      }
+    >();
+
+    for (const v of product.variants) {
+      const sizeLabel = v.size
+        ? v.size.toLowerCase().startsWith("talla")
+          ? v.size
+          : `Talla ${v.size}`
+        : "Talla Única";
+      const resolved = resolveColor(v.colorHex || v.color, globalColors);
+
+      if (!map.has(sizeLabel)) {
+        map.set(sizeLabel, {
+          size: sizeLabel,
+          sku: v.sku,
+          total: 0,
+          colors: [],
+          alert: false,
+        });
+      }
+
+      const group = map.get(sizeLabel)!;
+      group.total += v.stock;
+      group.colors.push({
+        hex: resolved.hex,
+        name: resolved.name,
+        stock: v.stock,
+      });
+      group.alert = group.total <= 2;
+    }
+
+    return Array.from(map.values());
+  }, [product, globalColors]);
+
   return (
     <tr className="bg-surface-container-high/40">
       <td className="p-0" colSpan={7}>
+        {/* Grid wrapper — transiciona de 0fr a 1fr */}
         <div
           className="grid transition-[grid-template-rows] duration-300 ease-in-out"
           style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
         >
+          {/* overflow:hidden necesario para que el 0fr realmente oculte */}
           <div className="overflow-hidden">
             <div className="pl-20 pr-4 py-3 bg-surface-container-high/30 flex flex-col gap-1.5">
+              {/* Subheader */}
               <div className="flex items-center justify-between text-[10px] font-inter font-medium uppercase text-on-surface-variant tracking-wider pb-1 px-3">
-                <span>Resumen de Variantes</span>
-                <span>Almacén Central</span>
+                <span>Desglose por Talla &amp; Confección</span>
+                <span>Almacén Central Madrid</span>
               </div>
-              <div className="flex items-center gap-4 px-4 py-2 bg-surface-container-lowest">
-                <span className="material-symbols-outlined text-[16px] text-outline">
-                  subdirectory_arrow_right
-                </span>
-                <span className="text-[14px] font-inter font-medium text-on-surface">
-                  {variantCount} variante{variantCount !== 1 ? "s" : ""} ·{" "}
-                  <span
+
+              {/* Loading */}
+              {isLoading && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-surface-container-lowest text-[12px] font-inter text-on-surface-variant animate-pulse">
+                  <span className="material-symbols-outlined text-[16px] animate-spin">
+                    progress_activity
+                  </span>
+                  <span>Cargando desglose de variantes…</span>
+                </div>
+              )}
+
+              {/* Error */}
+              {isError && (
+                <div className="px-4 py-2.5 bg-surface-container-lowest text-[12px] font-inter text-error">
+                  Error al cargar el desglose de variantes.
+                </div>
+              )}
+
+              {/* Sin variantes */}
+              {!isLoading && !isError && product && product.variants.length === 0 && (
+                <div className="px-4 py-2.5 bg-surface-container-lowest text-[12px] font-inter text-on-surface-variant">
+                  No hay variantes registradas para este producto.
+                </div>
+              )}
+
+              {/* Variantes por Talla */}
+              {!isLoading &&
+                !isError &&
+                groupedVariants.map((variant) => (
+                  <div
+                    key={variant.sku}
                     className={cn(
-                      "font-semibold",
-                      totalStock === 0
-                        ? "text-error"
-                        : totalStock <= 5
-                          ? "text-[#c77d2e]"
-                          : "text-on-surface",
+                      "flex items-center justify-between px-4 py-2 transition-colors duration-150",
+                      "bg-surface-container-lowest hover:bg-[#c77d2e]/15 cursor-pointer",
                     )}
                   >
-                    {totalStock} uds en total
-                  </span>
-                </span>
-              </div>
+                    {/* Size + SKU */}
+                    <div className="flex items-center gap-4">
+                      <span
+                        className={cn(
+                          "material-symbols-outlined text-[16px]",
+                          variant.alert ? "text-[#c77d2e]" : "text-outline",
+                        )}
+                      >
+                        subdirectory_arrow_right
+                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-[14px] font-inter font-medium text-on-surface">
+                          {variant.size}
+                        </span>
+                        <span className="text-[10px] font-mono font-inter text-on-surface-variant">
+                          SKU: {variant.sku}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Color swatches */}
+                    <div className="flex items-center gap-2">
+                      {variant.colors.map((color, idx) => (
+                        <div
+                          key={`${color.hex}-${idx}`}
+                          className="relative flex items-center justify-center border border-outline-variant/60 w-5 h-5"
+                          style={{ backgroundColor: color.hex }}
+                          title={`${color.name}: ${color.stock} uds`}
+                        >
+                          <span className="absolute -top-1.5 -right-1.5 bg-surface text-on-surface border border-outline-variant font-mono text-[9px] leading-tight px-1 font-bold">
+                            {color.stock}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Total */}
+                    <div>
+                      <span
+                        className={cn(
+                          "text-[14px] font-mono font-inter",
+                          variant.alert ? "text-primary font-semibold" : "text-on-surface",
+                        )}
+                      >
+                        {variant.total} uds
+                      </span>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -483,12 +608,11 @@ export function AdminProductsTable({
                       </td>
                     </tr>
 
-                    {/* ── Fila de variantes animada ── */}
+                    {/* ── Fila de variantes animada con datos reales ── */}
                     {hasVariants && (
-                      <VariantsSummaryRow
+                      <VariantsRow
                         key={`variants-${product.id}`}
-                        variantCount={product.variantCount}
-                        totalStock={product.totalStock}
+                        productId={product.id}
                         isOpen={isExpanded}
                       />
                     )}
