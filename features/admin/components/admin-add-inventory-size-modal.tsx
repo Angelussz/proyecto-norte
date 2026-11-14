@@ -67,8 +67,16 @@ function getGroupKeywordsForCategory(categoryName: string): string[] | null {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+interface SystemInfo {
+  id: string;
+  label: string;
+  groupTitle: string;
+  sizes: string[];
+}
+
 interface SizeOption {
   size: string;
+  systemId: string;
   systemLabel: string;
   groupTitle: string;
 }
@@ -97,73 +105,111 @@ export function AdminAddInventorySizeModal({
 }: AdminAddInventorySizeModalProps) {
   const { data: sizeGroupsData, isLoading } = useSizeGroups();
 
-  // Filtrar y aplanar talles del catálogo según la categoría del producto
-  const catalogSizes = useMemo<SizeOption[]>(() => {
+  // 1. Filtrar grupos según la categoría del producto
+  const groupKeywords = product?.category ? getGroupKeywordsForCategory(product.category) : null;
+
+  const filteredGroups = useMemo(() => {
     if (!sizeGroupsData) return [];
-
-    const groupKeywords = product?.category ? getGroupKeywordsForCategory(product.category) : null;
-
-    const filteredGroups = sizeGroupsData.filter((group) => {
+    return sizeGroupsData.filter((group) => {
       if (!groupKeywords) return true;
       const normTitle = normalize(group.title);
       return groupKeywords.some((kw) => normTitle.includes(normalize(kw)));
     });
+  }, [sizeGroupsData, groupKeywords]);
 
-    // Aplanar con de-duplicación por valor de talla
-    const seen = new Set<string>();
-    const result: SizeOption[] = [];
-
-    filteredGroups.forEach((group) => {
+  // 2. Sistemas de tallas activos disponibles con sus talles en orden estricto
+  const availableSystems = useMemo<SystemInfo[]>(() => {
+    return filteredGroups.flatMap((group) =>
       group.systems
         .filter((sys) => sys.active)
-        .forEach((sys) => {
-          sys.sizes.forEach((size) => {
-            const key = size.toLowerCase().trim();
-            if (!seen.has(key)) {
-              seen.add(key);
-              result.push({
-                size,
-                systemLabel: sys.label,
-                groupTitle: group.title,
-              });
-            }
-          });
-        });
-    });
+        .map((sys) => ({
+          id: sys.id,
+          label: sys.label,
+          groupTitle: group.title,
+          sizes: sys.sizes,
+        })),
+    );
+  }, [filteredGroups]);
 
-    return result;
-  }, [sizeGroupsData, product?.category]);
+  // 3. Detectar cuál sistema de talla usa el producto actualmente (por coincidencia de talles)
+  const detectedSystemId = useMemo(() => {
+    if (!product || availableSystems.length === 0) return "";
+    if (product.sizes.length === 0) return availableSystems[0]?.id || "";
 
+    const currentNormalized = new Set(product.sizes.map((s) => s.toLowerCase().trim()));
+
+    let bestMatchCount = -1;
+    let bestSystemId = availableSystems[0]?.id || "";
+
+    for (const sys of availableSystems) {
+      const matchCount = sys.sizes.filter((s) =>
+        currentNormalized.has(s.toLowerCase().trim()),
+      ).length;
+      if (matchCount > bestMatchCount) {
+        bestMatchCount = matchCount;
+        bestSystemId = sys.id;
+      }
+    }
+
+    return bestSystemId;
+  }, [product, availableSystems]);
+
+  const [selectedSystemId, setSelectedSystemId] = useState<string>("all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [search, setSearch] = useState("");
 
+  // Al abrir el modal, inicializar estado con los talles del producto y activar su sistema
   useEffect(() => {
     if (isOpen && product) {
       setSelectedSizes([...product.sizes]);
       setSearch("");
+      setSelectedSystemId(detectedSystemId || "all");
     }
-  }, [isOpen, product]);
+  }, [isOpen, product, detectedSystemId]);
+
+  // 4. Lista de opciones en orden estricto según el sistema de tallas seleccionado
+  const catalogSizes = useMemo<SizeOption[]>(() => {
+    const systemsToUse =
+      selectedSystemId !== "all"
+        ? availableSystems.filter((sys) => sys.id === selectedSystemId)
+        : availableSystems;
+
+    const result: SizeOption[] = [];
+    const seen = new Set<string>();
+
+    systemsToUse.forEach((sys) => {
+      sys.sizes.forEach((size) => {
+        // En vista "all", evitar duplicar exactamente la misma talla de sistemas repetidos
+        const dedupKey =
+          selectedSystemId === "all"
+            ? `${size.toLowerCase().trim()}-${sys.id}`
+            : size.toLowerCase().trim();
+        if (!seen.has(dedupKey)) {
+          seen.add(dedupKey);
+          result.push({
+            size,
+            systemId: sys.id,
+            systemLabel: sys.label,
+            groupTitle: sys.groupTitle,
+          });
+        }
+      });
+    });
+
+    return result;
+  }, [availableSystems, selectedSystemId]);
 
   if (!isOpen || !product) return null;
 
   const currentAssignedSizes = new Set(product.sizes.map((s) => s.toLowerCase().trim()));
 
-  // Filtrar por buscador
-  const filtered = catalogSizes.filter(
+  // 5. Filtrar solo por búsqueda de texto, SIN romper el orden secuencial del sistema
+  const filteredList = catalogSizes.filter(
     (s) =>
       s.size.toLowerCase().includes(search.toLowerCase()) ||
       s.systemLabel.toLowerCase().includes(search.toLowerCase()) ||
       s.groupTitle.toLowerCase().includes(search.toLowerCase()),
   );
-
-  // Ordenar: primero EN MATRIZ, luego disponibles
-  const sortedList = [...filtered].sort((a, b) => {
-    const aIn = currentAssignedSizes.has(a.size.toLowerCase().trim());
-    const bIn = currentAssignedSizes.has(b.size.toLowerCase().trim());
-    if (aIn && !bIn) return -1;
-    if (!aIn && bIn) return 1;
-    return a.size.localeCompare(b.size, undefined, { numeric: true });
-  });
 
   function toggleSize(size: string) {
     setSelectedSizes((prev) => {
@@ -176,7 +222,25 @@ export function AdminAddInventorySizeModal({
 
   function handleSave() {
     if (!product) return;
-    onSaveSizes(product.id, selectedSizes);
+
+    // Ordenar los talles seleccionados según el orden en que aparecen en el sistema
+    const orderMap = new Map<string, number>();
+    availableSystems.forEach((sys) => {
+      sys.sizes.forEach((size, idx) => {
+        const key = size.toLowerCase().trim();
+        if (!orderMap.has(key)) {
+          orderMap.set(key, idx);
+        }
+      });
+    });
+
+    const orderedSelectedSizes = [...selectedSizes].sort((a, b) => {
+      const idxA = orderMap.get(a.toLowerCase().trim()) ?? 999;
+      const idxB = orderMap.get(b.toLowerCase().trim()) ?? 999;
+      return idxA - idxB;
+    });
+
+    onSaveSizes(product.id, orderedSelectedSizes);
     onClose();
   }
 
@@ -186,7 +250,7 @@ export function AdminAddInventorySizeModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[500px] bg-[#fbf7ee] border border-[#e3dac9] p-6 shadow-2xl flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-[540px] bg-[#fbf7ee] border border-[#e3dac9] p-6 shadow-2xl flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Encabezado ── */}
@@ -251,8 +315,56 @@ export function AdminAddInventorySizeModal({
           </button>
         </div>
 
+        {/* ── Selector de sistema de tallas (si la categoría tiene más de un sistema) ── */}
+        {availableSystems.length > 1 && (
+          <div className="flex flex-col gap-1.5 p-2.5 bg-[#f4ede0] border border-[#e3dac9]">
+            <div className="flex items-center justify-between">
+              <span className="font-inter text-[10px] font-bold uppercase tracking-wider text-[#6c5d4f]">
+                SISTEMA DE TALLES
+              </span>
+              {detectedSystemId && (
+                <span className="font-inter text-[9px] text-[#3b5e28] font-bold uppercase tracking-wider bg-[#dce9d5] px-1.5 py-0.5 border border-[#c4dcba]">
+                  Detectado en producto
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {availableSystems.map((sys) => {
+                const isSelected = selectedSystemId === sys.id;
+                const isDetected = sys.id === detectedSystemId;
+                return (
+                  <button
+                    key={sys.id}
+                    type="button"
+                    onClick={() => setSelectedSystemId(sys.id)}
+                    className={`px-2.5 py-1 font-inter text-[11px] font-bold uppercase tracking-wider transition-colors border ${
+                      isSelected
+                        ? "bg-[#673900] text-white border-[#673900] shadow-2xs"
+                        : "bg-white text-[#524438] border-[#e3dac9] hover:bg-[#ebdcc9]"
+                    }`}
+                  >
+                    {sys.label}
+                    {isDetected && !isSelected && <span className="ml-1 text-[#3b5e28]">●</span>}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setSelectedSystemId("all")}
+                className={`px-2.5 py-1 font-inter text-[11px] font-bold uppercase tracking-wider transition-colors border ${
+                  selectedSystemId === "all"
+                    ? "bg-[#673900] text-white border-[#673900] shadow-2xs"
+                    : "bg-white text-[#524438] border-[#e3dac9] hover:bg-[#ebdcc9]"
+                }`}
+              >
+                Ver Todos
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Buscador ── */}
-        <div className="relative mt-1">
+        <div className="relative">
           <span className="material-symbols-outlined text-[18px] text-[#8f8274] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
             search
           </span>
@@ -261,33 +373,40 @@ export function AdminAddInventorySizeModal({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Escribir o buscar talle..."
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#e3dac9] font-inter text-[13px] text-[#1e1c13] placeholder:text-[#a5998a] outline-none focus:border-[#c77d2e] shadow-2xs transition-colors"
+            className="w-full pl-9 pr-4 py-2 bg-white border border-[#e3dac9] font-inter text-[13px] text-[#1e1c13] placeholder:text-[#a5998a] outline-none focus:border-[#c77d2e] shadow-2xs transition-colors"
           />
         </div>
 
         {/* ── Contadores ── */}
         <div className="flex items-center justify-between font-inter text-[10px] font-bold uppercase tracking-wider text-[#524438] px-0.5">
-          <span>TALLES DISPONIBLES ({filtered.length} OPCIONES)</span>
+          <span>
+            TALLES DISPONIBLES ({filteredList.length} OPCIONES)
+            {selectedSystemId !== "all" && (
+              <span className="text-[#786c5e] font-normal lowercase ml-1">
+                (según {availableSystems.find((s) => s.id === selectedSystemId)?.label})
+              </span>
+            )}
+          </span>
           <span className="text-[#673900]">{selectedSizes.length} SELECCIONADOS</span>
         </div>
 
-        {/* ── Lista ── */}
-        <div className="max-h-[260px] overflow-y-auto space-y-2 pr-1">
+        {/* ── Lista de talles ordenadas por sistema ── */}
+        <div className="max-h-[250px] overflow-y-auto space-y-2 pr-1">
           {isLoading ? (
             <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
               Cargando talles del catálogo…
             </div>
-          ) : sortedList.length === 0 && search ? (
+          ) : filteredList.length === 0 && search ? (
             <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
               No se encontraron talles para &quot;{search}&quot;.
             </div>
-          ) : sortedList.length === 0 ? (
+          ) : filteredList.length === 0 ? (
             <div className="p-6 text-center font-inter text-[12px] text-[#857466] bg-white border border-[#e8dfcf]">
               No hay talles configurados para esta categoría. Agregalos desde{" "}
               <strong>Categorías → Talles</strong>.
             </div>
           ) : (
-            sortedList.map((item) => {
+            filteredList.map((item) => {
               const isChecked = selectedSizes.some(
                 (s) => s.toLowerCase().trim() === item.size.toLowerCase().trim(),
               );
@@ -295,7 +414,7 @@ export function AdminAddInventorySizeModal({
 
               return (
                 <div
-                  key={item.size}
+                  key={`${item.systemId}-${item.size}`}
                   onClick={() => toggleSize(item.size)}
                   className="flex items-center justify-between p-3 bg-white hover:bg-[#faf7f0] border border-[#e8dfcf] hover:border-[#d9cdb8] cursor-pointer select-none transition-colors"
                 >

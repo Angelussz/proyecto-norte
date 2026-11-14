@@ -49,17 +49,17 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     category: "SOBRECAMISAS",
     name: "Sobrecamisa Lino Rústico Arena",
     pvp: "165,00 €",
-    sizes: ["38 (S)", "40 (M)", "42 (L)", "44 (XL)"],
+    sizes: ["S", "M", "L", "XL"],
     colors: [
       { name: "Arena Natural", hex: "#E4D5B7" },
       { name: "Verde Oliva", hex: "#4F583D" },
       { name: "Terracota", hex: "#9E472A" },
     ],
     stock: {
-      "38 (S)": { "Arena Natural": 8, "Verde Oliva": 4, Terracota: 0 },
-      "40 (M)": { "Arena Natural": 10, "Verde Oliva": 5, Terracota: 3 },
-      "42 (L)": { "Arena Natural": 3, "Verde Oliva": 5, Terracota: 1 },
-      "44 (XL)": { "Arena Natural": 2, "Verde Oliva": 1, Terracota: 1 },
+      S: { "Arena Natural": 8, "Verde Oliva": 4, Terracota: 0 },
+      M: { "Arena Natural": 10, "Verde Oliva": 5, Terracota: 3 },
+      L: { "Arena Natural": 3, "Verde Oliva": 5, Terracota: 1 },
+      XL: { "Arena Natural": 2, "Verde Oliva": 1, Terracota: 1 },
     },
     totalStock: 42,
     stockLevel: "healthy",
@@ -73,16 +73,16 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     category: "PANTALONES",
     name: "Pantalón Traje Sastre Arena",
     pvp: "145,00 €",
-    sizes: ["38 (S)", "40 (M)", "42 (L)", "44 (XL)"],
+    sizes: ["38", "40", "42", "44"],
     colors: [
       { name: "Arena Natural", hex: "#E4D5B7" },
       { name: "Negro Carbón", hex: "#1A1A1A" },
     ],
     stock: {
-      "38 (S)": { "Arena Natural": 2, "Negro Carbón": 1 },
-      "40 (M)": { "Arena Natural": 4, "Negro Carbón": 2 },
-      "42 (L)": { "Arena Natural": 3, "Negro Carbón": 1 },
-      "44 (XL)": { "Arena Natural": 1, "Negro Carbón": 0 },
+      "38": { "Arena Natural": 2, "Negro Carbón": 1 },
+      "40": { "Arena Natural": 4, "Negro Carbón": 2 },
+      "42": { "Arena Natural": 3, "Negro Carbón": 1 },
+      "44": { "Arena Natural": 1, "Negro Carbón": 0 },
     },
     totalStock: 14,
     stockLevel: "low",
@@ -121,7 +121,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     category: "CAMISAS",
     name: "Camisa Lino Cuello Mao",
     pvp: "135,00 €",
-    sizes: ["38 (S)", "40 (M)", "42 (L)"],
+    sizes: ["S", "M", "L"],
     colors: [
       { name: "Blanco Puro", hex: "#FDFBF7" },
       { name: "Azul Marino", hex: "#1E2A38" },
@@ -129,9 +129,9 @@ const INITIAL_PRODUCTS: ProductCard[] = [
       { name: "Arena Natural", hex: "#E4D5B7" },
     ],
     stock: {
-      "38 (S)": { "Blanco Puro": 5, "Azul Marino": 4, "Verde Oliva": 3, "Arena Natural": 2 },
-      "40 (M)": { "Blanco Puro": 7, "Azul Marino": 5, "Verde Oliva": 4, "Arena Natural": 3 },
-      "42 (L)": { "Blanco Puro": 4, "Azul Marino": 3, "Verde Oliva": 2, "Arena Natural": 1 },
+      S: { "Blanco Puro": 5, "Azul Marino": 4, "Verde Oliva": 3, "Arena Natural": 2 },
+      M: { "Blanco Puro": 7, "Azul Marino": 5, "Verde Oliva": 4, "Arena Natural": 3 },
+      L: { "Blanco Puro": 4, "Azul Marino": 3, "Verde Oliva": 2, "Arena Natural": 1 },
     },
     totalStock: 43,
     stockLevel: "healthy",
@@ -169,14 +169,14 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     category: "CHAQUETAS",
     name: "Chaqueta Oversize Espiga",
     pvp: "230,00 €",
-    sizes: ["40 (M)", "42 (L)"],
+    sizes: ["M", "L"],
     colors: [
       { name: "Gris Mineral", hex: "#7E7F83" },
       { name: "Negro Carbón", hex: "#1A1A1A" },
     ],
     stock: {
-      "40 (M)": { "Gris Mineral": 0, "Negro Carbón": 0 },
-      "42 (L)": { "Gris Mineral": 0, "Negro Carbón": 0 },
+      M: { "Gris Mineral": 0, "Negro Carbón": 0 },
+      L: { "Gris Mineral": 0, "Negro Carbón": 0 },
     },
     totalStock: 0,
     stockLevel: "critical",
@@ -190,7 +190,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     category: "BERMUDAS",
     name: "Bermuda Lino Plisada",
     pvp: "98,00 €",
-    sizes: ["38 (S)", "40 (M)", "42 (L)", "44 (XL)", "46 (XXL)"],
+    sizes: ["38", "40", "42", "44", "46"],
     colors: [
       { name: "Terracota", hex: "#9E472A" },
       { name: "Verde Oliva", hex: "#4F583D" },
@@ -199,35 +199,35 @@ const INITIAL_PRODUCTS: ProductCard[] = [
       { name: "Blanco Puro", hex: "#FDFBF7" },
     ],
     stock: {
-      "38 (S)": {
+      "38": {
         Terracota: 3,
         "Verde Oliva": 4,
         "Arena Natural": 5,
         "Azul Marino": 2,
         "Blanco Puro": 3,
       },
-      "40 (M)": {
+      "40": {
         Terracota: 6,
         "Verde Oliva": 5,
         "Arena Natural": 8,
         "Azul Marino": 4,
         "Blanco Puro": 5,
       },
-      "42 (L)": {
+      "42": {
         Terracota: 4,
         "Verde Oliva": 3,
         "Arena Natural": 6,
         "Azul Marino": 3,
         "Blanco Puro": 4,
       },
-      "44 (XL)": {
+      "44": {
         Terracota: 2,
         "Verde Oliva": 2,
         "Arena Natural": 3,
         "Azul Marino": 1,
         "Blanco Puro": 2,
       },
-      "46 (XXL)": {
+      "46": {
         Terracota: 1,
         "Verde Oliva": 1,
         "Arena Natural": 2,
@@ -247,14 +247,14 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     category: "ACCESORIOS",
     name: "Gorra Algodón Orgánico Lavado",
     pvp: "45,00 €",
-    sizes: ["TALLE ÚNICO"],
+    sizes: ["Talle Único"],
     colors: [
       { name: "Ocre Tierra", hex: "#C68B45" },
       { name: "Verde Oliva", hex: "#4F583D" },
       { name: "Negro Carbón", hex: "#1A1A1A" },
     ],
     stock: {
-      "TALLE ÚNICO": { "Ocre Tierra": 12, "Verde Oliva": 15, "Negro Carbón": 8 },
+      "Talle Único": { "Ocre Tierra": 12, "Verde Oliva": 15, "Negro Carbón": 8 },
     },
     totalStock: 35,
     stockLevel: "healthy",
@@ -311,7 +311,7 @@ const MOVEMENTS: Movement[] = [
     id: "m1",
     product: "Sobrecamisa Lino Arena",
     delta: 10,
-    detail: "Talle 40 • Arena Natural: 10 uds",
+    detail: "Talle M • Arena Natural: 10 uds",
     time: "Hoy, 11:24 por E. Vázquez",
     type: "in",
   },
@@ -928,9 +928,7 @@ export function AdminInventoryView() {
                         )}
                         <span>
                           Talles:{" "}
-                          <strong className="text-on-surface">
-                            {product.sizes.map((s) => s.replace(/ \([A-Z]+\)/, "")).join(", ")}
-                          </strong>
+                          <strong className="text-on-surface">{product.sizes.join(", ")}</strong>
                         </span>
                         <span>•</span>
                         <div className="flex items-center gap-1.5">
