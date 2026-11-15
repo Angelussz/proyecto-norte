@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
 import {
   AdminAddBrandModal,
   type BrandFormData,
@@ -435,49 +434,23 @@ export function AdminColorsBrandsView() {
 
       <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         {/* ── Encabezado principal ── */}
-        <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-          <div className="flex flex-col gap-2">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2">
-              <span className="w-2 h-2 bg-mustard" />
-              <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-[0.25em] font-semibold">
-                PALETAS CROMÁTICAS &amp; FIRMAS REGISTRADAS
-              </span>
-            </div>
-
-            {/* Título y subtítulo */}
-            <h1 className="font-headline text-[42px] uppercase tracking-normal leading-none text-on-surface mt-1">
-              GESTIÓN DE MARCAS Y COLORES
-            </h1>
-            <p className="font-inter text-[13px] text-on-surface-variant leading-relaxed max-w-3xl">
-              Administración de firmas registradas, marcas del atelier y cartas cromáticas oficiales
-              para tinturas de confección textil vinculadas al catálogo general.
-            </p>
+        <header className="flex flex-col gap-2">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2">
+            <span className="w-2 h-2 bg-mustard" />
+            <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-[0.25em] font-semibold">
+              PALETAS CROMÁTICAS &amp; FIRMAS REGISTRADAS
+            </span>
           </div>
 
-          {/* Botones de navegación directa a sub-vistas */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0 self-start lg:self-center">
-            <Link
-              href="/admin/categorias"
-              className="group inline-flex items-center gap-2.5 px-5 py-2.5 bg-[#33402f] hover:bg-[#253022] text-[#fff9ed] font-inter text-[12px] uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all active:translate-y-px"
-            >
-              <span className="material-symbols-outlined text-[19px] text-[#ffb875]">
-                arrow_back
-              </span>
-              <span>Ir a Categorías</span>
-            </Link>
-
-            <Link
-              href="/admin/categorias/talles"
-              className="group inline-flex items-center gap-2.5 px-5 py-2.5 bg-[#c77d2e] hover:bg-[#b06a20] text-white font-inter text-[12px] uppercase tracking-wider font-semibold shadow-md hover:shadow-lg transition-all active:translate-y-px"
-            >
-              <span className="material-symbols-outlined text-[19px]">straighten</span>
-              <span>Ir a Sistema de Talles</span>
-              <span className="material-symbols-outlined text-[15px] group-hover:translate-x-1 transition-transform">
-                arrow_forward
-              </span>
-            </Link>
-          </div>
+          {/* Título y subtítulo */}
+          <h1 className="font-headline text-[42px] uppercase tracking-normal leading-none text-on-surface mt-1">
+            GESTIÓN DE MARCAS Y COLORES
+          </h1>
+          <p className="font-inter text-[13px] text-on-surface-variant leading-relaxed max-w-3xl">
+            Administración de firmas registradas, marcas del atelier y cartas cromáticas oficiales
+            para tinturas de confección textil vinculadas al catálogo general.
+          </p>
         </header>
 
         {/* ── 1. Top 4 KPI Cards ── */}
