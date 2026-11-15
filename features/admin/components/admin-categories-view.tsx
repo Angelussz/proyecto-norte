@@ -415,8 +415,8 @@ export function AdminCategoriesView() {
   }
 
   return (
-    <main className="w-full bg-surface min-h-[calc(100vh-4rem)] flex flex-col justify-between">
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8 pb-16">
+    <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
+      <div className="w-full max-w-[1400px] mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8">
         {/* ── 1. Encabezado principal ── */}
         <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
           <div className="flex flex-col gap-2">
@@ -801,57 +801,57 @@ export function AdminCategoriesView() {
           </div>
         </footer>
 
-        {/* ── Modal Agregar Nueva Categoría ── */}
-        <AdminAddCategoryModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onSave={handleSaveNewCategory}
-        />
-
-        {/* ── Modal Editar Categoría ── */}
-        <AdminEditCategoryModal
-          category={editingCategory}
-          isOpen={Boolean(editingCategory)}
-          onClose={() => setEditingCategory(null)}
-          onSave={handleSaveEditedCategory}
-          onDelete={deleteCategory}
-        />
-      </div>
-
-      {/* ── STICKY BOTTOM BAR (Igual a la de agregar/editar producto) ── */}
-      <div className="sticky bottom-0 z-30 w-full bg-[#333027] text-[#f7f0e2] px-4 lg:px-12 py-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[#443f33]">
-        <div className="flex items-center gap-3">
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${
-              hasUnsavedChanges ? "bg-[#c77d2e] animate-pulse" : "bg-[#466635]"
-            }`}
-          />
-          <span className="font-inter text-[12px] text-[#e0dacb]">
-            {hasUnsavedChanges
-              ? "Cambios sin guardar en categorías"
-              : "Todos los cambios guardados"}
-          </span>
-        </div>
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
-          <button
-            type="button"
-            onClick={handleDiscardChanges}
-            disabled={!hasUnsavedChanges}
-            className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
-          >
-            DESCARTAR CAMBIOS
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveChanges}
-            disabled={!hasUnsavedChanges}
-            className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer active:translate-y-px"
-          >
-            GUARDAR CAMBIOS
-            <span className="material-symbols-outlined text-[18px]">check</span>
-          </button>
+        {/* ── STICKY BOTTOM BAR (Igual a la de agregar/editar producto) ── */}
+        <div className="sticky bottom-0 z-30 w-full bg-[#333027] text-[#f7f0e2] px-4 lg:px-12 py-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                hasUnsavedChanges ? "bg-[#c77d2e] animate-pulse" : "bg-[#466635]"
+              }`}
+            />
+            <span className="font-inter text-[12px] text-[#e0dacb]">
+              {hasUnsavedChanges
+                ? "Cambios sin guardar en categorías"
+                : "Todos los cambios guardados"}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleDiscardChanges}
+              disabled={!hasUnsavedChanges}
+              className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
+            >
+              DESCARTAR CAMBIOS
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveChanges}
+              disabled={!hasUnsavedChanges}
+              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer active:translate-y-px"
+            >
+              GUARDAR CAMBIOS
+              <span className="material-symbols-outlined text-[18px]">check</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* ── Modal Agregar Nueva Categoría ── */}
+      <AdminAddCategoryModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleSaveNewCategory}
+      />
+
+      {/* ── Modal Editar Categoría ── */}
+      <AdminEditCategoryModal
+        category={editingCategory}
+        isOpen={Boolean(editingCategory)}
+        onClose={() => setEditingCategory(null)}
+        onSave={handleSaveEditedCategory}
+        onDelete={deleteCategory}
+      />
 
       {/* ── Toast de confirmación ── */}
       {toast && (
