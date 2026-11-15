@@ -404,10 +404,18 @@ function persistProducts(updated: ProductCard[]) {
 
 export function AdminInventoryView() {
   const [products, setProducts] = useState<ProductCard[]>(() => loadFromLS() ?? INITIAL_PRODUCTS);
-  // Snapshot del stock "guardado" (antes de editar en la tabla). Permite Descartar.
-  const [savedStocks, setSavedStocks] = useState<Record<string, StockMatrix>>(() => {
+  // Snapshot completo del producto guardado (sizes + colors + stock).
+  // Solo se actualiza al presionar "Actualizar Stock". Permite Descartar TODO.
+  const [savedSnapshots, setSavedSnapshots] = useState<
+    Record<string, Pick<ProductCard, "sizes" | "colors" | "stock">>
+  >(() => {
     const base = loadFromLS() ?? INITIAL_PRODUCTS;
-    return Object.fromEntries(base.map((p) => [p.id, structuredClone(p.stock)]));
+    return Object.fromEntries(
+      base.map((p) => [
+        p.id,
+        structuredClone({ sizes: p.sizes, colors: p.colors, stock: p.stock }),
+      ]),
+    );
   });
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");
@@ -449,6 +457,7 @@ export function AdminInventoryView() {
     const current = products.find((p) => p.id === productId);
     if (!current) return;
 
+    // Reconstruir la matriz preservando stock existente para talles que ya había
     const updatedStock: StockMatrix = {};
     newSizes.forEach((talle) => {
       const currentTalleStock = current.stock[talle] ?? {};
@@ -459,28 +468,27 @@ export function AdminInventoryView() {
       });
     });
 
-    const updatedStockSnapshot = structuredClone(updatedStock);
     const newTotalStock = calcTotal(updatedStock);
     const newLevel: "healthy" | "low" | "critical" =
       newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
 
-    const updatedProducts = products.map((p) =>
-      p.id !== productId
-        ? p
-        : {
-            ...p,
-            sizes: newSizes,
-            stock: updatedStock,
-            totalStock: newTotalStock,
-            stockLevel: newLevel,
-          },
+    // Solo actualiza la vista — NO persiste ni actualiza el snapshot.
+    // Los cambios quedan pendientes hasta "Actualizar Stock".
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id !== productId
+          ? p
+          : {
+              ...p,
+              sizes: newSizes,
+              stock: updatedStock,
+              totalStock: newTotalStock,
+              stockLevel: newLevel,
+            },
+      ),
     );
 
-    setProducts(updatedProducts);
-    setSavedStocks((prev) => ({ ...prev, [productId]: updatedStockSnapshot }));
-    persistProducts(updatedProducts);
-
-    setToast(`Curva de talles actualizada para "${current.name}".`);
+    setToast(`Talles actualizados. Presioná "Actualizar Stock" para guardar.`);
     setTimeout(() => setToast(null), 3500);
   }
 
@@ -488,6 +496,7 @@ export function AdminInventoryView() {
     const current = products.find((p) => p.id === productId);
     if (!current) return;
 
+    // Reconstruir la matriz preservando stock existente para colores que ya había
     const updatedStock: StockMatrix = {};
     current.sizes.forEach((talle) => {
       const currentTalleStock = current.stock[talle] ?? {};
@@ -498,28 +507,27 @@ export function AdminInventoryView() {
       });
     });
 
-    const updatedStockSnapshot = structuredClone(updatedStock);
     const newTotalStock = calcTotal(updatedStock);
     const newLevel: "healthy" | "low" | "critical" =
       newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
 
-    const updatedProducts = products.map((p) =>
-      p.id !== productId
-        ? p
-        : {
-            ...p,
-            colors: newColors,
-            stock: updatedStock,
-            totalStock: newTotalStock,
-            stockLevel: newLevel,
-          },
+    // Solo actualiza la vista — NO persiste ni actualiza el snapshot.
+    // Los cambios quedan pendientes hasta "Actualizar Stock".
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id !== productId
+          ? p
+          : {
+              ...p,
+              colors: newColors,
+              stock: updatedStock,
+              totalStock: newTotalStock,
+              stockLevel: newLevel,
+            },
+      ),
     );
 
-    setProducts(updatedProducts);
-    setSavedStocks((prev) => ({ ...prev, [productId]: updatedStockSnapshot }));
-    persistProducts(updatedProducts);
-
-    setToast(`Matriz de colores actualizada para "${current.name}".`);
+    setToast(`Colores actualizados. Presioná "Actualizar Stock" para guardar.`);
     setTimeout(() => setToast(null), 3500);
   }
 
@@ -546,22 +554,27 @@ export function AdminInventoryView() {
   }
 
   function saveMatrix(productId: string) {
-    // Capturar el stock actual antes de cualquier setState (evita closure stale)
     const current = products.find((x) => x.id === productId);
     if (!current) return;
 
-    const snapshotStock = structuredClone(current.stock);
-    const newTotal = calcTotal(snapshotStock);
+    const newTotal = calcTotal(current.stock);
     const newLevel: "healthy" | "low" | "critical" =
       newTotal === 0 ? "critical" : newTotal < 15 ? "low" : "healthy";
 
-    // Construir array actualizado directamente (no forma funcional) para poder persistir
     const updatedProducts = products.map((p) =>
       p.id !== productId ? p : { ...p, totalStock: newTotal, stockLevel: newLevel },
     );
 
+    // Guardar snapshot completo: sizes + colors + stock
+    setSavedSnapshots((prev) => ({
+      ...prev,
+      [productId]: structuredClone({
+        sizes: current.sizes,
+        colors: current.colors,
+        stock: current.stock,
+      }),
+    }));
     setProducts(updatedProducts);
-    setSavedStocks((prev) => ({ ...prev, [productId]: snapshotStock }));
     persistProducts(updatedProducts);
 
     setToast(`Stock de "${current.name}" guardado correctamente.`);
@@ -569,16 +582,23 @@ export function AdminInventoryView() {
   }
 
   function discardMatrix(productId: string) {
-    const snapshot = savedStocks[productId];
-    if (!snapshot) return;
+    const snap = savedSnapshots[productId];
+    if (!snap) return;
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;
-        const restoredStock = structuredClone(snapshot);
+        const restoredStock = structuredClone(snap.stock);
         const restoredTotal = calcTotal(restoredStock);
         const restoredLevel: "healthy" | "low" | "critical" =
           restoredTotal === 0 ? "critical" : restoredTotal < 15 ? "low" : "healthy";
-        return { ...p, stock: restoredStock, totalStock: restoredTotal, stockLevel: restoredLevel };
+        return {
+          ...p,
+          sizes: structuredClone(snap.sizes),
+          colors: structuredClone(snap.colors),
+          stock: restoredStock,
+          totalStock: restoredTotal,
+          stockLevel: restoredLevel,
+        };
       }),
     );
     const p = products.find((x) => x.id === productId);
@@ -586,10 +606,17 @@ export function AdminInventoryView() {
     setTimeout(() => setToast(null), 3000);
   }
 
+  // Detecta si hay cambios pendientes vs. el último snapshot guardado.
+  // Compara sizes, colors Y stock — así agregar un talle/color también activa el indicador.
   function hasUnsavedChanges(productId: string): boolean {
     const current = products.find((x) => x.id === productId);
-    if (!current) return false;
-    return JSON.stringify(current.stock) !== JSON.stringify(savedStocks[productId] ?? {});
+    const snap = savedSnapshots[productId];
+    if (!current || !snap) return false;
+    return (
+      JSON.stringify(current.sizes) !== JSON.stringify(snap.sizes) ||
+      JSON.stringify(current.colors) !== JSON.stringify(snap.colors) ||
+      JSON.stringify(current.stock) !== JSON.stringify(snap.stock)
+    );
   }
 
   const filteredProducts = products.filter((p) => {
