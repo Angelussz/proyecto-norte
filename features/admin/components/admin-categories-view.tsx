@@ -972,49 +972,6 @@ export function AdminCategoriesView() {
             </div>
           </section>
 
-          {/* ── 5. Banner de Sincronización Automática inferior ── */}
-          <footer className="bg-[#f4eddf] p-4 border border-[#d8c3b2]/40 flex flex-col sm:flex-row items-center justify-between gap-4 mt-2">
-            <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[#673900] text-[20px] shrink-0">
-                sync
-              </span>
-              <p className="text-[11px] text-[#524438] leading-normal">
-                <strong className="text-[#1e1c13]">Sincronización Automática:</strong> Cualquier
-                cambio en las categorías, talles por categoría, colores o firmas se propaga
-                inmediatamente a las pantallas de Creación de Producto, Fichas de Inventario y
-                Tienda Online Pública.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 shrink-0 text-[10px] font-bold uppercase tracking-wider">
-              <button
-                type="button"
-                onClick={() => alert("Registro de Cambios: Catálogo sincronizado.")}
-                className="text-[#673900] hover:underline flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-[15px]">history</span> REGISTRO DE
-                CAMBIOS
-              </button>
-              <span className="text-[#d8c3b2]">|</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const data = JSON.stringify(categories, null, 2);
-                  const blob = new Blob([data], { type: "application/json" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "norte_categorias.json";
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-                className="text-[#524438] hover:text-[#1e1c13] flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-[15px]">download</span> EXPORTAR
-                JSON
-              </button>
-            </div>
-          </footer>
-
           {/* ── STICKY BOTTOM BAR (Igual a la de agregar/editar producto e inventario) ── */}
           <div className="sticky bottom-0 z-30 w-full bg-[#333027] text-[#f7f0e2] px-4 lg:px-12 py-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
