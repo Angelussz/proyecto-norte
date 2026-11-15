@@ -774,10 +774,10 @@ export function AdminCategoriesView() {
               {categories.map((cat) => (
                 <article
                   key={cat.id}
-                  className={`p-5 border flex flex-col gap-3 transition-all duration-200 ${
+                  className={`p-5 border border-l-4 flex flex-col gap-3 transition-all duration-200 ${
                     cat.active
-                      ? "bg-[#faf3e4] border-[#d8c3b2]/40"
-                      : "bg-[#f4eddf]/60 border-[#d8c3b2]/30 opacity-50 hover:opacity-80 grayscale-[35%]"
+                      ? "bg-[#faf3e4] border-[#d8c3b2]/40 border-l-[#33402f] shadow-xs"
+                      : "bg-[#e8dfcf] border-[#c4b5a3] border-l-[#736456] shadow-[inset_0_2px_6px_rgba(40,30,20,0.12)]"
                   }`}
                 >
                   {/* Cabecera de la categoría */}
@@ -785,7 +785,11 @@ export function AdminCategoriesView() {
                     <div className="flex items-start gap-3">
                       <button
                         type="button"
-                        className="text-[#857466] hover:text-[#673900] mt-0.5 cursor-grab active:cursor-grabbing"
+                        className={`mt-0.5 cursor-grab active:cursor-grabbing ${
+                          cat.active
+                            ? "text-[#857466] hover:text-[#673900]"
+                            : "text-[#9e9082] hover:text-[#524438]"
+                        }`}
                         title="Arrastrar para reordenar"
                       >
                         <span className="material-symbols-outlined text-[20px]">
@@ -794,7 +798,11 @@ export function AdminCategoriesView() {
                       </button>
                       <div className="flex flex-col">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <h3 className="font-headline text-[22px] uppercase text-[#1e1c13] tracking-wide leading-none">
+                          <h3
+                            className={`font-headline text-[22px] uppercase tracking-wide leading-none ${
+                              cat.active ? "text-[#1e1c13]" : "text-[#6e6153]"
+                            }`}
+                          >
                             {cat.name}
                           </h3>
                           {cat.active ? (
@@ -802,16 +810,37 @@ export function AdminCategoriesView() {
                               ACTIVO
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-[#857466] text-white text-[9px] uppercase tracking-wider font-semibold">
+                            <span className="px-2 py-0.5 bg-[#6e6153] text-[#f4eddf] text-[9px] uppercase tracking-wider font-semibold flex items-center gap-1 shadow-xs">
+                              <span className="material-symbols-outlined text-[11px]">
+                                visibility_off
+                              </span>
                               INACTIVO
                             </span>
                           )}
-                          <span className="px-2 py-0.5 bg-[#f4eddf] font-mono text-[10px] text-[#673900] font-bold border border-[#d8c3b2]/40">
+                          <span
+                            className={`px-2 py-0.5 font-mono text-[10px] font-bold border ${
+                              cat.active
+                                ? "bg-[#f4eddf] text-[#673900] border-[#d8c3b2]/40"
+                                : "bg-[#ded4c3] text-[#786450] border-[#c4b5a3]"
+                            }`}
+                          >
                             SKU: {cat.sku}
                           </span>
-                          <span className="text-[#524438] text-[11px] font-mono">{cat.slug}</span>
+                          <span
+                            className={`text-[11px] font-mono ${
+                              cat.active ? "text-[#524438]" : "text-[#8a7b6d]"
+                            }`}
+                          >
+                            {cat.slug}
+                          </span>
                         </div>
-                        <p className="text-[12px] text-[#524438] mt-1">{cat.description}</p>
+                        <p
+                          className={`text-[12px] mt-1 ${
+                            cat.active ? "text-[#524438]" : "text-[#7a6d5f]"
+                          }`}
+                        >
+                          {cat.description}
+                        </p>
                       </div>
                     </div>
 
@@ -828,16 +857,17 @@ export function AdminCategoriesView() {
                       <button
                         type="button"
                         onClick={() => toggleVisibility(cat.id)}
-                        className={`transition-colors p-1 cursor-pointer ${
+                        className={`transition-colors p-1 cursor-pointer flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider ${
                           cat.active
                             ? "hover:text-[#c77d2e]"
-                            : "text-[#857466] hover:text-[#33402f]"
+                            : "text-[#33402f] bg-[#ded4c3] hover:bg-[#d1c6b3] px-2 py-1 border border-[#c4b5a3]"
                         }`}
                         title={cat.active ? "Desactivar categoría" : "Activar categoría"}
                       >
                         <span className="material-symbols-outlined text-[18px]">
                           {cat.active ? "visibility" : "visibility_off"}
                         </span>
+                        {!cat.active && <span>Activar</span>}
                       </button>
                       <button
                         type="button"
@@ -855,12 +885,24 @@ export function AdminCategoriesView() {
                   </div>
 
                   {/* Subpanel integrado de talles */}
-                  <div className="bg-[#fff9ed] p-4 border border-[#d8c3b2]/30 flex flex-col gap-2.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1e1c13] uppercase tracking-wider">
-                      <span className="material-symbols-outlined text-[#673900] text-[16px]">
+                  <div
+                    className={`p-4 border flex flex-col gap-2.5 transition-colors ${
+                      cat.active
+                        ? "bg-[#fff9ed] border-[#d8c3b2]/30"
+                        : "bg-[#ded4c3]/80 border-[#c4b5a3] shadow-inner"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider">
+                      <span
+                        className={`material-symbols-outlined text-[16px] ${
+                          cat.active ? "text-[#673900]" : "text-[#786450]"
+                        }`}
+                      >
                         straighten
                       </span>
-                      <span>TALLES HABILITADOS PARA ESTA CATEGORÍA</span>
+                      <span className={cat.active ? "text-[#1e1c13]" : "text-[#6e6153]"}>
+                        TALLES HABILITADOS PARA ESTA CATEGORÍA
+                      </span>
                     </div>
 
                     {/* Filas de sistemas de talles habilitados para esta categoría */}
@@ -869,11 +911,20 @@ export function AdminCategoriesView() {
                         key={sys.id || `${sys.name}-${idx}`}
                         className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]"
                       >
-                        <span className="font-semibold text-[#524438] uppercase tracking-wider">
+                        <span
+                          className={`font-semibold uppercase tracking-wider ${
+                            cat.active ? "text-[#524438]" : "text-[#736456]"
+                          }`}
+                        >
                           {sys.name}:
                         </span>
                         {sys.sizes.map((size) => (
-                          <span key={size} className="font-mono text-[#673900] font-medium">
+                          <span
+                            key={size}
+                            className={`font-mono font-medium ${
+                              cat.active ? "text-[#673900]" : "text-[#7a6249]"
+                            }`}
+                          >
                             {size}
                           </span>
                         ))}
@@ -895,7 +946,11 @@ export function AdminCategoriesView() {
                         onChange={(e) =>
                           setSelectedSystem((prev) => ({ ...prev, [cat.id]: e.target.value }))
                         }
-                        className="flex-1 h-8 bg-white px-3 text-[12px] text-[#1e1c13] border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none cursor-pointer"
+                        className={`flex-1 h-8 px-3 text-[12px] border focus:outline-none cursor-pointer ${
+                          cat.active
+                            ? "bg-white text-[#1e1c13] border-[#d8c3b2]/60 focus:border-[#673900]"
+                            : "bg-[#eae2d3] text-[#524438] border-[#c4b5a3] focus:border-[#786450]"
+                        }`}
                       >
                         <option value="" disabled>
                           Selecciona sistema de talla
@@ -909,7 +964,11 @@ export function AdminCategoriesView() {
                       <button
                         type="button"
                         onClick={() => handleAddSelectedSystem(cat.id)}
-                        className="h-8 px-4 bg-[#54624f] hover:bg-[#33402f] text-white text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0"
+                        className={`h-8 px-4 text-white text-[11px] font-semibold uppercase tracking-wider transition-colors shrink-0 ${
+                          cat.active
+                            ? "bg-[#54624f] hover:bg-[#33402f]"
+                            : "bg-[#6c7867] hover:bg-[#54624f]"
+                        }`}
                       >
                         + AÑADIR TALLE
                       </button>
