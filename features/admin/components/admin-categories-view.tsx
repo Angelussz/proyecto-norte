@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   AdminAddCategoryModal,
@@ -303,7 +303,12 @@ export function AdminCategoriesView() {
   const updateMutation = useUpdateAdminCategory();
   const deleteMutation = useDeleteAdminCategory();
 
-  // ─── Estado local UI ─────────────────────────────────────────────────────
+  // ─── Estado local UI (Staging de cambios) ─────────────────────────────────
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [savedSnapshot, setSavedSnapshot] = useState<CategoryItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const isInitializedRef = useRef(false);
+
   const [selectedSystem, setSelectedSystem] = useState<Record<string, string>>({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
@@ -314,25 +319,32 @@ export function AdminCategoriesView() {
     clearLegacyLS();
   }, []);
 
-  // Derivar lista visible desde la DB (memoizado)
-  const categories: CategoryItem[] = useMemo(
-    () => (dbCategories ?? []).map(dtoToCategoryItem),
-    [dbCategories],
-  );
+  // Inicializar estado local cuando llegan los datos de la DB
+  useEffect(() => {
+    if (dbCategories) {
+      const mapped = dbCategories.map(dtoToCategoryItem);
+      if (!isInitializedRef.current) {
+        setCategories(mapped);
+        setSavedSnapshot(structuredClone(mapped));
+        isInitializedRef.current = true;
+      }
+    }
+  }, [dbCategories]);
 
-  // No hay cambios pendientes locales: las mutaciones son inmediatas en DB.
-  // La barra inferior se muestra solo mientras hay una mutación en curso.
-  const isMutating =
-    createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  // Comparar si hay cambios sin guardar respecto al snapshot de la DB
+  const hasUnsavedChanges = useMemo(() => {
+    if (!isInitializedRef.current) return false;
+    return JSON.stringify(categories) !== JSON.stringify(savedSnapshot);
+  }, [categories, savedSnapshot]);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   }
 
-  // ─── Handlers ────────────────────────────────────────────────────────────
+  // ─── Handlers locales (no persisten de inmediato en DB) ───────────────────
 
-  async function handleAddSelectedSystem(catId: string) {
+  function handleAddSelectedSystem(catId: string) {
     const val = selectedSystem[catId];
     if (!val) return;
 
@@ -344,103 +356,194 @@ export function AdminCategoriesView() {
       );
     if (!found) return;
 
-    const cat = categories.find((c) => c.id === catId);
-    if (!cat) return;
+    setCategories((prev) =>
+      prev.map((cat) => {
+        if (cat.id !== catId) return cat;
 
-    const currentSystems = getCategorySystems(cat);
-    const alreadyExists = currentSystems.some(
-      (s) => s.name.toUpperCase().trim() === found.systemName.toUpperCase().trim(),
+        const currentSystems = getCategorySystems(cat);
+        const alreadyExists = currentSystems.some(
+          (s) => s.name.toUpperCase().trim() === found.systemName.toUpperCase().trim(),
+        );
+        if (alreadyExists) return cat;
+
+        const newSystem: AssignedSizeSystem = {
+          id: found.id,
+          name: found.systemName,
+          sizes: [...found.sizes],
+        };
+
+        return {
+          ...cat,
+          systems: [...currentSystems, newSystem],
+        };
+      }),
     );
-    if (alreadyExists) return;
 
-    const newSysIds = [
-      ...(dbCategories?.find((d) => d.id === catId)?.sizeSystemIds ?? []),
-      found.id,
+    setSelectedSystem((prev) => ({ ...prev, [catId]: "" }));
+  }
+
+  function handleRemoveSystem(catId: string, systemId: string) {
+    setCategories((prev) =>
+      prev.map((cat) => {
+        if (cat.id !== catId) return cat;
+        const currentSystems = getCategorySystems(cat);
+        const updated = currentSystems.filter(
+          (s) => s.id !== systemId && s.name.toUpperCase().trim() !== systemId.toUpperCase().trim(),
+        );
+        return {
+          ...cat,
+          systems: updated,
+        };
+      }),
+    );
+  }
+
+  function toggleVisibility(catId: string) {
+    setCategories((prev) =>
+      prev.map((cat) => (cat.id === catId ? { ...cat, active: !cat.active } : cat)),
+    );
+  }
+
+  function deleteCategory(catId: string) {
+    setCategories((prev) => prev.filter((cat) => cat.id !== catId));
+    setEditingCategory(null);
+  }
+
+  function handleSaveNewCategory(data: CreateCategoryData) {
+    const slug = `/${data.name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")}`;
+
+    const defaultSystems: AssignedSizeSystem[] = [
+      {
+        id: "alfa_std",
+        name: "SISTEMA ALFA",
+        sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
+      },
+      {
+        id: "talles_unicos",
+        name: "TALLES ÚNICOS",
+        sizes: ["Talle Único", "Talle Ajustable"],
+      },
     ];
 
-    try {
-      await updateMutation.mutateAsync({ id: catId, body: { sizeSystemIds: newSysIds } });
-      setSelectedSystem((prev) => ({ ...prev, [catId]: "" }));
-      showToast(`Sistema "${found.systemName}" agregado.`);
-    } catch {
-      showToast("Error al agregar el sistema. Intenta de nuevo.");
-    }
+    const newCat: CategoryItem = {
+      id: `temp-${Date.now()}`,
+      name: data.name,
+      sku: data.sku || `NRT-${data.name.substring(0, 3).toUpperCase()}`,
+      slug,
+      active: true,
+      description: data.description || "",
+      systems: defaultSystems,
+      systemName: defaultSystems[0].name,
+      systemSizes: defaultSystems[0].sizes,
+      uniqueSizes: defaultSystems[1].sizes,
+      addedSizes: [],
+    };
+
+    setCategories((prev) => [...prev, newCat]);
+    setIsAddModalOpen(false);
   }
 
-  async function handleRemoveSystem(catId: string, systemId: string) {
-    const dbCat = dbCategories?.find((d) => d.id === catId);
-    if (!dbCat) return;
-
-    // Resuelve el id del catálogo si systemId coincide por id o por nombre
-    const catalogMatch = SIZE_SYSTEM_CATALOG.find(
-      (s) =>
-        s.id === systemId || s.systemName.toUpperCase().trim() === systemId.toUpperCase().trim(),
+  function handleSaveEditedCategory(updated: EditableCategory) {
+    setCategories((prev) =>
+      prev.map((c) => (c.id === updated.id ? ({ ...c, ...updated } as CategoryItem) : c)),
     );
-    const targetId = catalogMatch?.id ?? systemId;
-
-    const newSysIds = dbCat.sizeSystemIds.filter((id) => id !== targetId && id !== systemId);
-
-    try {
-      await updateMutation.mutateAsync({ id: catId, body: { sizeSystemIds: newSysIds } });
-      showToast("Sistema eliminado.");
-    } catch {
-      showToast("Error al eliminar el sistema.");
-    }
+    setEditingCategory(null);
   }
 
-  async function toggleVisibility(catId: string) {
-    const dbCat = dbCategories?.find((d) => d.id === catId);
-    if (!dbCat) return;
-    try {
-      await updateMutation.mutateAsync({ id: catId, body: { active: !dbCat.active } });
-    } catch {
-      showToast("Error al cambiar visibilidad.");
-    }
+  // ─── Descartar cambios locales ───────────────────────────────────────────
+
+  function handleDiscardChanges() {
+    setCategories(structuredClone(savedSnapshot));
+    showToast("Cambios descartados.");
   }
 
-  async function deleteCategory(catId: string) {
-    try {
-      await deleteMutation.mutateAsync(catId);
-      showToast("Categoría eliminada.");
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : "Error al eliminar la categoría.");
-    }
-  }
+  // ─── Persistir cambios acumulados en el backend ──────────────────────────
 
-  async function handleSaveNewCategory(data: CreateCategoryData) {
+  async function handleSaveChanges() {
+    if (!hasUnsavedChanges || isSaving) return;
+    setIsSaving(true);
     try {
-      await createMutation.mutateAsync({
-        name: data.name,
-        sku: data.sku,
-        description: data.description,
-        active: true,
-        sizeSystemIds: ["alfa_std", "talles_unicos"], // sistemas por defecto
-      });
-      showToast(`Categoría "${data.name}" creada.`);
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : "Error al crear la categoría.");
-    }
-  }
+      // 1. Eliminar categorías que ya no están
+      const currentIds = new Set(categories.map((c) => c.id));
+      const toDelete = savedSnapshot.filter(
+        (s) => !currentIds.has(s.id) && !s.id.startsWith("temp-"),
+      );
+      for (const del of toDelete) {
+        await deleteMutation.mutateAsync(del.id);
+      }
 
-  async function handleSaveEditedCategory(updated: EditableCategory) {
-    const systems = updated.systems ?? [];
-    const sizeSystemIds = systems
-      .map((s) => SIZE_SYSTEM_CATALOG.find((c) => c.systemName === s.name)?.id)
-      .filter(Boolean) as string[];
-
-    try {
-      await updateMutation.mutateAsync({
-        id: updated.id,
-        body: {
-          name: updated.name,
-          sku: updated.sku ?? "",
-          description: updated.description ?? "",
+      // 2. Crear nuevas categorías
+      const toCreate = categories.filter((c) => c.id.startsWith("temp-"));
+      for (const cat of toCreate) {
+        const sizeSystemIds = (cat.systems ?? []).map((s) => {
+          const found = SIZE_SYSTEM_CATALOG.find((c) => c.id === s.id || c.systemName === s.name);
+          return found?.id ?? s.id;
+        });
+        await createMutation.mutateAsync({
+          name: cat.name,
+          sku: cat.sku,
+          description: cat.description,
+          active: cat.active,
           sizeSystemIds,
-        },
-      });
-      showToast("Categoría actualizada.");
-    } catch {
-      showToast("Error al actualizar la categoría.");
+        });
+      }
+
+      // 3. Actualizar categorías existentes
+      const toUpdate = categories.filter((c) => !c.id.startsWith("temp-"));
+      for (const cat of toUpdate) {
+        const original = savedSnapshot.find((s) => s.id === cat.id);
+        if (!original) continue;
+
+        const currentSystemIds = (cat.systems ?? []).map((s) => {
+          const found = SIZE_SYSTEM_CATALOG.find((c) => c.id === s.id || c.systemName === s.name);
+          return found?.id ?? s.id;
+        });
+        const originalSystemIds = (original.systems ?? []).map((s) => {
+          const found = SIZE_SYSTEM_CATALOG.find((c) => c.id === s.id || c.systemName === s.name);
+          return found?.id ?? s.id;
+        });
+
+        const hasChanged =
+          cat.name !== original.name ||
+          cat.sku !== original.sku ||
+          cat.description !== original.description ||
+          cat.active !== original.active ||
+          JSON.stringify(currentSystemIds) !== JSON.stringify(originalSystemIds);
+
+        if (hasChanged) {
+          await updateMutation.mutateAsync({
+            id: cat.id,
+            body: {
+              name: cat.name,
+              sku: cat.sku,
+              description: cat.description,
+              active: cat.active,
+              sizeSystemIds: currentSystemIds,
+            },
+          });
+        }
+      }
+
+      const fresh = await refetch();
+      if (fresh.data) {
+        const mapped = fresh.data.map(dtoToCategoryItem);
+        setCategories(mapped);
+        setSavedSnapshot(structuredClone(mapped));
+      } else {
+        setSavedSnapshot(structuredClone(categories));
+      }
+
+      showToast("Cambios guardados correctamente en la base de datos.");
+    } catch (err: unknown) {
+      console.error("[handleSaveChanges]", err);
+      showToast(err instanceof Error ? err.message : "Error al guardar cambios.");
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -852,32 +955,41 @@ export function AdminCategoriesView() {
             </div>
           </footer>
 
-          {/* ── STICKY BOTTOM BAR ── */}
+          {/* ── STICKY BOTTOM BAR (Igual a la de agregar/editar producto e inventario) ── */}
           <div className="sticky bottom-0 z-30 w-full bg-[#333027] text-[#f7f0e2] px-4 lg:px-12 py-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span
                 className={`w-2.5 h-2.5 rounded-full ${
-                  isMutating ? "bg-[#c77d2e] animate-pulse" : "bg-[#466635]"
+                  isSaving || hasUnsavedChanges ? "bg-[#c77d2e] animate-pulse" : "bg-[#466635]"
                 }`}
               />
               <span className="font-inter text-[12px] text-[#e0dacb]">
-                {isMutating
+                {isSaving
                   ? "Guardando cambios en la base de datos…"
-                  : "Categorías sincronizadas con la DB"}
+                  : hasUnsavedChanges
+                    ? "Cambios sin guardar en categorías"
+                    : "Todos los cambios guardados"}
               </span>
             </div>
             <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
-              <span className="px-4 py-3 font-inter text-[10px] uppercase tracking-widest text-[#f7f0e2]/40 select-none">
-                Los cambios se guardan automáticamente
-              </span>
               <button
                 type="button"
-                disabled={isMutating}
-                className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer active:translate-y-px"
-                onClick={() => window.location.reload()}
+                onClick={handleDiscardChanges}
+                disabled={!hasUnsavedChanges || isSaving}
+                className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
               >
-                RECARGAR DATOS
-                <span className="material-symbols-outlined text-[18px]">refresh</span>
+                DESCARTAR CAMBIOS
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveChanges}
+                disabled={!hasUnsavedChanges || isSaving}
+                className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer active:translate-y-px"
+              >
+                {isSaving ? "GUARDANDO…" : "GUARDAR CAMBIOS"}
+                <span className="material-symbols-outlined text-[18px]">
+                  {isSaving ? "hourglass_top" : "check"}
+                </span>
               </button>
             </div>
           </div>
