@@ -92,13 +92,16 @@ model Address {
 }
 
 model Categories {
-  id                 String  @id @default(uuid())
+  id                 String   @id @default(uuid())
   parent_category_id String?
   name               String
-  slug               String  @unique
+  slug               String   @unique
   description        String?
   image_url          String?
   image_url_id       String?
+  sku                String?
+  active             Boolean  @default(true)
+  size_system_ids    String[] @default([])
 
   parent   Categories?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [id], onDelete: SetNull)
   children Categories[] @relation("CategoryHierarchy")
