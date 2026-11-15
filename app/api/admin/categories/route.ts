@@ -8,9 +8,17 @@ export async function GET() {
   try {
     const data = await listAdminCategories();
     return NextResponse.json({ data });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("[GET /api/admin/categories]", err);
-    return NextResponse.json({ error: "Error al obtener categorías" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Error al obtener categorías",
+        ...(process.env.NODE_ENV !== "production"
+          ? { details: err instanceof Error ? err.message : String(err) }
+          : {}),
+      },
+      { status: 500 },
+    );
   }
 }
 

@@ -298,7 +298,7 @@ function dtoToCategoryItem(dto: AdminCategoryDto): CategoryItem {
 
 export function AdminCategoriesView() {
   // ─── React Query ─────────────────────────────────────────────────────────
-  const { data: dbCategories, isLoading, isError } = useAdminCategories();
+  const { data: dbCategories, isLoading, isError, refetch } = useAdminCategories();
   const createMutation = useCreateAdminCategory();
   const updateMutation = useUpdateAdminCategory();
   const deleteMutation = useDeleteAdminCategory();
@@ -444,8 +444,15 @@ export function AdminCategoriesView() {
         </div>
       )}
       {isError && (
-        <div className="flex items-center justify-center h-64 text-error font-inter text-sm uppercase tracking-widest">
-          Error al cargar categorías desde la base de datos.
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-error font-inter text-sm uppercase tracking-widest">
+          <span>Error al cargar categorías desde la base de datos.</span>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-[#673900] text-white hover:bg-[#894d00] font-semibold text-xs tracking-wider cursor-pointer transition-colors"
+          >
+            Reintentar
+          </button>
         </div>
       )}
       {!isLoading && !isError && (
