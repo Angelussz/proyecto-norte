@@ -436,6 +436,42 @@ export function AdminInventoryView() {
   const { data: sizeGroupsData } = useSizeGroups();
   const sizeOrderMap = useMemo(() => buildSizeOrderMap(sizeGroupsData ?? []), [sizeGroupsData]);
 
+  // Cuando llega el mapa canónico de la DB, re-ordena talles y colores de todos
+  // los productos cargados (desde localStorage o INITIAL_PRODUCTS).
+  // Solo se ejecuta una vez: cuando sizeOrderMap pasa de vacío a tener datos.
+  const sortAppliedRef = useRef(false);
+  useEffect(() => {
+    if (sizeOrderMap.size === 0) return; // todavía no llegaron los datos
+    if (sortAppliedRef.current) return; // ya se aplicó en esta sesión
+    sortAppliedRef.current = true;
+
+    setProducts((prev) => {
+      const sorted = prev.map((p) => {
+        const orderedSizes = sortSizesBySystem(p.sizes, sizeOrderMap);
+        const sortedColors = [...p.colors].sort((a, b) =>
+          a.name.localeCompare(b.name, "es", { sensitivity: "base" }),
+        );
+        // Reconstruir stock con el nuevo orden de filas (talles)
+        const reorderedStock: StockMatrix = {};
+        orderedSizes.forEach((talle) => {
+          reorderedStock[talle] = { ...p.stock[talle] };
+        });
+        return { ...p, sizes: orderedSizes, colors: sortedColors, stock: reorderedStock };
+      });
+      // Sincronizar snapshots con el orden correcto (para que Descartar
+      // también restaure al orden ordenado, no al desordenado original).
+      setSavedSnapshots(
+        Object.fromEntries(
+          sorted.map((p) => [
+            p.id,
+            structuredClone({ sizes: p.sizes, colors: p.colors, stock: p.stock }),
+          ]),
+        ),
+      );
+      return sorted;
+    });
+  }, [sizeOrderMap]);
+
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
