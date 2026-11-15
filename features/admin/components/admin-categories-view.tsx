@@ -810,10 +810,7 @@ export function AdminCategoriesView() {
                               ACTIVO
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-[#6e6153] text-[#f4eddf] text-[9px] uppercase tracking-wider font-semibold flex items-center gap-1 shadow-xs">
-                              <span className="material-symbols-outlined text-[11px]">
-                                visibility_off
-                              </span>
+                            <span className="px-2 py-0.5 bg-[#6e6153] text-[#f4eddf] text-[9px] uppercase tracking-wider font-semibold">
                               INACTIVO
                             </span>
                           )}
@@ -857,17 +854,12 @@ export function AdminCategoriesView() {
                       <button
                         type="button"
                         onClick={() => toggleVisibility(cat.id)}
-                        className={`transition-colors p-1 cursor-pointer flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider ${
-                          cat.active
-                            ? "hover:text-[#c77d2e]"
-                            : "text-[#33402f] bg-[#ded4c3] hover:bg-[#d1c6b3] px-2 py-1 border border-[#c4b5a3]"
-                        }`}
+                        className="hover:text-[#c77d2e] transition-colors p-1 cursor-pointer"
                         title={cat.active ? "Desactivar categoría" : "Activar categoría"}
                       >
                         <span className="material-symbols-outlined text-[18px]">
                           {cat.active ? "visibility" : "visibility_off"}
                         </span>
-                        {!cat.active && <span>Activar</span>}
                       </button>
                       <button
                         type="button"
