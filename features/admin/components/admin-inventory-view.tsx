@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { AdminAddInventoryColorModal } from "./admin-add-inventory-color-modal";
 import { AdminAddInventorySizeModal } from "./admin-add-inventory-size-modal";
+import { useSizeGroups } from "@/features/admin/hooks/useSizeGroups";
+import { buildSizeOrderMap, sortSizesBySystem } from "@/lib/sort-sizes";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -430,6 +432,10 @@ export function AdminInventoryView() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Orden canónico de talles desde la DB (misma fuente que el modal de talles)
+  const { data: sizeGroupsData } = useSizeGroups();
+  const sizeOrderMap = useMemo(() => buildSizeOrderMap(sizeGroupsData ?? []), [sizeGroupsData]);
+
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -457,9 +463,13 @@ export function AdminInventoryView() {
     const current = products.find((p) => p.id === productId);
     if (!current) return;
 
+    // Ordenar talles según el sistema canónico de la DB (segunda línea de defensa
+    // por si el modal ya los entregó ordenados, o por si vienen de otra fuente).
+    const orderedSizes = sortSizesBySystem(newSizes, sizeOrderMap);
+
     // Reconstruir la matriz preservando stock existente para talles que ya había
     const updatedStock: StockMatrix = {};
-    newSizes.forEach((talle) => {
+    orderedSizes.forEach((talle) => {
       const currentTalleStock = current.stock[talle] ?? {};
       updatedStock[talle] = {};
       current.colors.forEach((c) => {
@@ -480,7 +490,7 @@ export function AdminInventoryView() {
           ? p
           : {
               ...p,
-              sizes: newSizes,
+              sizes: orderedSizes,
               stock: updatedStock,
               totalStock: newTotalStock,
               stockLevel: newLevel,
@@ -496,12 +506,17 @@ export function AdminInventoryView() {
     const current = products.find((p) => p.id === productId);
     if (!current) return;
 
+    // Ordenar colores alfabéticamente por nombre
+    const sortedColors = [...newColors].sort((a, b) =>
+      a.name.localeCompare(b.name, "es", { sensitivity: "base" }),
+    );
+
     // Reconstruir la matriz preservando stock existente para colores que ya había
     const updatedStock: StockMatrix = {};
     current.sizes.forEach((talle) => {
       const currentTalleStock = current.stock[talle] ?? {};
       updatedStock[talle] = {};
-      newColors.forEach((c) => {
+      sortedColors.forEach((c) => {
         const prevVal = currentTalleStock[c.name];
         updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
       });
@@ -519,7 +534,7 @@ export function AdminInventoryView() {
           ? p
           : {
               ...p,
-              colors: newColors,
+              colors: sortedColors,
               stock: updatedStock,
               totalStock: newTotalStock,
               stockLevel: newLevel,
