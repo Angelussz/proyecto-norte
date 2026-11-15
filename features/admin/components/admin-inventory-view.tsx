@@ -384,12 +384,31 @@ function StockCell({ value, onChange }: { value: number; onChange: (v: number) =
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+const LS_KEY = "norte-inventory-v1";
+
+function loadFromLS(): ProductCard[] | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw) as ProductCard[];
+  } catch {}
+  return null;
+}
+
+function persistProducts(updated: ProductCard[]) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.warn("[Inventario] No se pudo guardar en localStorage:", e);
+  }
+}
+
 export function AdminInventoryView() {
-  const [products, setProducts] = useState<ProductCard[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<ProductCard[]>(() => loadFromLS() ?? INITIAL_PRODUCTS);
   // Snapshot del stock "guardado" (antes de editar en la tabla). Permite Descartar.
-  const [savedStocks, setSavedStocks] = useState<Record<string, StockMatrix>>(() =>
-    Object.fromEntries(INITIAL_PRODUCTS.map((p) => [p.id, structuredClone(p.stock)])),
-  );
+  const [savedStocks, setSavedStocks] = useState<Record<string, StockMatrix>>(() => {
+    const base = loadFromLS() ?? INITIAL_PRODUCTS;
+    return Object.fromEntries(base.map((p) => [p.id, structuredClone(p.stock)]));
+  });
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -418,93 +437,89 @@ export function AdminInventoryView() {
 
   function handleDeleteProduct(productId: string) {
     const p = products.find((x) => x.id === productId);
-    setProducts((prev) => prev.filter((x) => x.id !== productId));
+    const updated = products.filter((x) => x.id !== productId);
+    setProducts(updated);
+    persistProducts(updated);
     setOpenMenuId(null);
     setToast(`"${p?.name}" eliminado del inventario.`);
     setTimeout(() => setToast(null), 3000);
   }
 
   function handleSaveSizes(productId: string, newSizes: string[]) {
-    let updatedStockSnapshot: StockMatrix = {};
+    const current = products.find((p) => p.id === productId);
+    if (!current) return;
 
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id !== productId) return p;
+    const updatedStock: StockMatrix = {};
+    newSizes.forEach((talle) => {
+      const currentTalleStock = current.stock[talle] ?? {};
+      updatedStock[talle] = {};
+      current.colors.forEach((c) => {
+        const prevVal = currentTalleStock[c.name];
+        updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
+      });
+    });
 
-        const updatedStock: StockMatrix = {};
-        newSizes.forEach((talle) => {
-          const currentTalleStock = p.stock[talle] ?? {};
-          updatedStock[talle] = {};
-          p.colors.forEach((c) => {
-            const prevVal = currentTalleStock[c.name];
-            updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
-          });
-        });
+    const updatedStockSnapshot = structuredClone(updatedStock);
+    const newTotalStock = calcTotal(updatedStock);
+    const newLevel: "healthy" | "low" | "critical" =
+      newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
 
-        updatedStockSnapshot = structuredClone(updatedStock);
-
-        const newTotalStock = calcTotal(updatedStock);
-        const newLevel: "healthy" | "low" | "critical" =
-          newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
-
-        return {
-          ...p,
-          sizes: newSizes,
-          stock: updatedStock,
-          totalStock: newTotalStock,
-          stockLevel: newLevel,
-        };
-      }),
+    const updatedProducts = products.map((p) =>
+      p.id !== productId
+        ? p
+        : {
+            ...p,
+            sizes: newSizes,
+            stock: updatedStock,
+            totalStock: newTotalStock,
+            stockLevel: newLevel,
+          },
     );
 
-    // Sincronizar snapshot para que "Descartar" no revierta a talles viejos
+    setProducts(updatedProducts);
     setSavedStocks((prev) => ({ ...prev, [productId]: updatedStockSnapshot }));
+    persistProducts(updatedProducts);
 
-    const targetProduct = products.find((x) => x.id === productId);
-    const prodName = targetProduct?.name || "el producto";
-    setToast(`Curva de talles actualizada para "${prodName}".`);
+    setToast(`Curva de talles actualizada para "${current.name}".`);
     setTimeout(() => setToast(null), 3500);
   }
 
   function handleSaveColors(productId: string, newColors: ColorVariant[]) {
-    let updatedStockSnapshot: StockMatrix = {};
+    const current = products.find((p) => p.id === productId);
+    if (!current) return;
 
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id !== productId) return p;
+    const updatedStock: StockMatrix = {};
+    current.sizes.forEach((talle) => {
+      const currentTalleStock = current.stock[talle] ?? {};
+      updatedStock[talle] = {};
+      newColors.forEach((c) => {
+        const prevVal = currentTalleStock[c.name];
+        updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
+      });
+    });
 
-        const updatedStock: StockMatrix = {};
-        p.sizes.forEach((talle) => {
-          const currentTalleStock = p.stock[talle] ?? {};
-          updatedStock[talle] = {};
-          newColors.forEach((c) => {
-            const prevVal = currentTalleStock[c.name];
-            updatedStock[talle][c.name] = prevVal !== undefined ? prevVal : 0;
-          });
-        });
+    const updatedStockSnapshot = structuredClone(updatedStock);
+    const newTotalStock = calcTotal(updatedStock);
+    const newLevel: "healthy" | "low" | "critical" =
+      newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
 
-        updatedStockSnapshot = structuredClone(updatedStock);
-
-        const newTotalStock = calcTotal(updatedStock);
-        const newLevel: "healthy" | "low" | "critical" =
-          newTotalStock === 0 ? "critical" : newTotalStock < 15 ? "low" : "healthy";
-
-        return {
-          ...p,
-          colors: newColors,
-          stock: updatedStock,
-          totalStock: newTotalStock,
-          stockLevel: newLevel,
-        };
-      }),
+    const updatedProducts = products.map((p) =>
+      p.id !== productId
+        ? p
+        : {
+            ...p,
+            colors: newColors,
+            stock: updatedStock,
+            totalStock: newTotalStock,
+            stockLevel: newLevel,
+          },
     );
 
-    // Sincronizar snapshot
+    setProducts(updatedProducts);
     setSavedStocks((prev) => ({ ...prev, [productId]: updatedStockSnapshot }));
+    persistProducts(updatedProducts);
 
-    const targetProduct = products.find((x) => x.id === productId);
-    const prodName = targetProduct?.name || "el producto";
-    setToast(`Matriz de colores actualizada para "${prodName}".`);
+    setToast(`Matriz de colores actualizada para "${current.name}".`);
     setTimeout(() => setToast(null), 3500);
   }
 
@@ -540,15 +555,14 @@ export function AdminInventoryView() {
     const newLevel: "healthy" | "low" | "critical" =
       newTotal === 0 ? "critical" : newTotal < 15 ? "low" : "healthy";
 
-    // 1. Actualizar totalStock y stockLevel en products
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id !== productId ? p : { ...p, totalStock: newTotal, stockLevel: newLevel },
-      ),
+    // Construir array actualizado directamente (no forma funcional) para poder persistir
+    const updatedProducts = products.map((p) =>
+      p.id !== productId ? p : { ...p, totalStock: newTotal, stockLevel: newLevel },
     );
 
-    // 2. Guardar snapshot del stock actual
+    setProducts(updatedProducts);
     setSavedStocks((prev) => ({ ...prev, [productId]: snapshotStock }));
+    persistProducts(updatedProducts);
 
     setToast(`Stock de "${current.name}" guardado correctamente.`);
     setTimeout(() => setToast(null), 3000);
