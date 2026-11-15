@@ -105,7 +105,9 @@ export function AdminEditCategoryModal({
   useEffect(() => {
     if (isOpen && category) {
       setName(category.name);
-      setSku(category.sku);
+      const rawSku = category.sku || "";
+      const cleanSku = rawSku.includes("-") ? rawSku.split("-").pop()! : rawSku;
+      setSku(cleanSku.slice(0, 3).toUpperCase());
       setDescription(category.description);
       setError("");
 
@@ -235,7 +237,9 @@ export function AdminEditCategoryModal({
       return;
     }
 
-    const trimmedSku = sku.trim().toUpperCase() || category.sku;
+    const rawSku = sku.trim().toUpperCase() || category.sku || "";
+    const cleanSku = rawSku.includes("-") ? rawSku.split("-").pop()! : rawSku;
+    const trimmedSku = cleanSku.slice(0, 3).toUpperCase();
     const computedSlug = `/${trimmedName
       .toLowerCase()
       .normalize("NFD")
@@ -343,16 +347,18 @@ export function AdminEditCategoryModal({
                   htmlFor="edit-cat-sku"
                   className="font-inter text-[11px] uppercase tracking-wider text-[#1e1c13] font-semibold flex items-center justify-between"
                 >
-                  <span>PREFIJO SKU</span>
+                  <span>CÓDIGO SKU</span>
                   <span className="text-[11px] text-[#524438] font-normal tracking-normal font-mono">
-                    Identificador
+                    3 letras
                   </span>
                 </label>
                 <input
                   id="edit-cat-sku"
                   type="text"
+                  maxLength={3}
                   value={sku}
-                  onChange={(e) => setSku(e.target.value)}
+                  onChange={(e) => setSku(e.target.value.toUpperCase())}
+                  placeholder="Ej: ACC"
                   className="w-full h-11 px-4 bg-[#faf3e4] text-[#673900] font-mono text-[13px] font-bold border border-[#d8c3b2]/50 focus:border-[#673900] focus:bg-white focus:outline-none transition-colors uppercase"
                 />
               </div>

@@ -269,6 +269,17 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
 
 // ─── Convierte AdminCategoryDto → CategoryItem (formato interno de la vista) ──
 
+export function formatSku3(sku: string | null | undefined): string {
+  if (!sku) return "";
+  const trimmed = sku.trim();
+  if (trimmed.includes("-")) {
+    const parts = trimmed.split("-");
+    const last = parts[parts.length - 1];
+    if (last) return last.slice(0, 3).toUpperCase();
+  }
+  return trimmed.slice(0, 3).toUpperCase();
+}
+
 function dtoToCategoryItem(dto: AdminCategoryDto): CategoryItem {
   // Mapear sizeSystemIds → sistemas usando SIZE_SYSTEM_CATALOG
   const systems: AssignedSizeSystem[] = dto.sizeSystemIds
@@ -283,7 +294,7 @@ function dtoToCategoryItem(dto: AdminCategoryDto): CategoryItem {
   return {
     id: dto.id,
     name: dto.name,
-    sku: dto.sku ?? "",
+    sku: formatSku3(dto.sku),
     slug: dto.slug,
     active: dto.active,
     description: dto.description ?? "",
@@ -821,14 +832,7 @@ export function AdminCategoriesView() {
                                 : "bg-[#ded4c3] text-[#786450] border-[#c4b5a3]"
                             }`}
                           >
-                            SKU: {cat.sku}
-                          </span>
-                          <span
-                            className={`text-[11px] font-mono ${
-                              cat.active ? "text-[#524438]" : "text-[#8a7b6d]"
-                            }`}
-                          >
-                            {cat.slug}
+                            SKU: {formatSku3(cat.sku)}
                           </span>
                         </div>
                         <p

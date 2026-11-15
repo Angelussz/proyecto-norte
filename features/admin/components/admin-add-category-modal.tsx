@@ -52,12 +52,14 @@ export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCateg
       return;
     }
 
+    const rawSku = sku.trim().toUpperCase();
+    const cleanSku = rawSku.includes("-") ? rawSku.split("-").pop()! : rawSku;
     const trimmedSku =
-      sku.trim().toUpperCase() ||
-      `NRT-${trimmedName
+      cleanSku.slice(0, 3) ||
+      trimmedName
         .slice(0, 3)
         .toUpperCase()
-        .replace(/[^A-Z]/g, "CAT")}`;
+        .replace(/[^A-Z]/g, "X");
 
     onSave({
       name: trimmedName.toUpperCase(),
@@ -147,15 +149,16 @@ export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCateg
                 htmlFor="modal-cat-sku"
                 className="font-inter text-[11px] uppercase tracking-wider text-[#1e1c13] font-semibold flex items-center justify-between"
               >
-                <span>PREFIJO SKU</span>
-                <span className="text-[11px] text-[#673900] font-bold font-mono">ID Ref</span>
+                <span>CÓDIGO SKU</span>
+                <span className="text-[11px] text-[#673900] font-bold font-mono">3 letras</span>
               </label>
               <input
                 id="modal-cat-sku"
                 type="text"
+                maxLength={3}
                 value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                placeholder="Ej: NRT-SOB"
+                onChange={(e) => setSku(e.target.value.toUpperCase())}
+                placeholder="Ej: ACC"
                 className="w-full h-11 px-4 bg-[#faf3e4] text-[#1e1c13] font-mono text-[13px] uppercase border border-[#d8c3b2]/50 focus:border-[#673900] focus:bg-white focus:outline-none transition-colors"
               />
             </div>
