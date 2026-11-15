@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   AdminAddBrandModal,
   type BrandFormData,
@@ -72,8 +72,18 @@ function dtoToColorLocal(c: ColorDto): OfficialColorLocal {
 
 export function AdminColorsBrandsView() {
   // ── React Query ───────────────────────────────────────────────────────────
-  const { data: brandsData = [], isLoading: brandsLoading, isError: brandsError } = useBrands();
-  const { data: colorsData = [], isLoading: colorsLoading, isError: colorsError } = useColors();
+  const {
+    data: brandsData = [],
+    isLoading: brandsLoading,
+    isError: brandsError,
+    refetch: refetchBrands,
+  } = useBrands();
+  const {
+    data: colorsData = [],
+    isLoading: colorsLoading,
+    isError: colorsError,
+    refetch: refetchColors,
+  } = useColors();
   const { data: productsData = [], isLoading: productsLoading } = useProducts();
 
   const createBrand = useCreateBrand();
@@ -84,10 +94,41 @@ export function AdminColorsBrandsView() {
   const updateColor = useUpdateColor();
   const deleteColor = useDeleteColor();
 
-  // ── Mapear DTOs a view-types ──────────────────────────────────────────────
-  const brands = brandsData.map(dtoToBrandLocal);
-  const colors = colorsData.map(dtoToColorLocal);
+  // ── Estado local de marcas y colores (staging) ────────────────────────────
+  const [brands, setBrands] = useState<AtelierBrandLocal[]>([]);
+  const [savedBrandsSnapshot, setSavedBrandsSnapshot] = useState<AtelierBrandLocal[] | null>(null);
+
+  const [colors, setColors] = useState<OfficialColorLocal[]>([]);
+  const [savedColorsSnapshot, setSavedColorsSnapshot] = useState<OfficialColorLocal[] | null>(null);
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!brandsLoading && savedBrandsSnapshot === null) {
+      const mapped = brandsData.map(dtoToBrandLocal);
+      setBrands(mapped);
+      setSavedBrandsSnapshot(structuredClone(mapped));
+    }
+  }, [brandsData, brandsLoading, savedBrandsSnapshot]);
+
+  useEffect(() => {
+    if (!colorsLoading && savedColorsSnapshot === null) {
+      const mapped = colorsData.map(dtoToColorLocal);
+      setColors(mapped);
+      setSavedColorsSnapshot(structuredClone(mapped));
+    }
+  }, [colorsData, colorsLoading, savedColorsSnapshot]);
+
   const totalGarments = productsLoading ? "…" : productsData.length;
+
+  // ── Detección de cambios sin guardar ──────────────────────────────────────
+  const hasUnsavedChanges = useMemo(() => {
+    if (!savedBrandsSnapshot || !savedColorsSnapshot) return false;
+    return (
+      JSON.stringify(brands) !== JSON.stringify(savedBrandsSnapshot) ||
+      JSON.stringify(colors) !== JSON.stringify(savedColorsSnapshot)
+    );
+  }, [brands, colors, savedBrandsSnapshot, savedColorsSnapshot]);
 
   // ── Form states - Color ───────────────────────────────────────────────────
   const [newColorName, setNewColorName] = useState("");
@@ -114,33 +155,39 @@ export function AdminColorsBrandsView() {
     setTimeout(() => setNotification(null), 3000);
   }
 
-  // ── Handlers para Marcas ──────────────────────────────────────────────────
-  async function handleSaveBrand(data: BrandFormData) {
-    try {
-      if (data.id) {
-        await updateBrand.mutateAsync({
-          id: data.id,
-          body: {
-            name: data.name,
-            skuPrefix: data.skuPrefix,
-            description: data.description,
-            active: data.active,
-          },
-        });
-        triggerNotice(`Marca "${data.name}" actualizada con éxito.`);
-      } else {
-        await createBrand.mutateAsync({
-          name: data.name,
-          skuPrefix: data.skuPrefix || "BRD",
-          description: data.description || "Nueva firma textil registrada en el atelier.",
-          iconColor: "secondary",
-          active: data.active,
-        });
-        triggerNotice(`Marca "${data.name}" registrada con éxito.`);
-      }
-    } catch {
-      triggerNotice("Error al guardar la marca. Intenta de nuevo.");
+  // ── Handlers para Marcas (staging local) ──────────────────────────────────
+  function handleSaveBrand(data: BrandFormData) {
+    if (data.id) {
+      setBrands((prev) =>
+        prev.map((b) =>
+          b.id === data.id
+            ? {
+                ...b,
+                name: data.name,
+                skuPrefix: data.skuPrefix,
+                description: data.description,
+                active: data.active,
+              }
+            : b,
+        ),
+      );
+      triggerNotice(`Marca "${data.name}" modificada (cambios sin guardar).`);
+    } else {
+      const newBrand: AtelierBrandLocal = {
+        id: `temp-brand-${Date.now()}`,
+        name: data.name,
+        skuPrefix: data.skuPrefix || "BRD",
+        description: data.description || "Nueva firma textil registrada en el atelier.",
+        assignedItems: 0,
+        iconColor: "secondary",
+        active: data.active,
+        locked: false,
+      };
+      setBrands((prev) => [...prev, newBrand]);
+      triggerNotice(`Marca "${data.name}" añadida (cambios sin guardar).`);
     }
+    setIsAddBrandModalOpen(false);
+    setEditingBrand(null);
   }
 
   function handleInlineAddBrand(e: React.FormEvent) {
@@ -166,45 +213,48 @@ export function AdminColorsBrandsView() {
     setNewBrandDesc("");
   }
 
-  async function handleDeleteBrand(id: string) {
+  function handleDeleteBrand(id: string) {
     const toDelete = brands.find((b) => b.id === id);
     if (!toDelete) return;
     if (confirm(`¿Eliminar la firma "${toDelete.name}"?`)) {
-      try {
-        await deleteBrand.mutateAsync(id);
-        triggerNotice(`Firma "${toDelete.name}" eliminada.`);
-      } catch {
-        triggerNotice("Error al eliminar la marca.");
-      }
+      setBrands((prev) => prev.filter((b) => b.id !== id));
+      triggerNotice(`Firma "${toDelete.name}" eliminada (cambios sin guardar).`);
+      setIsAddBrandModalOpen(false);
+      setEditingBrand(null);
     }
   }
 
-  // ── Handlers para Colores ─────────────────────────────────────────────────
-  async function handleSaveColor(data: ColorFormData) {
-    try {
-      if (data.id) {
-        await updateColor.mutateAsync({
-          id: data.id,
-          body: {
-            name: data.name,
-            hex: data.hex,
-            skuCode: data.skuCode,
-            active: data.active,
-          },
-        });
-        triggerNotice(`Tintura "${data.name}" actualizada con éxito.`);
-      } else {
-        await createColor.mutateAsync({
-          name: data.name,
-          skuCode: data.skuCode || "CLR",
-          hex: data.hex,
-          active: data.active,
-        });
-        triggerNotice(`Tintura "${data.name}" añadida con éxito.`);
-      }
-    } catch {
-      triggerNotice("Error al guardar el color. Intenta de nuevo.");
+  // ── Handlers para Colores (staging local) ─────────────────────────────────
+  function handleSaveColor(data: ColorFormData) {
+    if (data.id) {
+      setColors((prev) =>
+        prev.map((c) =>
+          c.id === data.id
+            ? {
+                ...c,
+                name: data.name,
+                hex: data.hex,
+                skuCode: data.skuCode,
+                active: data.active,
+              }
+            : c,
+        ),
+      );
+      triggerNotice(`Tintura "${data.name}" modificada (cambios sin guardar).`);
+    } else {
+      const newColor: OfficialColorLocal = {
+        id: `temp-color-${Date.now()}`,
+        name: data.name,
+        skuCode: data.skuCode || "CLR",
+        hex: data.hex,
+        assignedItems: 0,
+        active: data.active,
+      };
+      setColors((prev) => [...prev, newColor]);
+      triggerNotice(`Tintura "${data.name}" añadida (cambios sin guardar).`);
     }
+    setIsAddColorModalOpen(false);
+    setEditingColor(null);
   }
 
   function handleInlineAddColor(e: React.FormEvent) {
@@ -234,16 +284,141 @@ export function AdminColorsBrandsView() {
     setNewColorHex("#2C3E50");
   }
 
-  async function handleDeleteColor(id: string) {
+  function handleDeleteColor(id: string) {
     const toDelete = colors.find((c) => c.id === id);
     if (!toDelete) return;
     if (confirm(`¿Eliminar la tintura oficial "${toDelete.name}" (${toDelete.hex})?`)) {
-      try {
-        await deleteColor.mutateAsync(id);
-        triggerNotice(`Tintura "${toDelete.name}" eliminada.`);
-      } catch {
-        triggerNotice("Error al eliminar el color.");
+      setColors((prev) => prev.filter((c) => c.id !== id));
+      triggerNotice(`Tintura "${toDelete.name}" eliminada (cambios sin guardar).`);
+      setIsAddColorModalOpen(false);
+      setEditingColor(null);
+    }
+  }
+
+  // ── Descartar cambios locales ─────────────────────────────────────────────
+  function handleDiscardChanges() {
+    if (savedBrandsSnapshot) setBrands(structuredClone(savedBrandsSnapshot));
+    if (savedColorsSnapshot) setColors(structuredClone(savedColorsSnapshot));
+    triggerNotice("Cambios descartados.");
+  }
+
+  // ── Persistir cambios en backend ──────────────────────────────────────────
+  async function handleSaveChanges() {
+    if (!hasUnsavedChanges || isSaving || !savedBrandsSnapshot || !savedColorsSnapshot) return;
+    setIsSaving(true);
+    try {
+      // 1. Eliminar marcas
+      const currentBrandIds = new Set(brands.map((b) => b.id));
+      const brandsToDelete = savedBrandsSnapshot.filter(
+        (s) => !currentBrandIds.has(s.id) && !s.id.startsWith("temp-"),
+      );
+      for (const b of brandsToDelete) {
+        await deleteBrand.mutateAsync(b.id);
       }
+
+      // 2. Crear marcas nuevas
+      const brandsToCreate = brands.filter((b) => b.id.startsWith("temp-"));
+      for (const b of brandsToCreate) {
+        await createBrand.mutateAsync({
+          name: b.name,
+          skuPrefix: b.skuPrefix || "BRD",
+          description: b.description || "Nueva firma textil registrada en el atelier.",
+          iconColor: b.iconColor || "secondary",
+          active: b.active ?? true,
+        });
+      }
+
+      // 3. Actualizar marcas existentes modificadas
+      const brandsToUpdate = brands.filter((b) => !b.id.startsWith("temp-"));
+      for (const b of brandsToUpdate) {
+        const original = savedBrandsSnapshot.find((s) => s.id === b.id);
+        if (!original) continue;
+        const changed =
+          b.name !== original.name ||
+          b.skuPrefix !== original.skuPrefix ||
+          b.description !== original.description ||
+          b.active !== original.active ||
+          b.iconColor !== original.iconColor;
+        if (changed) {
+          await updateBrand.mutateAsync({
+            id: b.id,
+            body: {
+              name: b.name,
+              skuPrefix: b.skuPrefix,
+              description: b.description,
+              iconColor: b.iconColor,
+              active: b.active,
+            },
+          });
+        }
+      }
+
+      // 4. Eliminar colores
+      const currentColorIds = new Set(colors.map((c) => c.id));
+      const colorsToDelete = savedColorsSnapshot.filter(
+        (s) => !currentColorIds.has(s.id) && !s.id.startsWith("temp-"),
+      );
+      for (const c of colorsToDelete) {
+        await deleteColor.mutateAsync(c.id);
+      }
+
+      // 5. Crear colores nuevos
+      const colorsToCreate = colors.filter((c) => c.id.startsWith("temp-"));
+      for (const c of colorsToCreate) {
+        await createColor.mutateAsync({
+          name: c.name,
+          skuCode: c.skuCode || "CLR",
+          hex: c.hex,
+          active: c.active ?? true,
+        });
+      }
+
+      // 6. Actualizar colores existentes modificados
+      const colorsToUpdate = colors.filter((c) => !c.id.startsWith("temp-"));
+      for (const c of colorsToUpdate) {
+        const original = savedColorsSnapshot.find((s) => s.id === c.id);
+        if (!original) continue;
+        const changed =
+          c.name !== original.name ||
+          c.hex !== original.hex ||
+          c.skuCode !== original.skuCode ||
+          c.active !== original.active;
+        if (changed) {
+          await updateColor.mutateAsync({
+            id: c.id,
+            body: {
+              name: c.name,
+              hex: c.hex,
+              skuCode: c.skuCode,
+              active: c.active,
+            },
+          });
+        }
+      }
+
+      // 7. Refrescar datos
+      const [freshBrands, freshColors] = await Promise.all([refetchBrands(), refetchColors()]);
+      if (freshBrands.data) {
+        const mapped = freshBrands.data.map(dtoToBrandLocal);
+        setBrands(mapped);
+        setSavedBrandsSnapshot(structuredClone(mapped));
+      } else {
+        setSavedBrandsSnapshot(structuredClone(brands));
+      }
+      if (freshColors.data) {
+        const mapped = freshColors.data.map(dtoToColorLocal);
+        setColors(mapped);
+        setSavedColorsSnapshot(structuredClone(mapped));
+      } else {
+        setSavedColorsSnapshot(structuredClone(colors));
+      }
+
+      triggerNotice("Cambios guardados correctamente en la base de datos.");
+    } catch (err: unknown) {
+      console.error("[handleSaveChanges]", err);
+      triggerNotice(err instanceof Error ? err.message : "Error al guardar cambios.");
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -251,7 +426,7 @@ export function AdminColorsBrandsView() {
     <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-mustard font-inter text-[13px] shadow-lg flex items-center gap-3">
+        <div className="fixed bottom-24 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-mustard font-inter text-[13px] shadow-lg flex items-center gap-3">
           <span className="material-symbols-outlined text-mustard text-[18px]">info</span>
           <span>{notification}</span>
         </div>
@@ -726,6 +901,45 @@ export function AdminColorsBrandsView() {
             )}
           </div>
         </section>
+
+        {/* ── STICKY BOTTOM BAR ── */}
+        <div className="sticky bottom-0 z-30 w-full bg-[#333027] text-[#f7f0e2] px-4 lg:px-8 py-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+          <div className="flex items-center gap-3">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                isSaving || hasUnsavedChanges ? "bg-[#c77d2e] animate-pulse" : "bg-[#466635]"
+              }`}
+            />
+            <span className="font-inter text-[12px] text-[#e0dacb]">
+              {isSaving
+                ? "Guardando cambios en la base de datos…"
+                : hasUnsavedChanges
+                  ? "Cambios sin guardar en marcas y colores"
+                  : "Todos los cambios guardados"}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleDiscardChanges}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
+            >
+              DESCARTAR CAMBIOS
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveChanges}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer active:translate-y-px"
+            >
+              {isSaving ? "GUARDANDO…" : "GUARDAR CAMBIOS"}
+              <span className="material-symbols-outlined text-[18px]">
+                {isSaving ? "hourglass_top" : "check"}
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ── Modal Añadir / Editar Marca (con fondo sombreado) ── */}

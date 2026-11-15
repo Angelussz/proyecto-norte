@@ -114,21 +114,51 @@ export async function updateSizeGroup(
     },
   });
 
-  // 2. Si se envían sistemas → reemplazar (delete + recreate)
+  // 2. Si se envían sistemas → sincronizar preservando IDs existentes
   if (body.systems !== undefined) {
-    await prisma.sizeSystem.deleteMany({ where: { group_id: id } });
-    await prisma.sizeSystem.createMany({
-      data: body.systems.map((s, i) => ({
-        group_id: id,
-        label: s.label.trim(),
-        description: s.description?.trim() ?? null,
-        badge: s.badge?.trim() ?? null,
-        badge_variant: s.badge_variant ?? null,
-        sizes: s.sizes,
-        active: s.active ?? true,
-        sort_order: s.sort_order ?? i,
-      })),
-    });
+    const existingSystems = await prisma.sizeSystem.findMany({ where: { group_id: id } });
+    const existingIds = new Set(existingSystems.map((s) => s.id));
+    const incomingIds = new Set(
+      body.systems.map((s) => s.id).filter((sysId): sysId is string => Boolean(sysId)),
+    );
+
+    // Eliminar sistemas que ya no están
+    const toDeleteIds = existingSystems.filter((s) => !incomingIds.has(s.id)).map((s) => s.id);
+    if (toDeleteIds.length > 0) {
+      await prisma.sizeSystem.deleteMany({ where: { id: { in: toDeleteIds } } });
+    }
+
+    // Actualizar o crear cada sistema
+    for (let i = 0; i < body.systems.length; i++) {
+      const s = body.systems[i];
+      if (s.id && existingIds.has(s.id)) {
+        await prisma.sizeSystem.update({
+          where: { id: s.id },
+          data: {
+            label: s.label.trim(),
+            description: s.description?.trim() ?? null,
+            badge: s.badge?.trim() ?? null,
+            badge_variant: s.badge_variant ?? null,
+            sizes: s.sizes,
+            active: s.active ?? true,
+            sort_order: s.sort_order ?? i,
+          },
+        });
+      } else {
+        await prisma.sizeSystem.create({
+          data: {
+            group_id: id,
+            label: s.label.trim(),
+            description: s.description?.trim() ?? null,
+            badge: s.badge?.trim() ?? null,
+            badge_variant: s.badge_variant ?? null,
+            sizes: s.sizes,
+            active: s.active ?? true,
+            sort_order: s.sort_order ?? i,
+          },
+        });
+      }
+    }
   }
 
   const updated = await prisma.sizeGroup.findUnique({

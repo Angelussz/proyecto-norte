@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   AdminAddSizeSystemModal,
   type NewSizeCategory,
@@ -252,12 +252,28 @@ function BadgeVariant({ variant, text }: { variant?: SizeOption["badgeVariant"];
 // ── Componente principal ───────────────────────────────────────────────────
 export function AdminSizeSystemView() {
   // ─── Backend data via React Query ───────────────────────────────────────
-  const { data: groups = [], isLoading, isError, error } = useSizeGroups();
+  const { data: groups = [], isLoading, isError, error, refetch: refetchGroups } = useSizeGroups();
   const createGroup = useCreateSizeGroup();
   const updateGroup = useUpdateSizeGroup();
-  const toggleSystem = useToggleSizeSystem();
   const deleteGroup = useDeleteSizeGroup();
-  const deleteSystem = useDeleteSizeSystem();
+
+  // ─── Estado local de grupos (staging) ───────────────────────────────────
+  const [localGroups, setLocalGroups] = useState<SizeGroupDto[]>([]);
+  const [savedSnapshot, setSavedSnapshot] = useState<SizeGroupDto[] | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && savedSnapshot === null) {
+      setLocalGroups(structuredClone(groups));
+      setSavedSnapshot(structuredClone(groups));
+    }
+  }, [groups, isLoading, savedSnapshot]);
+
+  // ─── Detección de cambios sin guardar ───────────────────────────────────
+  const hasUnsavedChanges = useMemo(() => {
+    if (!savedSnapshot) return false;
+    return JSON.stringify(localGroups) !== JSON.stringify(savedSnapshot);
+  }, [localGroups, savedSnapshot]);
 
   // ─── Modal state ─────────────────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -285,63 +301,173 @@ export function AdminSizeSystemView() {
     setIsAddModalOpen(true);
   }
 
-  async function handleConfirmDeleteGroup() {
+  function handleConfirmDeleteGroup() {
     if (!groupToDelete) return;
-    try {
-      await deleteGroup.mutateAsync(groupToDelete.id);
-      showToast(`Grupo "${groupToDelete.title}" eliminado correctamente.`);
-      setGroupToDelete(null);
-    } catch (err) {
-      showToast((err as Error).message ?? "Error al eliminar el grupo.");
-    }
+    setLocalGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
+    showToast(`Grupo "${groupToDelete.title}" eliminado (cambios sin guardar).`);
+    setGroupToDelete(null);
   }
 
-  async function handleConfirmDeleteSystem() {
+  function handleConfirmDeleteSystem() {
     if (!systemToDelete) return;
-    try {
-      await deleteSystem.mutateAsync({
-        groupId: systemToDelete.groupId,
-        systemId: systemToDelete.systemId,
-      });
-      showToast(`Sistema "${systemToDelete.label}" eliminado correctamente.`);
-      setSystemToDelete(null);
-    } catch (err) {
-      showToast((err as Error).message ?? "Error al eliminar el sistema.");
-    }
+    setLocalGroups((prev) =>
+      prev.map((g) =>
+        g.id === systemToDelete.groupId
+          ? {
+              ...g,
+              systems: g.systems.filter((s) => s.id !== systemToDelete.systemId),
+            }
+          : g,
+      ),
+    );
+    showToast(`Sistema "${systemToDelete.label}" eliminado (cambios sin guardar).`);
+    setSystemToDelete(null);
   }
 
-  async function handleSaveCategory(savedCat: NewSizeCategory) {
-    try {
-      const payload = {
+  function handleSaveCategory(savedCat: NewSizeCategory) {
+    if (editingCategory) {
+      setLocalGroups((prev) =>
+        prev.map((g) => {
+          if (g.id !== editingCategory.id) return g;
+          return {
+            ...g,
+            title: savedCat.title,
+            description: savedCat.description,
+            systems: savedCat.options.map((o, idx) => {
+              const existingSys = g.systems.find((s) => s.id === o.id);
+              return {
+                id: o.id || `temp-sys-${Date.now()}-${idx}`,
+                group_id: g.id,
+                label: o.label,
+                description: o.description || null,
+                badge: o.badge || null,
+                badge_variant: o.badgeVariant || null,
+                sizes: o.sizes,
+                active: o.active,
+                sort_order: existingSys?.sort_order ?? idx,
+              };
+            }),
+          };
+        }),
+      );
+      showToast("Grupo modificado (cambios sin guardar).");
+    } else {
+      const tempGroupId = `temp-group-${Date.now()}`;
+      const newGroup: SizeGroupDto = {
+        id: tempGroupId,
         title: savedCat.title,
         description: savedCat.description,
-        systems: savedCat.options.map((o) => ({
+        sort_order: localGroups.length,
+        systems: savedCat.options.map((o, idx) => ({
+          id: `temp-sys-${Date.now()}-${idx}`,
+          group_id: tempGroupId,
           label: o.label,
-          description: o.description,
-          badge: o.badge,
-          badge_variant: o.badgeVariant,
+          description: o.description || null,
+          badge: o.badge || null,
+          badge_variant: o.badgeVariant || null,
           sizes: o.sizes,
           active: o.active,
+          sort_order: idx,
         })),
       };
+      setLocalGroups((prev) => [...prev, newGroup]);
+      showToast("Nuevo grupo creado (cambios sin guardar).");
+    }
+    setIsAddModalOpen(false);
+    setEditingCategory(null);
+  }
 
-      if (editingCategory) {
-        await updateGroup.mutateAsync({ id: editingCategory.id, body: payload });
-        showToast("Sistema de talles actualizado correctamente.");
-      } else {
-        await createGroup.mutateAsync(payload);
-        showToast("Nuevo sistema de talles creado correctamente.");
-      }
-    } catch (err) {
-      showToast((err as Error).message ?? "Ocurrió un error al guardar.");
+  function handleToggleSystem(groupId: string, systemId: string) {
+    setLocalGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              systems: g.systems.map((s) => (s.id === systemId ? { ...s, active: !s.active } : s)),
+            }
+          : g,
+      ),
+    );
+  }
+
+  function handleDiscardChanges() {
+    if (savedSnapshot) {
+      setLocalGroups(structuredClone(savedSnapshot));
+      showToast("Cambios descartados.");
     }
   }
 
-  async function handleToggleSystem(groupId: string, systemId: string, currentActive: boolean) {
+  async function handleSaveChanges() {
+    if (!hasUnsavedChanges || isSaving || !savedSnapshot) return;
+    setIsSaving(true);
     try {
-      await toggleSystem.mutateAsync({ groupId, systemId, active: !currentActive });
-    } catch {
-      // El hook revierte automáticamente en error
+      // 1. Grupos eliminados
+      const currentGroupIds = new Set(localGroups.map((g) => g.id));
+      const groupsToDelete = savedSnapshot.filter(
+        (s) => !currentGroupIds.has(s.id) && !s.id.startsWith("temp-"),
+      );
+      for (const g of groupsToDelete) {
+        await deleteGroup.mutateAsync(g.id);
+      }
+
+      // 2. Grupos nuevos
+      const groupsToCreate = localGroups.filter((g) => g.id.startsWith("temp-"));
+      for (const g of groupsToCreate) {
+        await createGroup.mutateAsync({
+          title: g.title,
+          description: g.description ?? undefined,
+          systems: g.systems.map((s) => ({
+            label: s.label,
+            description: s.description ?? undefined,
+            badge: s.badge ?? undefined,
+            badge_variant: s.badge_variant ?? undefined,
+            sizes: s.sizes,
+            active: s.active,
+          })),
+        });
+      }
+
+      // 3. Grupos modificados
+      const groupsToUpdate = localGroups.filter((g) => !g.id.startsWith("temp-"));
+      for (const g of groupsToUpdate) {
+        const original = savedSnapshot.find((s) => s.id === g.id);
+        if (!original) continue;
+        if (JSON.stringify(g) !== JSON.stringify(original)) {
+          await updateGroup.mutateAsync({
+            id: g.id,
+            body: {
+              title: g.title,
+              description: g.description ?? undefined,
+              systems: g.systems.map((s) => ({
+                id: s.id.startsWith("temp-") ? undefined : s.id,
+                label: s.label,
+                description: s.description ?? undefined,
+                badge: s.badge ?? undefined,
+                badge_variant: s.badge_variant ?? undefined,
+                sizes: s.sizes,
+                active: s.active,
+                sort_order: s.sort_order,
+              })),
+            },
+          });
+        }
+      }
+
+      // 4. Refrescar datos
+      const fresh = await refetchGroups();
+      if (fresh.data) {
+        setLocalGroups(structuredClone(fresh.data));
+        setSavedSnapshot(structuredClone(fresh.data));
+      } else {
+        setSavedSnapshot(structuredClone(localGroups));
+      }
+
+      showToast("Cambios guardados correctamente en la base de datos.");
+    } catch (err: unknown) {
+      console.error("[handleSaveChanges]", err);
+      showToast(err instanceof Error ? err.message : "Error al guardar cambios.");
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -363,9 +489,13 @@ export function AdminSizeSystemView() {
     };
   }
 
-  const totalActive = groups.reduce((acc, g) => acc + g.systems.filter((s) => s.active).length, 0);
-  const totalOptions = groups.reduce((acc, g) => acc + g.systems.length, 0);
-  const totalSizes = groups.reduce(
+  const displayGroups = savedSnapshot !== null ? localGroups : groups;
+  const totalActive = displayGroups.reduce(
+    (acc, g) => acc + g.systems.filter((s) => s.active).length,
+    0,
+  );
+  const totalOptions = displayGroups.reduce((acc, g) => acc + g.systems.length, 0);
+  const totalSizes = displayGroups.reduce(
     (acc, g) => acc + g.systems.reduce((b, s) => b + s.sizes.length, 0),
     0,
   );
@@ -374,7 +504,7 @@ export function AdminSizeSystemView() {
     <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-[#c77d2e] font-inter text-[13px] shadow-lg flex items-center gap-3">
+        <div className="fixed bottom-24 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-[#c77d2e] font-inter text-[13px] shadow-lg flex items-center gap-3">
           <span className="material-symbols-outlined text-[#c77d2e] text-[18px]">check_circle</span>
           <span>{toast}</span>
         </div>
@@ -445,7 +575,7 @@ export function AdminSizeSystemView() {
           {[
             {
               label: "Grupos de Uso",
-              value: groups.length,
+              value: displayGroups.length,
               sub: "Tipos de prenda cubiertos",
               icon: "style",
               color: "text-primary",
@@ -542,7 +672,7 @@ export function AdminSizeSystemView() {
 
           {/* Category Blocks */}
           <div className="flex flex-col gap-6">
-            {groups.map((cat) => (
+            {displayGroups.map((cat) => (
               <div
                 key={cat.id}
                 className="bg-surface p-6 border border-outline-variant/30 flex flex-col gap-4"
@@ -590,7 +720,7 @@ export function AdminSizeSystemView() {
                         <input
                           type="checkbox"
                           checked={opt.active}
-                          onChange={() => handleToggleSystem(cat.id, opt.id, opt.active)}
+                          onChange={() => handleToggleSystem(cat.id, opt.id)}
                           className="mt-1 text-primary focus:ring-0 rounded-none cursor-pointer h-4 w-4 shrink-0"
                         />
                         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -687,6 +817,45 @@ export function AdminSizeSystemView() {
             v2.4 — ACTIVO
           </span>
         </div>
+        {/* ── STICKY BOTTOM BAR ── */}
+        <div className="sticky bottom-0 z-30 w-full bg-[#333027] text-[#f7f0e2] px-4 lg:px-8 py-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+          <div className="flex items-center gap-3">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                isSaving || hasUnsavedChanges ? "bg-[#c77d2e] animate-pulse" : "bg-[#466635]"
+              }`}
+            />
+            <span className="font-inter text-[12px] text-[#e0dacb]">
+              {isSaving
+                ? "Guardando cambios en la base de datos…"
+                : hasUnsavedChanges
+                  ? "Cambios sin guardar en sistemas de talles"
+                  : "Todos los cambios guardados"}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleDiscardChanges}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
+            >
+              DESCARTAR CAMBIOS
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveChanges}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer active:translate-y-px"
+            >
+              {isSaving ? "GUARDANDO…" : "GUARDAR CAMBIOS"}
+              <span className="material-symbols-outlined text-[18px]">
+                {isSaving ? "hourglass_top" : "check"}
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* ── Modal Agregar / Editar Grupo y Sistema de Talles ── */}
         <AdminAddSizeSystemModal
           isOpen={isAddModalOpen}
@@ -708,8 +877,8 @@ export function AdminSizeSystemView() {
           initialData={editingCategory ? groupToCategory(editingCategory) : null}
           groupNumber={
             editingCategory
-              ? groups.findIndex((c) => c.id === editingCategory.id) + 1
-              : groups.length + 1
+              ? displayGroups.findIndex((c) => c.id === editingCategory.id) + 1
+              : displayGroups.length + 1
           }
         />
         {/* ── Modal Confirmar Eliminar Grupo Completo ── */}
@@ -744,7 +913,7 @@ export function AdminSizeSystemView() {
                   <strong className="text-[#1e1c13] font-semibold">{groupToDelete.title}</strong>
                 </p>
                 <p className="text-[12px] text-error font-medium">
-                  Se eliminarán permanentemente este grupo y todos los{" "}
+                  Se eliminarán este grupo y todos los{" "}
                   <strong>{groupToDelete.systems.length} sistemas de talles</strong> que contiene.
                 </p>
               </div>
@@ -760,11 +929,10 @@ export function AdminSizeSystemView() {
                 <button
                   type="button"
                   onClick={handleConfirmDeleteGroup}
-                  disabled={deleteGroup.isPending}
-                  className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>
-                  <span>{deleteGroup.isPending ? "ELIMINANDO..." : "SÍ, ELIMINAR GRUPO"}</span>
+                  <span>SÍ, ELIMINAR GRUPO</span>
                 </button>
               </div>
             </div>
@@ -819,11 +987,10 @@ export function AdminSizeSystemView() {
                 <button
                   type="button"
                   onClick={handleConfirmDeleteSystem}
-                  disabled={deleteSystem.isPending}
-                  className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>
-                  <span>{deleteSystem.isPending ? "ELIMINANDO..." : "SÍ, ELIMINAR"}</span>
+                  <span>SÍ, ELIMINAR</span>
                 </button>
               </div>
             </div>
