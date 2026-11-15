@@ -370,7 +370,16 @@ export function AdminCategoriesView() {
   async function handleRemoveSystem(catId: string, systemId: string) {
     const dbCat = dbCategories?.find((d) => d.id === catId);
     if (!dbCat) return;
-    const newSysIds = dbCat.sizeSystemIds.filter((id) => id !== systemId);
+
+    // Resuelve el id del catálogo si systemId coincide por id o por nombre
+    const catalogMatch = SIZE_SYSTEM_CATALOG.find(
+      (s) =>
+        s.id === systemId || s.systemName.toUpperCase().trim() === systemId.toUpperCase().trim(),
+    );
+    const targetId = catalogMatch?.id ?? systemId;
+
+    const newSysIds = dbCat.sizeSystemIds.filter((id) => id !== targetId && id !== systemId);
+
     try {
       await updateMutation.mutateAsync({ id: catId, body: { sizeSystemIds: newSysIds } });
       showToast("Sistema eliminado.");
@@ -744,34 +753,29 @@ export function AdminCategoriesView() {
                     </div>
 
                     {/* Filas de sistemas de talles habilitados para esta categoría */}
-                    {getCategorySystems(cat).map((sys, idx) => {
-                      const isRemovable = idx >= 2;
-                      return (
-                        <div
-                          key={sys.id || `${sys.name}-${idx}`}
-                          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]"
-                        >
-                          <span className="font-semibold text-[#524438] uppercase tracking-wider">
-                            {sys.name}:
+                    {getCategorySystems(cat).map((sys, idx) => (
+                      <div
+                        key={sys.id || `${sys.name}-${idx}`}
+                        className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]"
+                      >
+                        <span className="font-semibold text-[#524438] uppercase tracking-wider">
+                          {sys.name}:
+                        </span>
+                        {sys.sizes.map((size) => (
+                          <span key={size} className="font-mono text-[#673900] font-medium">
+                            {size}
                           </span>
-                          {sys.sizes.map((size) => (
-                            <span key={size} className="font-mono text-[#673900] font-medium">
-                              {size}
-                            </span>
-                          ))}
-                          {isRemovable && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSystem(cat.id, sys.id)}
-                              title={`Eliminar sistema ${sys.name}`}
-                              className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[#857466] hover:text-red-600 hover:bg-red-50 rounded text-xs font-bold transition-colors cursor-pointer"
-                            >
-                              ×
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSystem(cat.id, sys.id)}
+                          title={`Eliminar sistema ${sys.name}`}
+                          className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[#857466] hover:text-red-600 hover:bg-red-50 rounded text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
 
                     {/* Dropdown y botón Añadir Talle */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 max-w-md">
