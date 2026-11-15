@@ -456,6 +456,7 @@ export function AdminInventoryView() {
   const [toast, setToast] = useState<string | null>(null);
   const [colorModalProduct, setColorModalProduct] = useState<ProductCard | null>(null);
   const [sizeModalProduct, setSizeModalProduct] = useState<ProductCard | null>(null);
+  const [productToDelete, setProductToDelete] = useState<ProductCard | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -514,11 +515,19 @@ export function AdminInventoryView() {
 
   function handleDeleteProduct(productId: string) {
     const p = products.find((x) => x.id === productId);
-    const updated = products.filter((x) => x.id !== productId);
+    if (!p) return;
+    setProductToDelete(p);
+    setOpenMenuId(null);
+  }
+
+  function handleConfirmDeleteProduct() {
+    if (!productToDelete) return;
+    const p = productToDelete;
+    const updated = products.filter((x) => x.id !== p.id);
     setProducts(updated);
     persistProducts(updated);
-    setOpenMenuId(null);
-    setToast(`"${p?.name}" eliminado del inventario.`);
+    setProductToDelete(null);
+    setToast(`"${p.name}" eliminado del inventario.`);
     setTimeout(() => setToast(null), 3000);
   }
 
@@ -1550,6 +1559,68 @@ export function AdminInventoryView() {
         product={sizeModalProduct}
         onSaveSizes={handleSaveSizes}
       />
+
+      {/* ── Modal Confirmar Eliminar Producto ── */}
+      {productToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            className="fixed inset-0 bg-[#1e1c13]/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setProductToDelete(null)}
+          />
+          <div className="relative bg-[#fff9ed] border border-[#d8c3b2]/60 shadow-2xl max-w-md w-full p-6 z-10 flex flex-col gap-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-error/10 text-error flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[24px]">delete_forever</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="px-2 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold w-fit">
+                  CONFIRMAR ELIMINACIÓN
+                </span>
+                <h3 className="font-headline text-[22px] uppercase tracking-wide text-[#1e1c13] leading-tight">
+                  ¿ELIMINAR PRODUCTO?
+                </h3>
+              </div>
+            </div>
+
+            <div className="font-inter text-[13px] text-[#524438] leading-relaxed bg-[#faf3e4] p-3 border border-[#d8c3b2]/40 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2 border-b border-[#d8c3b2]/30 pb-2">
+                <span className="font-headline text-[15px] uppercase tracking-wider text-[#1e1c13]">
+                  {productToDelete.name}
+                </span>
+                <span className="px-2 py-0.5 bg-white text-[#524438] text-[10px] font-mono border border-[#d8c3b2]/40 font-semibold">
+                  {productToDelete.sku}
+                </span>
+              </div>
+              <p className="text-[12px] text-on-surface-variant">
+                ¿Deseas eliminar este producto del inventario? Esta acción removerá el producto y
+                toda su matriz de stock asignada de talles y colores.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2 bg-white text-[#524438] hover:text-[#1e1c13] font-headline text-[15px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors cursor-pointer"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteProduct}
+                className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span>SÍ, ELIMINAR</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
