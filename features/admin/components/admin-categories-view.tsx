@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   AdminAddCategoryModal,
@@ -26,6 +26,121 @@ export type CategoryItem = {
   addedSizes: string[];
 };
 
+export interface SizeSystemCatalogItem {
+  id: string;
+  label: string;
+  systemName: string;
+  sizes: string[];
+}
+
+export const SIZE_SYSTEM_CATALOG: SizeSystemCatalogItem[] = [
+  {
+    id: "num_eu",
+    label: "Numérico EU / Cono Sur (34, 36, 38, 40...)",
+    systemName: "NUMÉRICO EU / CONO SUR",
+    sizes: ["34", "36", "38", "40", "42", "44", "46", "48"],
+  },
+  {
+    id: "num_us",
+    label: "Numérico US / México (28, 30, 32, 34...)",
+    systemName: "NUMÉRICO US / MÉXICO",
+    sizes: ["28", "30", "32", "34", "36", "38", "40"],
+  },
+  {
+    id: "alfa_std",
+    label: "Sistema Alfa (XXS, XS, S, M, L, XL, XXL, 3XL)",
+    systemName: "SISTEMA ALFA",
+    sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
+  },
+  {
+    id: "calzado_eu",
+    label: "Calzado Adulto Unisex EU (35 - 46)",
+    systemName: "NUMERACIÓN CALZADO",
+    sizes: ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+  },
+  {
+    id: "num_sastreria",
+    label: "Numérico Sastrería / Calce Estructurado (38 - 46)",
+    systemName: "NUMÉRICO SASTRERÍA",
+    sizes: ["38", "40", "42", "44", "46"],
+  },
+  {
+    id: "talles_unicos",
+    label: "Talles Únicos & Adaptables (TU, Regulable)",
+    systemName: "TALLES ÚNICOS",
+    sizes: ["Talle Único", "Talle Ajustable"],
+  },
+  {
+    id: "med_cintura",
+    label: "Medidas en Pulgadas / Cintura (30W - 38W)",
+    systemName: "MEDIDAS EN PULGADAS",
+    sizes: ["30W", "32W", "34W", "36W", "38W"],
+  },
+  {
+    id: "med_anat",
+    label: "Medidas Anatómicas Exactas (cm)",
+    systemName: "MEDIDAS ANATÓMICAS",
+    sizes: ["88 cm", "92 cm", "96 cm", "100 cm", "104 cm"],
+  },
+];
+
+const LS_CATEGORIES_KEY = "norte-categories-v1";
+
+function loadCategoriesFromLS(): CategoryItem[] | null {
+  try {
+    const raw = localStorage.getItem(LS_CATEGORIES_KEY);
+    if (raw) return JSON.parse(raw) as CategoryItem[];
+  } catch {}
+  return null;
+}
+
+function persistCategories(updated: CategoryItem[]) {
+  try {
+    localStorage.setItem(LS_CATEGORIES_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.warn("[Categorias] No se pudo guardar en localStorage:", e);
+  }
+}
+
+export function getCategorySystems(cat: CategoryItem): AssignedSizeSystem[] {
+  if (cat.systems && cat.systems.length > 0) {
+    return cat.systems;
+  }
+  const result: AssignedSizeSystem[] = [];
+  if (cat.systemName && cat.systemSizes && cat.systemSizes.length > 0) {
+    result.push({
+      id: `sys-${cat.id}-main`,
+      name: cat.systemName,
+      sizes: cat.systemSizes,
+    });
+  }
+  if (cat.uniqueSizes && cat.uniqueSizes.length > 0) {
+    result.push({
+      id: `sys-${cat.id}-unicos`,
+      name: "TALLES ÚNICOS",
+      sizes: cat.uniqueSizes,
+    });
+  }
+  if (cat.addedSizes && cat.addedSizes.length > 0) {
+    cat.addedSizes.forEach((item, idx) => {
+      const found = SIZE_SYSTEM_CATALOG.find(
+        (s) =>
+          s.id === item ||
+          s.label.toLowerCase().includes(item.toLowerCase()) ||
+          s.systemName.toLowerCase().includes(item.toLowerCase()),
+      );
+      if (found) {
+        result.push({
+          id: `sys-legacy-${cat.id}-${idx}`,
+          name: found.systemName,
+          sizes: found.sizes,
+        });
+      }
+    });
+  }
+  return result;
+}
+
 const INITIAL_CATEGORIES: CategoryItem[] = [
   {
     id: "cat-1",
@@ -35,6 +150,18 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Prendas de media estación y lino crudo estructurado. 14 prendas activas en tienda.",
+    systems: [
+      {
+        id: "sys-cat-1-alfa",
+        name: "SISTEMA ALFA",
+        sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
+      },
+      {
+        id: "sys-cat-1-unicos",
+        name: "TALLES ÚNICOS",
+        sizes: ["Talle Único", "Talle Ajustable"],
+      },
+    ],
     systemName: "SISTEMA ALFA",
     systemSizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
@@ -48,6 +175,18 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Pantalón ancho, pinzas artesanales y cortes rectos sartoriales. 10 prendas activas.",
+    systems: [
+      {
+        id: "sys-cat-2-num-eu",
+        name: "SISTEMA NUMÉRICO EU",
+        sizes: ["36", "38", "40", "42", "44", "46", "48"],
+      },
+      {
+        id: "sys-cat-2-unicos",
+        name: "TALLES ÚNICOS",
+        sizes: ["Talle Único", "Talle Ajustable"],
+      },
+    ],
     systemName: "SISTEMA NUMÉRICO EU",
     systemSizes: ["36", "38", "40", "42", "44", "46", "48"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
@@ -61,6 +200,18 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Alpargatas, mocasines y calzado de confección artesana en suela vegetal. 6 modelos.",
+    systems: [
+      {
+        id: "sys-cat-3-calzado",
+        name: "NUMERACIÓN CALZADO",
+        sizes: ["38", "39", "40", "41", "42", "43", "44", "45"],
+      },
+      {
+        id: "sys-cat-3-unicos",
+        name: "TALLES ÚNICOS",
+        sizes: ["Talle Único", "Talle Ajustable"],
+      },
+    ],
     systemName: "NUMERACIÓN CALZADO",
     systemSizes: ["38", "39", "40", "41", "42", "43", "44", "45"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
@@ -74,6 +225,18 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Gabardinas de algodón encerado, saharianas y abrigos desestructurados. 4 referencias.",
+    systems: [
+      {
+        id: "sys-cat-4-alfa",
+        name: "SISTEMA ALFA",
+        sizes: ["S", "M", "L", "XL", "XXL", "3XL"],
+      },
+      {
+        id: "sys-cat-4-unicos",
+        name: "TALLES ÚNICOS",
+        sizes: ["Talle Único", "Talle Ajustable"],
+      },
+    ],
     systemName: "SISTEMA ALFA",
     systemSizes: ["S", "M", "L", "XL", "XXL", "3XL"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
@@ -87,6 +250,18 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     active: true,
     description:
       "Bolsos tote de lona encerada, cinturones de piel vegetal y bufandas de telar. 4 referencias.",
+    systems: [
+      {
+        id: "sys-cat-5-alfa",
+        name: "SISTEMA ALFA",
+        sizes: ["S", "M", "L", "XL"],
+      },
+      {
+        id: "sys-cat-5-unicos",
+        name: "TALLES ÚNICOS",
+        sizes: ["Talle Único", "Talle Ajustable"],
+      },
+    ],
     systemName: "SISTEMA ALFA",
     systemSizes: ["S", "M", "L", "XL"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
@@ -94,48 +269,83 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
   },
 ];
 
-const SIZE_SYSTEM_OPTIONS = [
-  "Sistema Alfa (XS, S, M, L, XL, XXL)",
-  "Numérico EU / Cono Sur (36, 38, 40, 42, 44...)",
-  "Numérico US / México (28, 30, 32, 34...)",
-  "Calzado Adulto Unisex EU (35 - 46)",
-  "Talle Único Estándar (TU / One Size)",
-  "Talle Único Ajustable / Regulable",
-  "Medidas en Pulgadas / Cintura",
-  "Medidas Anatómicas Exactas (cm)",
-];
-
 export function AdminCategoriesView() {
-  const [categories, setCategories] = useState<CategoryItem[]>(INITIAL_CATEGORIES);
+  const [categories, setCategoriesState] = useState<CategoryItem[]>(INITIAL_CATEGORIES);
   const [selectedSystem, setSelectedSystem] = useState<Record<string, string>>({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
 
-  function addSize(catId: string, sizeName: string) {
-    setCategories((prev) =>
-      prev.map((cat) => {
-        if (cat.id !== catId) return cat;
-        if (cat.addedSizes.includes(sizeName)) return cat;
-        return { ...cat, addedSizes: [...cat.addedSizes, sizeName] };
-      }),
-    );
-  }
+  // Cargar estado guardado en localStorage en el cliente
+  useEffect(() => {
+    const saved = loadCategoriesFromLS();
+    if (saved && saved.length > 0) {
+      setCategoriesState(saved);
+    }
+  }, []);
 
-  function removeSize(catId: string, sizeName: string) {
-    setCategories((prev) =>
-      prev.map((cat) => {
-        if (cat.id !== catId) return cat;
-        return { ...cat, addedSizes: cat.addedSizes.filter((s) => s !== sizeName) };
-      }),
-    );
+  function setCategories(updater: CategoryItem[] | ((prev: CategoryItem[]) => CategoryItem[])) {
+    setCategoriesState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      persistCategories(next);
+      return next;
+    });
   }
 
   function handleAddSelectedSystem(catId: string) {
     const val = selectedSystem[catId];
     if (!val) return;
-    const label = val.split("(")[0].trim();
-    addSize(catId, label);
+
+    // Buscar el sistema en el catálogo por ID o por coincidencia de nombre
+    const found =
+      SIZE_SYSTEM_CATALOG.find((s) => s.id === val || s.label === val) ||
+      SIZE_SYSTEM_CATALOG.find((s) => val.toLowerCase().includes(s.id.toLowerCase())) ||
+      SIZE_SYSTEM_CATALOG.find((s) =>
+        s.label.toLowerCase().includes(val.split("(")[0].trim().toLowerCase()),
+      );
+
+    if (!found) return;
+
+    setCategories((prev) =>
+      prev.map((cat) => {
+        if (cat.id !== catId) return cat;
+
+        const currentSystems = getCategorySystems(cat);
+
+        // Evitar duplicar el mismo sistema si ya está asignado
+        const alreadyExists = currentSystems.some(
+          (s) => s.name.toUpperCase().trim() === found.systemName.toUpperCase().trim(),
+        );
+        if (alreadyExists) return cat;
+
+        const newSystem: AssignedSizeSystem = {
+          id: `sys-${cat.id}-${found.id}-${Date.now()}`,
+          name: found.systemName,
+          sizes: [...found.sizes],
+        };
+
+        return {
+          ...cat,
+          systems: [...currentSystems, newSystem],
+          addedSizes: [],
+        };
+      }),
+    );
+
     setSelectedSystem((prev) => ({ ...prev, [catId]: "" }));
+  }
+
+  function handleRemoveSystem(catId: string, systemId: string) {
+    setCategories((prev) =>
+      prev.map((cat) => {
+        if (cat.id !== catId) return cat;
+        const currentSystems = getCategorySystems(cat);
+        const updated = currentSystems.filter((s) => s.id !== systemId);
+        return {
+          ...cat,
+          systems: updated,
+        };
+      }),
+    );
   }
 
   function toggleVisibility(catId: string) {
@@ -474,63 +684,35 @@ export function AdminCategoriesView() {
                     <span>TALLES HABILITADOS PARA ESTA CATEGORÍA</span>
                   </div>
 
-                  {/* Fila del sistema específico */}
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
-                    <span className="font-semibold text-[#524438] uppercase tracking-wider">
-                      {cat.systemName}:
-                    </span>
-                    {cat.systemSizes.map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => addSize(cat.id, size)}
-                        className="font-mono text-[#673900] hover:text-[#c77d2e] hover:underline transition-colors font-medium"
+                  {/* Filas de sistemas de talles habilitados para esta categoría */}
+                  {getCategorySystems(cat).map((sys, idx) => {
+                    const isRemovable = idx >= 2;
+                    return (
+                      <div
+                        key={sys.id || `${sys.name}-${idx}`}
+                        className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]"
                       >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Fila de talles únicos */}
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
-                    <span className="font-semibold text-[#524438] uppercase tracking-wider">
-                      TALLES ÚNICOS:
-                    </span>
-                    {cat.uniqueSizes.map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => addSize(cat.id, size)}
-                        className="font-mono text-[#673900] hover:text-[#c77d2e] hover:underline transition-colors font-medium"
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Talles adicionales agregados */}
-                  {cat.addedSizes.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#d8c3b2]/20">
-                      <span className="text-[10px] text-[#524438] uppercase font-semibold">
-                        Añadidos:
-                      </span>
-                      {cat.addedSizes.map((size) => (
-                        <span
-                          key={size}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#eee8d9] text-[#1e1c13] text-[11px] font-mono font-medium"
-                        >
-                          {size}
+                        <span className="font-semibold text-[#524438] uppercase tracking-wider">
+                          {sys.name}:
+                        </span>
+                        {sys.sizes.map((size) => (
+                          <span key={size} className="font-mono text-[#673900] font-medium">
+                            {size}
+                          </span>
+                        ))}
+                        {isRemovable && (
                           <button
                             type="button"
-                            onClick={() => removeSize(cat.id, size)}
-                            className="hover:text-red-600 text-[#857466]"
+                            onClick={() => handleRemoveSystem(cat.id, sys.id)}
+                            title={`Eliminar sistema ${sys.name}`}
+                            className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[#857466] hover:text-red-600 hover:bg-red-50 rounded text-xs font-bold transition-colors cursor-pointer"
                           >
                             ×
                           </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* Dropdown y botón Añadir Talle */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 max-w-md">
@@ -544,9 +726,9 @@ export function AdminCategoriesView() {
                       <option value="" disabled>
                         Selecciona sistema de talla
                       </option>
-                      {SIZE_SYSTEM_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
+                      {SIZE_SYSTEM_CATALOG.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
                         </option>
                       ))}
                     </select>
