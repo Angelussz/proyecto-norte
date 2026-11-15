@@ -168,7 +168,7 @@ export function AdminColorsBrandsView() {
 
   async function handleDeleteBrand(id: string) {
     const toDelete = brands.find((b) => b.id === id);
-    if (!toDelete || toDelete.locked) return;
+    if (!toDelete) return;
     if (confirm(`¿Eliminar la firma "${toDelete.name}"?`)) {
       try {
         await deleteBrand.mutateAsync(id);
@@ -505,16 +505,14 @@ export function AdminColorsBrandsView() {
                           {brand.name}
                         </span>
                       </div>
-                      {!brand.locked && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBrand(brand.id)}
-                          className="text-on-surface-variant hover:text-error transition-colors p-1 cursor-pointer"
-                          title={`Eliminar marca ${brand.name}`}
-                        >
-                          <span className="material-symbols-outlined text-[16px]">close</span>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBrand(brand.id)}
+                        className="text-on-surface-variant hover:text-error transition-colors p-1 cursor-pointer"
+                        title={`Eliminar marca ${brand.name}`}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">close</span>
+                      </button>
                     </div>
                     <p className="font-inter text-[12px] text-on-surface-variant leading-relaxed">
                       {brand.description}
@@ -738,7 +736,7 @@ export function AdminColorsBrandsView() {
           setEditingBrand(null);
         }}
         onSave={handleSaveBrand}
-        onDelete={editingBrand && !editingBrand.locked ? handleDeleteBrand : undefined}
+        onDelete={editingBrand ? handleDeleteBrand : undefined}
         initialData={
           editingBrand
             ? {

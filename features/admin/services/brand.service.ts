@@ -74,6 +74,5 @@ export async function updateBrand(id: string, body: UpdateBrandBody): Promise<Br
 export async function deleteBrand(id: string): Promise<void> {
   const brand = await prisma.brand.findUnique({ where: { id } });
   if (!brand) throw new Error("Marca no encontrada.");
-  if (brand.locked) throw new Error("Esta marca es protegida y no puede eliminarse.");
   await prisma.brand.delete({ where: { id } });
 }
