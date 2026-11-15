@@ -787,17 +787,6 @@ export function AdminSizeSystemView() {
               </div>
             ))}
           </div>
-
-          {/* Footer info */}
-          <div className="flex items-center gap-2 text-on-surface-variant font-inter text-[12px] pt-4 border-t border-outline-variant/20">
-            <span className="material-symbols-outlined text-[18px] text-[#c77d2e]">
-              verified_user
-            </span>
-            <span>
-              Las directrices activas se aplican a los filtros de catálogo, fichas y validación de
-              inventario para adultos.
-            </span>
-          </div>
         </section>
 
         {/* ── Sync Banner ───────────────────────────────── */}
