@@ -50,7 +50,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-LNO-12",
     category: "SOBRECAMISAS",
     name: "Sobrecamisa Lino Rústico Arena",
-    pvp: "165,00 €",
+    pvp: "$165.00",
     sizes: ["S", "M", "L", "XL"],
     colors: [
       { name: "Arena Natural", hex: "#E4D5B7" },
@@ -74,7 +74,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-TRJ-02",
     category: "PANTALONES",
     name: "Pantalón Traje Sastre Arena",
-    pvp: "145,00 €",
+    pvp: "$145.00",
     sizes: ["38", "40", "42", "44"],
     colors: [
       { name: "Arena Natural", hex: "#E4D5B7" },
@@ -97,7 +97,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-ZAP-01",
     category: "CALZADO",
     name: "Zapatillas Esenciales Blancas",
-    pvp: "120,00 €",
+    pvp: "$120.00",
     sizes: ["40", "41", "42", "43", "44", "45"],
     colors: [
       { name: "Blanco Puro", hex: "#FDFBF7" },
@@ -122,7 +122,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-CMS-04",
     category: "CAMISAS",
     name: "Camisa Lino Cuello Mao",
-    pvp: "135,00 €",
+    pvp: "$135.00",
     sizes: ["S", "M", "L"],
     colors: [
       { name: "Blanco Puro", hex: "#FDFBF7" },
@@ -146,7 +146,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-SWT-07",
     category: "SUÉTERES",
     name: "Suéter Punto Grueso Merino",
-    pvp: "195,00 €",
+    pvp: "$195.00",
     sizes: ["S", "M", "L", "XL"],
     colors: [
       { name: "Cacao Tostado", hex: "#5C4033" },
@@ -170,7 +170,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-CHQ-09",
     category: "CHAQUETAS",
     name: "Chaqueta Oversize Espiga",
-    pvp: "230,00 €",
+    pvp: "$230.00",
     sizes: ["M", "L"],
     colors: [
       { name: "Gris Mineral", hex: "#7E7F83" },
@@ -191,7 +191,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-BRM-03",
     category: "BERMUDAS",
     name: "Bermuda Lino Plisada",
-    pvp: "98,00 €",
+    pvp: "$98.00",
     sizes: ["38", "40", "42", "44", "46"],
     colors: [
       { name: "Terracota", hex: "#9E472A" },
@@ -248,7 +248,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-ACC-01",
     category: "ACCESORIOS",
     name: "Gorra Algodón Orgánico Lavado",
-    pvp: "45,00 €",
+    pvp: "$45.00",
     sizes: ["Talle Único"],
     colors: [
       { name: "Ocre Tierra", hex: "#C68B45" },
@@ -269,7 +269,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-PLR-05",
     category: "CAMISAS",
     name: "Remera Manga Larga Ribbed",
-    pvp: "78,00 €",
+    pvp: "$78.00",
     sizes: ["S", "M", "L"],
     colors: [{ name: "Arena Natural", hex: "#E4D5B7" }],
     stock: {
@@ -288,7 +288,7 @@ const INITIAL_PRODUCTS: ProductCard[] = [
     sku: "NRT-BOT-02",
     category: "CALZADO",
     name: "Botines Chelsea Cuero Nobuk",
-    pvp: "210,00 €",
+    pvp: "$210.00",
     sizes: ["41", "42", "43", "44"],
     colors: [
       { name: "Cacao Tostado", hex: "#5C4033" },
@@ -388,17 +388,44 @@ function StockCell({ value, onChange }: { value: number; onChange: (v: number) =
 
 const LS_KEY = "norte-inventory-v1";
 
+function formatPvpToUsd(pvp?: string): string | undefined {
+  if (!pvp) return undefined;
+  if (pvp.includes("€")) {
+    const cleaned = pvp.replace("€", "").trim();
+    const normalized = cleaned.replace(",", ".");
+    const num = parseFloat(normalized);
+    if (!isNaN(num)) {
+      return `$${num.toFixed(2)}`;
+    }
+    return `$${cleaned}`;
+  }
+  if (!pvp.startsWith("$")) {
+    return `$${pvp}`;
+  }
+  return pvp;
+}
+
 function loadFromLS(): ProductCard[] | null {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw) as ProductCard[];
+    if (raw) {
+      const parsed = JSON.parse(raw) as ProductCard[];
+      return parsed.map((p) => ({
+        ...p,
+        pvp: formatPvpToUsd(p.pvp),
+      }));
+    }
   } catch {}
   return null;
 }
 
 function persistProducts(updated: ProductCard[]) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(updated));
+    const sanitized = updated.map((p) => ({
+      ...p,
+      pvp: formatPvpToUsd(p.pvp),
+    }));
+    localStorage.setItem(LS_KEY, JSON.stringify(sanitized));
   } catch (e) {
     console.warn("[Inventario] No se pudo guardar en localStorage:", e);
   }
@@ -1072,7 +1099,10 @@ export function AdminInventoryView() {
                         {product.pvp && (
                           <>
                             <span>
-                              PVP: <strong className="text-on-surface">{product.pvp}</strong>
+                              PVP:{" "}
+                              <strong className="text-on-surface">
+                                {formatPvpToUsd(product.pvp)}
+                              </strong>
                             </span>
                             <span>•</span>
                           </>
