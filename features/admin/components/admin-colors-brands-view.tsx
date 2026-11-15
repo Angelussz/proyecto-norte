@@ -21,6 +21,7 @@ import {
   useUpdateColor,
   useDeleteColor,
 } from "@/features/admin/hooks/useColors";
+import { useProducts } from "@/features/admin/hooks/useProducts";
 import type { BrandDto, ColorDto } from "@/features/admin/types/brand-color.interface";
 
 // ── Tipos locales para el modal (view-layer) ──────────────────────────────────
@@ -73,6 +74,7 @@ export function AdminColorsBrandsView() {
   // ── React Query ───────────────────────────────────────────────────────────
   const { data: brandsData = [], isLoading: brandsLoading, isError: brandsError } = useBrands();
   const { data: colorsData = [], isLoading: colorsLoading, isError: colorsError } = useColors();
+  const { data: productsData = [], isLoading: productsLoading } = useProducts();
 
   const createBrand = useCreateBrand();
   const updateBrand = useUpdateBrand();
@@ -85,6 +87,7 @@ export function AdminColorsBrandsView() {
   // ── Mapear DTOs a view-types ──────────────────────────────────────────────
   const brands = brandsData.map(dtoToBrandLocal);
   const colors = colorsData.map(dtoToColorLocal);
+  const totalGarments = productsLoading ? "…" : productsData.length;
 
   // ── Form states - Color ───────────────────────────────────────────────────
   const [newColorName, setNewColorName] = useState("");
@@ -244,8 +247,6 @@ export function AdminColorsBrandsView() {
     }
   }
 
-  const totalAssignedGarments = brands.reduce((acc, b) => acc + b.assignedItems, 0);
-
   return (
     <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
       {/* Toast Notification */}
@@ -317,11 +318,11 @@ export function AdminColorsBrandsView() {
             </div>
           </div>
 
-          {/* KPI 3: Prendas Asignadas */}
+          {/* KPI 3: Total Prendas */}
           <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm">
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
-                Prendas Asignadas
+                Total Prendas
               </span>
               <span className="material-symbols-outlined text-forest-green text-[20px]">
                 checkroom
@@ -329,13 +330,13 @@ export function AdminColorsBrandsView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[36px] text-on-surface tracking-wide block leading-none">
-                {totalAssignedGarments}
+                {totalGarments}
               </span>
               <span className="font-inter text-[12px] text-on-surface-variant uppercase block mt-1 font-medium">
                 Prendas Totales
               </span>
               <p className="font-inter text-[12px] text-secondary mt-1">
-                Vinculadas a marcas del atelier
+                Registradas en el catálogo del atelier
               </p>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
