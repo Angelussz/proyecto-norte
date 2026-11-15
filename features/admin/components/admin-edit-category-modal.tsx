@@ -263,10 +263,7 @@ export function AdminEditCategoryModal({
 
   function handleDeleteClick() {
     if (!category) return;
-    if (confirm(`¿Eliminar la categoría ${category.name} permanentemente?`)) {
-      onDelete(category.id);
-      onClose();
-    }
+    onDelete(category.id);
   }
 
   return (

@@ -323,6 +323,7 @@ export function AdminCategoriesView() {
   const [selectedSystem, setSelectedSystem] = useState<Record<string, string>>({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<CategoryItem | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   // Limpiar localStorage legacy al montar (ya no se usa)
@@ -867,13 +868,9 @@ export function AdminCategoriesView() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm(`¿Eliminar la categoría ${cat.name}?`)) {
-                            deleteCategory(cat.id);
-                          }
-                        }}
+                        onClick={() => setCategoryToDelete(cat)}
                         className="hover:text-red-600 transition-colors p-1 cursor-pointer"
-                        title="Eliminar"
+                        title="Eliminar categoría"
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
@@ -1072,8 +1069,79 @@ export function AdminCategoriesView() {
         isOpen={Boolean(editingCategory)}
         onClose={() => setEditingCategory(null)}
         onSave={handleSaveEditedCategory}
-        onDelete={deleteCategory}
+        onDelete={(catId) => {
+          const found = categories.find((c) => c.id === catId);
+          setEditingCategory(null);
+          if (found) {
+            setCategoryToDelete(found);
+          } else {
+            deleteCategory(catId);
+          }
+        }}
       />
+
+      {/* ── Cartel Confirmar Eliminar Categoría ── */}
+      {categoryToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            className="fixed inset-0 bg-[#1e1c13]/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setCategoryToDelete(null)}
+          />
+          <div className="relative bg-[#fff9ed] border border-[#d8c3b2]/60 shadow-2xl max-w-md w-full p-6 z-10 flex flex-col gap-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-error/10 text-error flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[24px]">delete_forever</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="px-2 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold w-fit">
+                  CONFIRMAR ELIMINACIÓN
+                </span>
+                <h3 className="font-headline text-[22px] uppercase tracking-wide text-[#1e1c13] leading-tight">
+                  ¿ELIMINAR CATEGORÍA?
+                </h3>
+              </div>
+            </div>
+
+            <div className="font-inter text-[13px] text-[#524438] leading-relaxed bg-[#faf3e4] p-3 border border-[#d8c3b2]/40 flex flex-col gap-1.5">
+              <p>
+                ¿Deseas eliminar la categoría{" "}
+                <strong className="text-[#1e1c13] font-semibold">{categoryToDelete.name}</strong>?
+              </p>
+              <p className="text-[12px] text-on-surface-variant">
+                Esta categoría dejará de estar disponible en el catálogo. Podrás descartar los
+                cambios en la barra inferior o guardarlos para aplicarlos en la base de datos.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCategoryToDelete(null)}
+                className="px-4 py-2 bg-white text-[#524438] hover:text-[#1e1c13] font-headline text-[15px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors cursor-pointer"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const name = categoryToDelete.name;
+                  deleteCategory(categoryToDelete.id);
+                  setCategoryToDelete(null);
+                  showToast(`Categoría "${name}" eliminada (cambios sin guardar).`);
+                }}
+                className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span>SÍ, ELIMINAR</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Toast de confirmación ── */}
       {toast && (
