@@ -774,7 +774,11 @@ export function AdminCategoriesView() {
               {categories.map((cat) => (
                 <article
                   key={cat.id}
-                  className="bg-[#faf3e4] p-5 border border-[#d8c3b2]/40 flex flex-col gap-3"
+                  className={`p-5 border flex flex-col gap-3 transition-all duration-200 ${
+                    cat.active
+                      ? "bg-[#faf3e4] border-[#d8c3b2]/40"
+                      : "bg-[#f4eddf]/60 border-[#d8c3b2]/30 opacity-50 hover:opacity-80 grayscale-[35%]"
+                  }`}
                 >
                   {/* Cabecera de la categoría */}
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -824,8 +828,12 @@ export function AdminCategoriesView() {
                       <button
                         type="button"
                         onClick={() => toggleVisibility(cat.id)}
-                        className="hover:text-[#c77d2e] transition-colors p-1"
-                        title="Visibilidad"
+                        className={`transition-colors p-1 cursor-pointer ${
+                          cat.active
+                            ? "hover:text-[#c77d2e]"
+                            : "text-[#857466] hover:text-[#33402f]"
+                        }`}
+                        title={cat.active ? "Desactivar categoría" : "Activar categoría"}
                       >
                         <span className="material-symbols-outlined text-[18px]">
                           {cat.active ? "visibility" : "visibility_off"}
@@ -838,7 +846,7 @@ export function AdminCategoriesView() {
                             deleteCategory(cat.id);
                           }
                         }}
-                        className="hover:text-red-600 transition-colors p-1"
+                        className="hover:text-red-600 transition-colors p-1 cursor-pointer"
                         title="Eliminar"
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
