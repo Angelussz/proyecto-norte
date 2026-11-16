@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { AdminInventoryVariantsSection } from "@/features/admin/components/admin-inventory-variants-section";
 import { useCategories } from "@/features/category/hooks/useCategories";
 import { useBrands } from "@/features/admin/hooks/useBrands";
+import { useProduct } from "@/features/admin/hooks/useProducts";
+import { getInventoryProductById } from "@/features/admin/components/admin-inventory-view";
 
 /* ─── Mock data: producto existente ─── */
 const MOCK_PRODUCT = {
@@ -30,7 +33,78 @@ const MOCK_PRODUCT = {
 };
 
 export function AdminEditProductForm() {
-  const p = MOCK_PRODUCT;
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const rawId = (params?.id as string) || searchParams?.get("id") || "";
+
+  // 1. Buscar en inventario (local o mock)
+  const inventoryProduct = useMemo(() => {
+    return rawId ? getInventoryProductById(rawId) : null;
+  }, [rawId]);
+
+  // 2. Buscar en base de datos si es id de producto existente
+  const { data: dbProduct } = useProduct(rawId && rawId.length > 10 ? rawId : null);
+
+  const p = useMemo(() => {
+    if (dbProduct) {
+      const firstSku =
+        dbProduct.variants?.[0]?.sku || `NRT-${dbProduct.name.slice(0, 3).toUpperCase()}-01`;
+      return {
+        id: dbProduct.id,
+        name: dbProduct.name,
+        category: dbProduct.categoryName || "Camisas",
+        sku: firstSku,
+        brand: "NORTE Atelier",
+        gender: "Unisex",
+        slug: dbProduct.slug || dbProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        description: dbProduct.description || "",
+        care:
+          dbProduct.material ||
+          "100% Lino Europeo certificado. Lavar en seco o en ciclo delicado a 30°C.",
+        priceRetail: dbProduct.basePrice || 165.0,
+        priceCost: Math.round((dbProduct.basePrice || 165.0) * 0.4),
+        vat: 21,
+        vipDiscount: 15,
+        status: dbProduct.active,
+        featured: false,
+        dynamicCover: true,
+        createdAt: "24 mayo 2024, 11:42",
+        lastEditedAt: "15 noviembre 2026, 17:00",
+        lastEditedBy: "Elena Vázquez",
+      };
+    }
+
+    if (inventoryProduct) {
+      const priceVal = inventoryProduct.pvp
+        ? parseFloat(inventoryProduct.pvp.replace(/[^0-9.]/g, ""))
+        : 165.0;
+      const validPrice = isNaN(priceVal) ? 165.0 : priceVal;
+      return {
+        id: inventoryProduct.id,
+        name: inventoryProduct.name,
+        category: inventoryProduct.category,
+        sku: inventoryProduct.sku,
+        brand: "NORTE Atelier",
+        gender: "Unisex",
+        slug: inventoryProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        description: `Pieza artesanal perteneciente a la línea de ${inventoryProduct.category.toLowerCase()}. Confección con materiales seleccionados y patronaje atemporal de atelier.`,
+        care: "Confección artesanal. Limpieza profesional o ciclo delicado según directriz técnica.",
+        priceRetail: validPrice,
+        priceCost: Math.round(validPrice * 0.4),
+        vat: 21,
+        vipDiscount: 15,
+        status: true,
+        featured: false,
+        dynamicCover: true,
+        createdAt: "24 mayo 2024, 11:42",
+        lastEditedAt: "15 noviembre 2026, 17:00",
+        lastEditedBy: "Elena Vázquez",
+      };
+    }
+
+    return MOCK_PRODUCT;
+  }, [dbProduct, inventoryProduct]);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // ── Categorías desde la DB ───────────────────────────────────────────────
@@ -38,17 +112,17 @@ export function AdminEditProductForm() {
   const [categoryId, setCategoryId] = useState("");
 
   useEffect(() => {
-    if (!categoryId && categories && categories.length > 0) {
+    if (categories && categories.length > 0) {
       const match =
         categories.find((c) => c.name.toLowerCase() === p.category.toLowerCase()) ||
         categories.find((c) => p.category.toLowerCase().includes(c.name.toLowerCase())) ||
-        categories.find((c) => c.name.toLowerCase().includes("camisa")) ||
+        categories.find((c) => c.name.toLowerCase().includes(p.category.toLowerCase())) ||
         categories[0];
       if (match) {
         setCategoryId(match.id);
       }
     }
-  }, [categories, categoryId, p.category]);
+  }, [categories, p.category]);
 
   const selectedCategoryName =
     categories?.find((c) => c.id === categoryId)?.name ?? (categoryId ? "" : p.category);
@@ -74,7 +148,10 @@ export function AdminEditProductForm() {
 
   return (
     <>
-      <div className="w-full max-w-[1400px] mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8">
+      <div
+        key={p.id}
+        className="w-full max-w-[1400px] mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8"
+      >
         {/* ── Header ── */}
         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-[#eee8d9]">
           <div className="flex flex-col gap-1 max-w-3xl">

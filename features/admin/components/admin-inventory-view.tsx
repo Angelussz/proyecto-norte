@@ -44,7 +44,7 @@ interface Movement {
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
-const INITIAL_PRODUCTS: ProductCard[] = [
+export const INITIAL_PRODUCTS: ProductCard[] = [
   {
     id: "p1",
     sku: "NRT-LNO-12",
@@ -429,6 +429,21 @@ function persistProducts(updated: ProductCard[]) {
   } catch (e) {
     console.warn("[Inventario] No se pudo guardar en localStorage:", e);
   }
+}
+
+export function getInventoryProductById(id: string): ProductCard | undefined {
+  if (!id) return undefined;
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const list = JSON.parse(raw) as ProductCard[];
+        const found = list.find((p) => p.id === id || p.sku.toLowerCase() === id.toLowerCase());
+        if (found) return found;
+      }
+    } catch {}
+  }
+  return INITIAL_PRODUCTS.find((p) => p.id === id || p.sku.toLowerCase() === id.toLowerCase());
 }
 
 export function AdminInventoryView() {
@@ -1156,6 +1171,7 @@ export function AdminInventoryView() {
                     <div
                       className="relative self-start"
                       ref={openMenuId === product.id ? menuRef : null}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <button
                         type="button"
@@ -1163,25 +1179,33 @@ export function AdminInventoryView() {
                           e.stopPropagation();
                           setOpenMenuId(openMenuId === product.id ? null : product.id);
                         }}
-                        className="p-2 text-on-surface-variant hover:text-on-surface bg-white shadow-sm transition-colors"
+                        className="p-2 text-on-surface-variant hover:text-on-surface bg-white shadow-sm transition-colors cursor-pointer"
                         aria-label="Opciones del producto"
                       >
                         <span className="material-symbols-outlined text-[20px]">more_vert</span>
                       </button>
                       {openMenuId === product.id && (
-                        <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-outline-variant/40 shadow-lg min-w-[180px]">
+                        <div
+                          className="absolute right-0 top-full mt-1 z-30 bg-white border border-outline-variant/40 shadow-lg min-w-[180px]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link
                             href={`/admin/productos/editar/${product.id}`}
-                            onClick={() => setOpenMenuId(null)}
-                            className="flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-on-surface hover:bg-surface-container transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[16px]">edit</span>
                             Editar producto
                           </Link>
                           <button
                             type="button"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-error hover:bg-error-container transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteProduct(product.id);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-error hover:bg-error-container transition-colors cursor-pointer text-left"
                           >
                             <span className="material-symbols-outlined text-[16px]">delete</span>
                             Eliminar
