@@ -1,89 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { serializeOrder } from "@/lib/orders";
-import type { OrderStatus } from "@/generated/prisma/client";
-
-const VALID_STATUSES: OrderStatus[] = [
-  "PENDING_PAYMENT",
-  "PAID",
-  "PREPARING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-];
+import { SESSION_COOKIE_NAME, verifyToken } from "@/lib/session";
 
 /**
  * GET /api/orders/[id]
- * Obtiene una orden por su ID.
+ * Permite consultar una orden únicamente a su propietario autenticado.
  */
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
 
-  const order = await prisma.orders.findUnique({
-    where: { id },
-    include: { items: true },
-  });
-
-  if (!order) {
-    return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
+  if (!token) {
+    return NextResponse.json(
+      { error: "Iniciá sesión para consultar tu orden." },
+      { status: 401, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
-  return NextResponse.json(serializeOrder(order));
-}
+  let userId: string;
 
-/**
- * PATCH /api/orders/[id]
- * Actualiza el status de una orden con control de concurrencia optimista.
- *
- * Body:
- *   status           - nuevo status (requerido)
- *   expectedUpdatedAt - timestamp que el cliente tiene (requerido)
- */
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-
-  let body: { status?: string; expectedUpdatedAt?: string };
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Body inválido" }, { status: 400 });
-  }
+    const payload = await verifyToken(token);
 
-  if (!body.status || !body.expectedUpdatedAt) {
-    return NextResponse.json(
-      { error: "Faltan campos requeridos: status, expectedUpdatedAt" },
-      { status: 400 },
-    );
-  }
-
-  const normalizedStatus = body.status.toUpperCase() as OrderStatus;
-  if (!VALID_STATUSES.includes(normalizedStatus)) {
-    return NextResponse.json({ error: "Status inválido" }, { status: 400 });
-  }
-
-  const result = await prisma.orders.updateMany({
-    where: {
-      id,
-      updated_at: new Date(body.expectedUpdatedAt),
-    },
-    data: { status: normalizedStatus },
-  });
-
-  if (result.count === 0) {
-    const exists = await prisma.orders.findUnique({ where: { id } });
-    if (!exists) {
-      return NextResponse.json({ error: "Orden no encontrada" }, { status: 404 });
+    if (typeof payload.sub !== "string" || !payload.sub) {
+      return NextResponse.json(
+        { error: "La sesión no contiene un usuario válido." },
+        { status: 401, headers: { "Cache-Control": "no-store" } },
+      );
     }
+
+    userId = payload.sub;
+  } catch {
     return NextResponse.json(
-      { error: "Conflicto: la orden fue modificada por otro usuario" },
-      { status: 409 },
+      { error: "La sesión es inválida o expiró. Iniciá sesión nuevamente." },
+      { status: 401, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const updated = await prisma.orders.findUnique({
-    where: { id },
-    include: { items: true },
-  });
+  try {
+    const { id } = await params;
 
-  return NextResponse.json({ success: true, order: serializeOrder(updated!) });
+    const order = await prisma.orders.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+
+    if (!order || order.user_id !== userId) {
+      return NextResponse.json(
+        { error: "Orden no encontrada." },
+        { status: 404, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    return NextResponse.json(serializeOrder(order), {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    console.error(
+      "[GET /api/orders/[id]] Error al consultar la orden:",
+      error instanceof Error ? error.message : error,
+    );
+
+    return NextResponse.json(
+      { error: "No se pudo consultar la orden." },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 }

@@ -1,12 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getStoreSettings } from "@/lib/store-settings";
 import type { CheckoutItem, CheckoutQuote } from "@/features/checkout/types/checkout.interface";
-
-// ── Reglas de negocio (constantes temporales) ─────────────────────────────
-// TODO(futuro sprint): el envío variará por zona/peso/promociones y los
-// impuestos por régimen fiscal. Hoy son valores fijos para el resumen.
-export const SHIPPING_FLAT_RATE = 9.9;
-export const SHIPPING_LABEL = "Tarifa plana";
-export const TAX_RATE = 0.18; // IGV, aplicado sobre el subtotal
 
 export const MAX_ITEMS = 50;
 export const MAX_QUANTITY_PER_ITEM = 10;
@@ -61,22 +55,26 @@ export function parseQuoteItems(body: unknown): CleanedQuoteItem[] {
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
     throw new QuoteHttpError(400, "items debe ser un arreglo no vacío");
   }
+
   if (rawItems.length > MAX_ITEMS) {
     throw new QuoteHttpError(400, `items no puede tener más de ${MAX_ITEMS} elementos`);
   }
 
   const cleaned: CleanedQuoteItem[] = [];
+
   for (let index = 0; index < rawItems.length; index++) {
     const raw = rawItems[index] as {
       variantId?: unknown;
       quantity?: unknown;
     };
+
     const variantId = typeof raw?.variantId === "string" ? raw.variantId.trim() : "";
     const quantity = raw?.quantity;
 
     if (variantId.length === 0) {
       throw new QuoteHttpError(400, `items[${index}].variantId inválido`);
     }
+
     if (
       !Number.isInteger(quantity) ||
       (quantity as number) < 1 ||
@@ -95,9 +93,8 @@ export function parseQuoteItems(body: unknown): CleanedQuoteItem[] {
 }
 
 /**
- * Resuelve los items contra la BD (precios y stock siempre desde la BD).
- * Lanza QuoteHttpError(422) si alguna variante no existe, está inactiva
- * o no tiene stock suficiente.
+ * Resuelve los items contra la BD.
+ * Los precios y el stock siempre se obtienen desde la BD.
  */
 export async function validateQuoteItems(
   cleaned: CleanedQuoteItem[],
@@ -126,10 +123,12 @@ export async function validateQuoteItems(
       problems.push({ variantId, reason: "not_found" });
       continue;
     }
+
     if (!variant.active || !variant.product.active) {
       problems.push({ variantId, reason: "inactive" });
       continue;
     }
+
     if (variant.stock < quantity) {
       problems.push({
         variantId,
@@ -171,8 +170,12 @@ export function toCheckoutItems(validated: ValidatedQuoteItem[]): CheckoutItem[]
 
 /**
  * Calcula subtotal + envío + impuestos + total.
+ * Utiliza los valores de configuración de la tienda.
  */
-export function calculateQuoteTotals(items: CheckoutItem[]): {
+export function calculateQuoteTotals(
+  items: CheckoutItem[],
+  settings: Awaited<ReturnType<typeof getStoreSettings>>,
+): {
   subtotal: number;
   shippingCost: number;
   shippingLabel: string;
@@ -180,14 +183,18 @@ export function calculateQuoteTotals(items: CheckoutItem[]): {
   total: number;
 } {
   const subtotal = round2(items.reduce((acc, item) => acc + item.price * item.quantity, 0));
-  const shippingCost = SHIPPING_FLAT_RATE;
-  const taxes = round2(subtotal * TAX_RATE);
+
+  const hasFreeShipping =
+    settings.freeShippingThreshold !== null && subtotal >= settings.freeShippingThreshold;
+
+  const shippingCost = hasFreeShipping ? 0 : settings.shippingCost;
+  const taxes = round2(subtotal * settings.taxRate);
   const total = round2(subtotal + shippingCost + taxes);
 
   return {
     subtotal,
     shippingCost,
-    shippingLabel: SHIPPING_LABEL,
+    shippingLabel: settings.shippingLabel,
     taxes,
     total,
   };
@@ -201,7 +208,8 @@ export async function buildCheckoutQuote(body: unknown): Promise<CheckoutQuote> 
   const cleaned = parseQuoteItems(body);
   const validated = await validateQuoteItems(cleaned);
   const items = toCheckoutItems(validated);
-  const totals = calculateQuoteTotals(items);
+  const settings = await getStoreSettings();
+  const totals = calculateQuoteTotals(items, settings);
 
   return { items, ...totals };
 }

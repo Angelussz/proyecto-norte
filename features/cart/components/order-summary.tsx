@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { formatPrice } from "@/lib/products";
 import type { OrderSummary } from "@/features/cart/types/cart.interface";
 
 interface OrderSummaryProps {
@@ -18,7 +19,7 @@ export default function OrderSummaryComponent({ summary, isLoading }: OrderSumma
         <div className="mb-6 space-y-3 sm:mb-8 sm:space-y-4">
           <div className="flex justify-between pt-4 font-headline text-xl text-foreground border-t border-border sm:pt-6 sm:text-[32px]">
             <span>Subtotal</span>
-            <span>{isLoading ? "Cargando..." : `$${summary.subtotal.toFixed(2)}`}</span>
+            <span>{isLoading ? "Cargando..." : formatPrice(summary.subtotal)}</span>
           </div>
           <p className="text-sm text-muted-foreground">
             Impuestos y costo de envío se calculan en el checkout.
