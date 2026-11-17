@@ -4,7 +4,15 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/features/auth/hooks/useSession";
-import { Store, LogOut, PackageCheck, ShieldCheck } from "lucide-react";
+import {
+  Store,
+  LogOut,
+  PackageCheck,
+  ShieldCheck,
+  LayoutDashboard,
+  CreditCard,
+  Settings,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -61,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Logo y Badge de Operaciones */}
           <div className="flex items-center gap-3 md:gap-5">
             <Link
-              href="/admin/orders"
+              href="/admin"
               className="text-2xl font-normal tracking-[0.22em] text-foreground transition-opacity hover:opacity-80 select-none"
               style={{ fontFamily: "var(--font-display), sans-serif" }}
             >
@@ -76,6 +84,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Navegación Principal */}
           <nav className="hidden items-center gap-6 md:flex">
             <Link
+              href="/admin"
+              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                pathname === "/admin"
+                  ? "text-primary border-b-2 border-primary py-5 -mb-px"
+                  : "text-muted-foreground hover:text-foreground py-5"
+              }`}
+            >
+              <LayoutDashboard className="size-4" />
+              <span>Dashboard</span>
+            </Link>
+            <Link
               href="/admin/orders"
               className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
                 pathname.startsWith("/admin/orders")
@@ -85,6 +104,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               <PackageCheck className="size-4" />
               <span>Gestión de Órdenes</span>
+            </Link>
+            <Link
+              href="/admin/payments"
+              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                pathname.startsWith("/admin/payments")
+                  ? "text-primary border-b-2 border-primary py-5 -mb-px"
+                  : "text-muted-foreground hover:text-foreground py-5"
+              }`}
+            >
+              <CreditCard className="size-4" />
+              <span>Pagos</span>
+            </Link>
+            <Link
+              href="/admin/settings"
+              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                pathname.startsWith("/admin/settings")
+                  ? "text-primary border-b-2 border-primary py-5 -mb-px"
+                  : "text-muted-foreground hover:text-foreground py-5"
+              }`}
+            >
+              <Settings className="size-4" />
+              <span>Configuración</span>
             </Link>
             <Link
               href="/"

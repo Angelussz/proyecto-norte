@@ -40,6 +40,14 @@ enum PaymentStatus {
   REJECTED
 }
 
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REQUIRES_REVIEW
+}
+
 enum ReceiptType {
   BOLETA
   FACTURA
@@ -58,19 +66,19 @@ enum FiscalStatus {
 }
 
 model Users {
-  id                  String    @id @default(uuid())
-  name                String
-  last_name           String
-  email               String    @unique
-  password_hash       String
-  phone               String
-  role                Role      @default(CUSTOMER)
+  id                String    @id @default(uuid())
+  name              String
+  last_name         String
+  email             String    @unique
+  password_hash     String
+  phone             String
+  role              Role      @default(CUSTOMER)
   // Verificación de correo — implementar el flujo de email en producción.
   // En dev todos los usuarios del seed se crean con email_verified = true.
   // TODO: bloquear login si !email_verified cuando se implemente el envío real.
-  email_verified      Boolean   @default(false)
-  email_verified_at   DateTime?
-  created_at          DateTime  @default(now())
+  email_verified    Boolean   @default(false)
+  email_verified_at DateTime?
+  created_at        DateTime  @default(now())
 
   addresses Address[]
   orders    Orders[]
@@ -144,12 +152,14 @@ model Orders {
   address_id    String
   subtotal      Decimal     @db.Decimal(10, 2)
   shipping_cost Decimal     @db.Decimal(10, 2)
+  taxes Decimal @default(0) @db.Decimal(10, 2)
   total         Decimal     @db.Decimal(10, 2)
   status        OrderStatus @default(PENDING_PAYMENT)
   cancel_reason String?     @db.Text
   status_notes  String?     @db.Text
   created_at    DateTime    @default(now())
   updated_at    DateTime    @updatedAt
+
 
   user           Users           @relation(fields: [user_id], references: [id], onDelete: Restrict)
   address        Address         @relation(fields: [address_id], references: [id], onDelete: Restrict)
@@ -185,7 +195,28 @@ model Payments {
   paid_at                DateTime?
   created_at             DateTime       @default(now())
 
-  order Orders @relation(fields: [order_id], references: [id], onDelete: Restrict)
+  order   Orders           @relation(fields: [order_id], references: [id], onDelete: Restrict)
+  refunds PaymentRefunds[]
+}
+
+model PaymentRefunds {
+  id               String       @id @default(uuid())
+  payment_id       String
+  amount           Decimal      @db.Decimal(10, 2)
+  reason           String       @db.Text
+  status           RefundStatus @default(PENDING)
+  stripe_refund_id String?      @unique
+  idempotency_key  String       @unique
+  requested_by     String
+  error_message    String?      @db.Text
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  completed_at     DateTime?
+
+  payment Payments @relation(fields: [payment_id], references: [id], onDelete: Restrict)
+
+  @@index([payment_id, status])
+  @@index([created_at])
 }
 
 model FiscalVouchers {
@@ -204,4 +235,14 @@ model FiscalVouchers {
   issued_at                DateTime             @default(now())
 
   order Orders @relation(fields: [order_id], references: [id], onDelete: Restrict)
+}
+
+model StoreSettings {
+  id                     String   @id @default("default")
+  shipping_cost          Decimal  @default(9.9) @db.Decimal(10, 2)
+  shipping_label         String   @default("Tarifa plana")
+  free_shipping_threshold Decimal? @db.Decimal(10, 2)
+  tax_rate               Decimal  @default(0.18) @db.Decimal(5, 4)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
 }

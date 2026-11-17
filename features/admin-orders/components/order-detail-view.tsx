@@ -17,7 +17,18 @@ import {
   OrderActionDialog,
   type ActionDialogType,
 } from "@/features/admin-orders/components/order-action-dialog";
-import { ArrowLeft, Calendar, AlertCircle, Copy, Check, Ban, Radio } from "lucide-react";
+import { PaymentDetailDialog } from "@/features/admin-payments/components/payment-detail-dialog";
+import type { AdminPayment } from "@/features/admin-payments/types/admin-payment.interface";
+import {
+  ArrowLeft,
+  Calendar,
+  AlertCircle,
+  Copy,
+  Check,
+  Ban,
+  Radio,
+  CreditCard,
+} from "lucide-react";
 
 interface AdminOrderDetailViewProps {
   orderId: string;
@@ -25,11 +36,13 @@ interface AdminOrderDetailViewProps {
 
 export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
   const { order, isLoading, isError, error } = useAdminOrderDetail(orderId);
+
   const updateMutation = useUpdateOrderStatus();
   const cancelMutation = useCancelOrder();
 
   const [copiedId, setCopiedId] = useState(false);
   const [bannerAlert, setBannerAlert] = useState<string | null>(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   const [dialogState, setDialogState] = useState<{
     open: boolean;
@@ -42,6 +55,7 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
 
   function handleCopyUuid() {
     if (!order) return;
+
     navigator.clipboard.writeText(order.id);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
@@ -49,7 +63,9 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
 
   async function handleAdvanceStatus(nextStatus: OrderStatus) {
     if (!order) return;
+
     setBannerAlert(null);
+
     try {
       await updateMutation.mutateAsync({
         id: order.id,
@@ -67,6 +83,7 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
 
   function handleRequestActionDialog(type: ActionDialogType, targetStatus?: OrderStatus) {
     setBannerAlert(null);
+
     setDialogState({
       open: true,
       actionType: type,
@@ -109,6 +126,7 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 sm:px-6 md:px-8">
         <div className="h-8 w-48 animate-pulse bg-muted/60" />
         <div className="h-28 w-full animate-pulse bg-muted/40" />
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-7 h-96 animate-pulse bg-muted/30" />
           <div className="md:col-span-5 h-96 animate-pulse bg-muted/30" />
@@ -121,12 +139,15 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
     return (
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-4 px-4 pt-16 text-center">
         <AlertCircle className="size-10 text-destructive" />
+
         <h2 className="text-lg font-bold uppercase tracking-wider text-foreground">
           Orden no encontrada
         </h2>
+
         <p className="text-xs text-muted-foreground max-w-md">
           {error?.message || "No se pudo cargar la información operativa del pedido especificado."}
         </p>
+
         <Link
           href="/admin/orders"
           className="mt-2 border border-border bg-card px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground hover:bg-muted transition-colors"
@@ -137,7 +158,28 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
     );
   }
 
+  // Adaptamos el pago de la orden al formato que utiliza el modal existente.
+  const paymentForDialog: AdminPayment | null = order.payment
+    ? {
+        ...order.payment,
+        order_id: order.id,
+        order: {
+          id: order.id,
+          status: order.status,
+          total: order.total,
+          created_at: order.created_at,
+          user: {
+            id: order.user.id,
+            name: order.user.name,
+            last_name: order.user.last_name,
+            email: order.user.email,
+          },
+        },
+      }
+    : null;
+
   const shortId = order.id.slice(0, 8);
+
   const dateFormatted = new Date(order.created_at).toLocaleString("es-PE", {
     day: "2-digit",
     month: "short",
@@ -145,11 +187,12 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
     hour: "2-digit",
     minute: "2-digit",
   });
+
   const isTerminal = isTerminalStatus(order.status);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 sm:px-6 md:px-8">
-      {/* ─── Botón Volver ───────────────────────────────────────────────── */}
+      {/* Botón Volver */}
       <div>
         <Link
           href="/admin/orders"
@@ -160,13 +203,14 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
         </Link>
       </div>
 
-      {/* ─── Banner de Alerta / Conflicto ───────────────────────────────── */}
+      {/* Banner de Alerta / Conflicto */}
       {bannerAlert && (
         <div className="flex items-center justify-between gap-3 border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive animate-in fade-in duration-150">
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 shrink-0" />
             <span>{bannerAlert}</span>
           </div>
+
           <button
             type="button"
             onClick={() => setBannerAlert(null)}
@@ -177,7 +221,7 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
         </div>
       )}
 
-      {/* ─── Cabecera Principal de la Orden ─────────────────────────────── */}
+      {/* Cabecera Principal de la Orden */}
       <div className="border border-border bg-card p-5 shadow-xs flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
@@ -188,6 +232,7 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
               >
                 ORDEN #ORD-{shortId}
               </h1>
+
               <button
                 type="button"
                 onClick={handleCopyUuid}
@@ -199,6 +244,7 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
                 ) : (
                   <Copy className="size-3" />
                 )}
+
                 <span>{copiedId ? "Copiado" : "UUID"}</span>
               </button>
             </div>
@@ -240,21 +286,22 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
         </div>
       </div>
 
-      {/* ─── Stepper Logístico / Banners de Auditoría ───────────────────── */}
+      {/* Stepper Logístico / Banners de Auditoría */}
       <OrderStepper
         status={order.status}
         cancelReason={order.cancel_reason}
         statusNotes={order.status_notes}
       />
 
-      {/* ─── Grilla Editorial Principal (7 columnas / 5 columnas) ───────── */}
+      {/* Grilla Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Columna Izquierda: Ítems y Desglose Liquidado */}
+        {/* Columna Izquierda: Ítems y Desglose */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           <OrderItemsCard
             items={order.items}
             subtotal={order.subtotal}
             shippingCost={order.shipping_cost}
+            taxes={order.taxes}
             total={order.total}
           />
         </div>
@@ -267,10 +314,22 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
             payment={order.payment}
             fiscalReceipt={order.fiscal_receipt}
           />
+
+          {/* Acceso al detalle del pago y sus reembolsos */}
+          {paymentForDialog && (
+            <button
+              type="button"
+              onClick={() => setIsPaymentDialogOpen(true)}
+              className="flex w-full items-center justify-center gap-2 border border-border bg-card px-4 py-3 text-xs font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-muted"
+            >
+              <CreditCard className="size-4" />
+              Gestionar pago y reembolsos
+            </button>
+          )}
         </div>
       </div>
 
-      {/* ─── Modal de Acción ────────────────────────────────────────────── */}
+      {/* Modal de Acción de la Orden */}
       <OrderActionDialog
         open={dialogState.open}
         onOpenChange={(open) => setDialogState((prev) => ({ ...prev, open }))}
@@ -282,6 +341,14 @@ export function AdminOrderDetailView({ orderId }: AdminOrderDetailViewProps) {
         isLoading={updateMutation.isPending || cancelMutation.isPending}
         onConfirm={handleConfirmDialog}
       />
+
+      {/* Modal de Pago y Reembolsos */}
+      {isPaymentDialogOpen && paymentForDialog && (
+        <PaymentDetailDialog
+          payment={paymentForDialog}
+          onClose={() => setIsPaymentDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -136,6 +136,13 @@ export interface AdminOrderPayment {
   rejection_reason: string | null;
   paid_at: string | null;
   created_at: string;
+  refunds: {
+    id: string;
+    amount: number;
+    reason: string | null;
+    status: string;
+    created_at: string;
+  }[];
 }
 
 export interface AdminOrderFiscalVoucher {
@@ -160,6 +167,7 @@ export interface AdminOrderSummary {
   id: string;
   subtotal: number;
   shipping_cost: number;
+  taxes: number;
   total: number;
   status: OrderStatus;
   cancel_reason: string | null;
@@ -184,6 +192,7 @@ export interface AdminOrderDetail {
   address_id: string;
   subtotal: number;
   shipping_cost: number;
+  taxes: number;
   total: number;
   status: OrderStatus;
   cancel_reason: string | null;
