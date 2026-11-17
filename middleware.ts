@@ -5,7 +5,7 @@
  * cualquier página. Lo usamos como guardián de rutas protegidas.
  *
  * Lógica:
- *  - Si el usuario visita una ruta protegida (ej: /account, /orders)
+ *  - Si el usuario visita una ruta protegida (ej: /account, /orders, /admin)
  *    sin tener cookie de sesión válida → lo redirigimos a /login.
  *  - Si ya está logueado e intenta entrar a /login o /register
  *    → lo mandamos a la tienda (/).

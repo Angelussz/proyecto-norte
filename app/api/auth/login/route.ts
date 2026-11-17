@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
         id: jwtPayload.sub,
         email: jwtPayload.email,
         name: jwtPayload.name,
+        picture: jwtPayload.picture,
         role: jwtPayload.role,
       },
     };
