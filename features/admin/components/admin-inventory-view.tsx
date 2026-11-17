@@ -994,8 +994,9 @@ export function AdminInventoryView() {
                 >
                   <option value="">Marca: Todas</option>
                   <option>NORTE Atelier</option>
-                  <option>NORTE Essentials</option>
-                  <option>Colaboración Jorge Juan</option>
+                  <option>Alba Studio</option>
+                  <option>Cápsula Jorge Juan</option>
+                  <option>Taller Madrid</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">
                   keyboard_arrow_down

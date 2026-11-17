@@ -444,8 +444,8 @@ async function main() {
       sort_order: 0,
     },
     {
-      name: "NORTE ESSENTIALS",
-      sku_prefix: "ESS",
+      name: "ALBA STUDIO",
+      sku_prefix: "ALB",
       description:
         "Básicos perennes confeccionados en pequeñas tiradas limitadas. Línea esencial de patrones minimalistas y fibras orgánicas.",
       icon_color: "secondary",
@@ -454,13 +454,23 @@ async function main() {
       sort_order: 1,
     },
     {
-      name: "COLABORACIÓN JORGE JUAN",
+      name: "CÁPSULA JORGE JUAN",
       sku_prefix: "CJJ",
       description: "Cápsula exclusiva de sastrería desestructurada para la temporada 2025.",
       icon_color: "mustard",
       locked: false,
       active: true,
       sort_order: 2,
+    },
+    {
+      name: "TALLER MADRID",
+      sku_prefix: "TMD",
+      description:
+        "Línea contemporánea de accesorios y sastrería en tejidos nobles de producción local.",
+      icon_color: "secondary",
+      locked: false,
+      active: true,
+      sort_order: 3,
     },
   ];
 
