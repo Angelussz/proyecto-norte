@@ -59,10 +59,13 @@ export function AdminProductsContainer() {
   // ── Client-side filtering ─────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return products.filter((p) => {
-      // Search: name or slug
+      // Search: name, slug or variant SKU
       if (search) {
         const q = search.toLowerCase();
-        const matches = p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q);
+        const matches =
+          p.name.toLowerCase().includes(q) ||
+          p.slug.toLowerCase().includes(q) ||
+          Boolean(p.skus?.some((s) => s.toLowerCase().includes(q)));
         if (!matches) return false;
       }
       // Category: match against categoryName

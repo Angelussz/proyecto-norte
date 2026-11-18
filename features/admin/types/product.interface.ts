@@ -58,4 +58,5 @@ export interface ProductListItem {
   categoryName: string;
   variantCount: number;
   totalStock: number;
+  skus?: string[];
 }

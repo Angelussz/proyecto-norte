@@ -1,5 +1,8 @@
 "use client";
 
+import { useCategories } from "@/features/category/hooks/useCategories";
+import { useBrands } from "@/features/admin/hooks/useBrands";
+
 interface Props {
   search: string;
   onSearchChange: (v: string) => void;
@@ -19,6 +22,8 @@ export function AdminProductsFilters({
   onStatusChange,
   onClear,
 }: Props) {
+  const { data: categories = [] } = useCategories();
+  const { data: brands = [] } = useBrands();
   return (
     <section className="w-full px-8 py-4">
       <div className="flex flex-col gap-2 w-full">
@@ -46,11 +51,11 @@ export function AdminProductsFilters({
                 className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
               >
                 <option value="">Categoría: Todas</option>
-                <option value="sobrecamisas">Sobrecamisas</option>
-                <option value="sastreria">Pantalones &amp; Sastrería</option>
-                <option value="calzado">Calzado</option>
-                <option value="accesorios">Accesorios</option>
-                <option value="atelier">Edición Atelier</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
               <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 keyboard_arrow_down
@@ -75,16 +80,18 @@ export function AdminProductsFilters({
               </span>
             </div>
 
-            {/* Brand filter — decorativo (ProductListItem no tiene campo brand) */}
+            {/* Brand filter */}
             <div className="relative w-full">
               <select
                 className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
                 defaultValue=""
               >
                 <option value="">Marca: Todas</option>
-                <option value="atelier">NORTE Atelier</option>
-                <option value="coleccion">NORTE Colección</option>
-                <option value="linea_taller">Línea Taller</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.name}>
+                    {b.name}
+                  </option>
+                ))}
               </select>
               <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 keyboard_arrow_down

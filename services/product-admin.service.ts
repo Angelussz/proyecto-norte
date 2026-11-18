@@ -355,7 +355,7 @@ export async function listProducts(): Promise<ProductListItem[]> {
     orderBy: { created_at: "desc" },
     include: {
       category: { select: { name: true } },
-      variants: { select: { stock: true } },
+      variants: { select: { stock: true, sku: true } },
     },
   });
   return products.map((p) => ({
@@ -369,6 +369,7 @@ export async function listProducts(): Promise<ProductListItem[]> {
     categoryName: p.category.name,
     variantCount: p.variants.length,
     totalStock: p.variants.reduce((acc, v) => acc + v.stock, 0),
+    skus: p.variants.map((v) => v.sku),
   }));
 }
 

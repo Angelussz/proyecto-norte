@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleAdminError } from "@/lib/admin-api";
-import { createProductVariant } from "@/services/product-admin.service";
+import { createProductVariant, getProductById } from "@/services/product-admin.service";
 
 type Params = { params: Promise<{ id: string }> };
+
+/**
+ * GET /api/admin/products/[id]/variants
+ * Obtiene todas las variantes del producto.
+ */
+export async function GET(req: NextRequest, { params }: Params) {
+  try {
+    const { id } = await params;
+    const product = await getProductById(id);
+    if (!product) {
+      return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
+    }
+    return NextResponse.json({ data: product.variants });
+  } catch (err) {
+    return handleAdminError(err, "GET /api/admin/products/[id]/variants");
+  }
+}
 
 /**
  * POST /api/admin/products/[id]/variants

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -295,6 +295,7 @@ export function AdminProductsTable({
   onPage,
 }: Props) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [productToDelete, setProductToDelete] = useState<ProductListItem | null>(null);
 
   const toggle = (id: string) => {
     setExpandedIds((prev) => {
@@ -449,7 +450,7 @@ export function AdminProductsTable({
                 const hasVariants = product.variantCount > 0;
 
                 return (
-                  <>
+                  <Fragment key={product.id}>
                     {/* ── Fila principal ── */}
                     <tr
                       key={product.id}
@@ -581,7 +582,7 @@ export function AdminProductsTable({
                       >
                         <div className="inline-flex items-center justify-end gap-2">
                           <Link
-                            href={`/admin/productos/editar?id=${product.id}`}
+                            href={`/admin/productos/editar/${product.id}`}
                             className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface hover:text-primary hover:bg-surface-container transition-colors rounded-none flex items-center gap-1"
                           >
                             <span className="material-symbols-outlined text-[16px]">edit</span>
@@ -591,16 +592,10 @@ export function AdminProductsTable({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (
-                                window.confirm(
-                                  `¿Eliminar "${product.name}"? Esta acción no se puede deshacer.`,
-                                )
-                              ) {
-                                onDelete(product.id);
-                              }
+                              setProductToDelete(product);
                             }}
                             title="Borrar producto"
-                            className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors rounded-none flex items-center gap-1"
+                            className="px-2 py-1 text-[10px] font-inter font-semibold uppercase tracking-wider text-on-surface-variant hover:text-error hover:bg-surface-container transition-colors rounded-none flex items-center gap-1 cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[16px]">delete</span>
                             <span>Borrar</span>
@@ -617,12 +612,77 @@ export function AdminProductsTable({
                         isOpen={isExpanded}
                       />
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
           </tbody>
         </table>
       </div>
+
+      {/* ── Modal Confirmar Eliminar Producto ── */}
+      {productToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            className="fixed inset-0 bg-[#1e1c13]/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setProductToDelete(null)}
+          />
+          <div className="relative bg-[#fff9ed] border border-[#d8c3b2]/60 shadow-2xl max-w-md w-full p-6 z-10 flex flex-col gap-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-error/10 text-error flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[24px]">delete_forever</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="px-2 py-0.5 bg-error/10 text-error font-mono text-[9px] uppercase tracking-wider font-bold w-fit">
+                  CONFIRMAR ELIMINACIÓN
+                </span>
+                <h3 className="font-headline text-[22px] uppercase tracking-wide text-[#1e1c13] leading-tight">
+                  ¿ELIMINAR PRODUCTO?
+                </h3>
+              </div>
+            </div>
+
+            <div className="font-inter text-[13px] text-[#524438] leading-relaxed bg-[#faf3e4] p-3 border border-[#d8c3b2]/40 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2 border-b border-[#d8c3b2]/30 pb-2">
+                <span className="font-headline text-[15px] uppercase tracking-wider text-[#1e1c13]">
+                  {productToDelete.name}
+                </span>
+                <span className="px-2 py-0.5 bg-white text-[#524438] text-[10px] font-mono border border-[#d8c3b2]/40 font-semibold">
+                  {productToDelete.categoryName}
+                </span>
+              </div>
+              <p className="text-[12px] text-on-surface-variant">
+                ¿Deseas eliminar permanentemente esta prenda? Esta acción removerá el producto y
+                todas sus variantes de confección de la base de datos.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2 bg-white text-[#524438] hover:text-[#1e1c13] font-headline text-[15px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors cursor-pointer"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDelete(productToDelete.id);
+                  setProductToDelete(null);
+                }}
+                className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+                <span>SÍ, ELIMINAR</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
