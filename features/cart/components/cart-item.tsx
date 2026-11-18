@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
+import { formatPrice } from "@/lib/products";
 import type { CartItem } from "@/features/cart/types/cart.interface";
 
 interface CartItemProps {
@@ -36,7 +37,7 @@ export default function CartItemRow({ item, onUpdateQuantity, onRemove }: CartIt
               <p className="text-sm text-muted-foreground sm:text-base">Talla: {item.size}</p>
             </div>
             <p className="text-base font-semibold text-foreground sm:text-lg whitespace-nowrap">
-              ${item.price.toFixed(2)}
+              {formatPrice(item.price)}
             </p>
           </div>
         </div>

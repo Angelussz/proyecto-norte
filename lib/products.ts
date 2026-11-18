@@ -19,5 +19,5 @@ export function getTotalVariantStock(product: ProductDetail): number {
 }
 
 export function formatPrice(value: number): string {
-  return `$${value.toFixed(2)}`;
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "USD" }).format(value);
 }

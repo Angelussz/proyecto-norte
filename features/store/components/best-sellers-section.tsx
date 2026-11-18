@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Heart } from "lucide-react";
+import { formatPrice } from "@/lib/products";
 
 const BEST_SELLERS = [
   {
@@ -71,7 +72,7 @@ export function BestSellersSection() {
                 <div>
                   <h3 className="text-sm font-semibold text-[#1e1c13]">{product.title}</h3>
                   <p className="text-xs font-medium text-[#534438] mt-1">
-                    ${product.price.toFixed(2)}
+                    {formatPrice(product.price)}
                   </p>
                 </div>
               </div>
