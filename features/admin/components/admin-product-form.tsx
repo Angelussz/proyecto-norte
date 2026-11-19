@@ -8,7 +8,7 @@ import {
 } from "@/features/admin/components/admin-inventory-variants-section";
 import { useCategories } from "@/features/category/hooks/useCategories";
 import { useBrands } from "@/features/admin/hooks/useBrands";
-import { useCreateProduct } from "@/features/admin/hooks/useProducts";
+import { useCreateProduct, useProducts } from "@/features/admin/hooks/useProducts";
 
 function slugify(name: string): string {
   return name
@@ -28,6 +28,7 @@ export function AdminProductForm() {
   const { data: categories, isLoading: catsLoading, isError: catsError } = useCategories();
   const { data: brands, isLoading: brandsLoading, isError: brandsError } = useBrands();
   const createProduct = useCreateProduct();
+  const { data: allProducts = [] } = useProducts();
 
   // ── Estado del formulario ─────────────────────────────────────────────────
   const [name, setName] = useState("");
@@ -54,23 +55,29 @@ export function AdminProductForm() {
   const marginStr = margin.toFixed(1);
   const profit = (basePriceNum - unitCostNum).toFixed(2);
 
-  // ── Auto-SKU: se genera cuando se seleccionan marca y categoría ──────────
+  // ── Auto-SKU: se genera en cuanto hay marca O categoría ─────────────────
   useEffect(() => {
     if (skuManuallyEdited) return;
-    if (!brandId || !categoryId) return;
-    const brand = brands?.find((b) => b.id === brandId);
-    const cat = categories?.find((c) => c.id === categoryId);
-    if (!brand || !cat) return;
-    const brandPrefix = brand.skuPrefix?.trim().toUpperCase() || "";
-    const catCode =
-      cat.name
-        .trim()
-        .replace(/[^A-Za-z]/g, "")
-        .slice(0, 3)
-        .toUpperCase() || "CAT";
-    const autoSku = `${brandPrefix}${catCode}0001`;
+    if (!brandId && !categoryId) return;
+
+    const brand = brandId ? brands?.find((b) => b.id === brandId) : null;
+    const cat = categoryId ? categories?.find((c) => c.id === categoryId) : null;
+
+    const brandPrefix = brand?.skuPrefix?.trim().toUpperCase() ?? "???";
+    const catCode = cat
+      ? cat.name
+          .trim()
+          .replace(/[^A-Za-z]/g, "")
+          .slice(0, 3)
+          .toUpperCase() || "???"
+      : "???";
+
+    // Número: total de productos existentes + 1 (4 dígitos con padding)
+    const nextNum = String(allProducts.length + 1).padStart(4, "0");
+
+    const autoSku = `${brandPrefix}-${catCode}${nextNum}`;
     setSku(autoSku);
-  }, [brandId, categoryId, brands, categories, skuManuallyEdited]);
+  }, [brandId, categoryId, brands, categories, skuManuallyEdited, allProducts]);
 
   // ── Imágenes (UI only) ────────────────────────────────────────────────────
   const [images] = useState([
@@ -326,7 +333,7 @@ export function AdminProductForm() {
                       setSku(e.target.value.toUpperCase());
                       setSkuManuallyEdited(true);
                     }}
-                    placeholder="NRTCAM0001"
+                    placeholder="NRT-CAM0001"
                     className="w-full bg-[#faf3e4] pl-4 pr-10 py-3 font-mono text-[16px] text-[#1e1c13] uppercase tracking-wider focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                   />
                   {skuManuallyEdited && (
@@ -345,12 +352,14 @@ export function AdminProductForm() {
                     <span className="text-[#c77d2e]">
                       SKU personalizado — pulsá ↺ para restaurar el auto-generado.
                     </span>
-                  ) : brandId && categoryId ? (
+                  ) : brandId || categoryId ? (
                     <span className="text-[#33402f]">
-                      SKU generado automáticamente desde marca y categoría.
+                      SKU generado automáticamente.
+                      {!brandId && " Seleccioná una marca para completarlo."}
+                      {!categoryId && " Seleccioná una categoría para completarlo."}
                     </span>
                   ) : (
-                    "Se generará al seleccionar marca y categoría."
+                    "Se generará al seleccionar marca o categoría."
                   )}
                 </span>
               </div>
