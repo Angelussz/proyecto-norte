@@ -94,7 +94,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p3",
-    sku: "NRT-CAL0003",
+    sku: "ALB-CAL0003",
     category: "CALZADO",
     name: "Zapatillas Esenciales Blancas",
     pvp: "$120.00",
@@ -119,7 +119,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p4",
-    sku: "NRT-CAM0004",
+    sku: "ALB-CAM0004",
     category: "CAMISAS",
     name: "Camisa Lino Cuello Mao",
     pvp: "$135.00",
@@ -143,7 +143,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p5",
-    sku: "NRT-SUE0005",
+    sku: "CJJ-SUE0005",
     category: "SUÉTERES",
     name: "Suéter Punto Grueso Merino",
     pvp: "$195.00",
@@ -167,7 +167,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p6",
-    sku: "NRT-CHA0006",
+    sku: "CJJ-CHA0006",
     category: "CHAQUETAS",
     name: "Chaqueta Oversize Espiga",
     pvp: "$230.00",
@@ -188,7 +188,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p7",
-    sku: "NRT-BER0007",
+    sku: "TMD-BER0007",
     category: "BERMUDAS",
     name: "Bermuda Lino Plisada",
     pvp: "$98.00",
@@ -245,7 +245,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p8",
-    sku: "NRT-ACC0008",
+    sku: "TMD-ACC0008",
     category: "ACCESORIOS",
     name: "Gorra Algodón Orgánico Lavado",
     pvp: "$45.00",
@@ -266,7 +266,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p9",
-    sku: "NRT-CAM0009",
+    sku: "ALB-CAM0009",
     category: "CAMISAS",
     name: "Remera Manga Larga Ribbed",
     pvp: "$78.00",
@@ -285,7 +285,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p10",
-    sku: "NRT-CAL0010",
+    sku: "TMD-CAL0010",
     category: "CALZADO",
     name: "Botines Chelsea Cuero Nobuk",
     pvp: "$210.00",
@@ -395,7 +395,7 @@ function StockCell({ value, onChange }: { value: number; onChange: (v: number) =
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const LS_KEY = "norte-inventory-v2";
+const LS_KEY = "norte-inventory-v3";
 
 function formatPvpToUsd(pvp?: string): string | undefined {
   if (!pvp) return undefined;
@@ -741,6 +741,18 @@ export function AdminInventoryView() {
     }
     if (filterStatus && p.stockLevel !== filterStatus) {
       return false;
+    }
+    if (filterBrand) {
+      const brandMap: Record<string, string> = {
+        "NORTE Atelier": "NRT",
+        "Alba Studio": "ALB",
+        "Cápsula Jorge Juan": "CJJ",
+        "Taller Madrid": "TMD",
+      };
+      const prefix = brandMap[filterBrand];
+      if (prefix && !p.sku.toUpperCase().startsWith(prefix)) {
+        return false;
+      }
     }
     return true;
   });
