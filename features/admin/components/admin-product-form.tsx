@@ -8,6 +8,7 @@ import {
 } from "@/features/admin/components/admin-inventory-variants-section";
 import { useCategories } from "@/features/category/hooks/useCategories";
 import { useBrands } from "@/features/admin/hooks/useBrands";
+import { useColors } from "@/features/admin/hooks/useColors";
 import { useCreateProduct, useProducts } from "@/features/admin/hooks/useProducts";
 
 function slugify(name: string): string {
@@ -27,6 +28,7 @@ export function AdminProductForm() {
   // ── Categorías y marcas ───────────────────────────────────────────────────
   const { data: categories, isLoading: catsLoading, isError: catsError } = useCategories();
   const { data: brands, isLoading: brandsLoading, isError: brandsError } = useBrands();
+  const { data: globalColors = [] } = useColors();
   const createProduct = useCreateProduct();
   const { data: allProducts = [] } = useProducts();
 
@@ -123,8 +125,27 @@ export function AdminProductForm() {
       const variantsToSave = variants.filter((v) => v.stock > 0);
       if (variantsToSave.length > 0) {
         await Promise.all(
-          variantsToSave.map((v) =>
-            fetch(`/api/admin/products/${productId}/variants`, {
+          variantsToSave.map((v) => {
+            const colorCode =
+              globalColors?.find(
+                (c) =>
+                  c.hex.toLowerCase() === v.colorHex.toLowerCase() ||
+                  c.name.toLowerCase() === v.colorName.toLowerCase(),
+              )?.skuCode ||
+              v.colorName
+                .trim()
+                .replace(/[^A-Za-z]/g, "")
+                .slice(0, 3)
+                .toUpperCase() ||
+              "STD";
+            const cleanSize =
+              v.size
+                .toUpperCase()
+                .replace(/^TALLA\s*/i, "")
+                .trim() || "U";
+            const variantSku = sku.trim() ? `${sku.trim()}-${colorCode}-${cleanSize}` : undefined;
+
+            return fetch(`/api/admin/products/${productId}/variants`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -132,11 +153,10 @@ export function AdminProductForm() {
                 color: v.colorName,
                 colorHex: v.colorHex,
                 stock: v.stock,
-                // SKU base del producto (ej: NRT-CAM0006); el service lo guarda en la variante
-                sku: sku.trim() || undefined,
+                sku: variantSku,
               }),
-            }),
-          ),
+            });
+          }),
         );
       }
 

@@ -436,7 +436,7 @@ async function main() {
   const BRANDS_SEED = [
     {
       name: "NORTE ATELIER",
-      sku_prefix: "ATL",
+      sku_prefix: "NRT",
       description: "Línea sede confeccionada en Madrid. Patronaje clásico atemporal.",
       icon_color: "primary",
       locked: true,

@@ -67,16 +67,23 @@ function ActiveToggle({
   );
 }
 
-// ─── SKU base extractor ───────────────────────────────────────────────────────
-// El formato del variant SKU es: MARCA-CAT0001-CLR-TALLE
-// El SKU base del producto es:   MARCA-CAT0001  (primeros 2 segmentos)
-function extractBaseSku(variantSku: string): string {
+// ─── SKU matrix formatter ─────────────────────────────────────────────────────
+// En la matriz agrupada por talla, cada fila muestra el SKU con la talla y "***"
+// en lugar del color ya que en esa fila conviven múltiples colores:
+// Formato: MARCA-CAT0001-***-TALLE (ej. NRT-CAM0001-***-M)
+function formatMatrixSku(variantSku: string, rawSize: string): string {
+  const cleanSize =
+    rawSize
+      .toUpperCase()
+      .replace(/^TALLA\s*/i, "")
+      .trim() || "U";
   const parts = variantSku.split("-");
-  // Si tiene al menos 3 partes (MARCA, CATNUM, resto) → tomar primeras 2
-  if (parts.length >= 3) {
-    return `${parts[0]}-${parts[1]}`;
+  if (parts.length >= 2) {
+    const brand = parts[0];
+    const catCodeNum = parts[1];
+    return `${brand}-${catCodeNum}-***-${cleanSize}`;
   }
-  return variantSku;
+  return `${variantSku}-***-${cleanSize}`;
 }
 
 // ─── Color resolver helper ────────────────────────────────────────────────────
@@ -123,7 +130,7 @@ function VariantsRow({ productId, isOpen }: { productId: string; isOpen: boolean
       if (!map.has(sizeLabel)) {
         map.set(sizeLabel, {
           size: sizeLabel,
-          sku: extractBaseSku(v.sku),
+          sku: formatMatrixSku(v.sku, v.size),
           total: 0,
           colors: [],
           alert: false,
