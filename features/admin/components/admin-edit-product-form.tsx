@@ -5,8 +5,17 @@ import { useParams, useSearchParams } from "next/navigation";
 import { AdminInventoryVariantsSection } from "@/features/admin/components/admin-inventory-variants-section";
 import { useCategories } from "@/features/category/hooks/useCategories";
 import { useBrands } from "@/features/admin/hooks/useBrands";
-import { useProduct } from "@/features/admin/hooks/useProducts";
+import { useProduct, useProducts } from "@/features/admin/hooks/useProducts";
 import { getInventoryProductById } from "@/features/admin/components/admin-inventory-view";
+
+function getBaseSkuFromVariant(variantSku?: string | null): string {
+  if (!variantSku) return "";
+  const parts = variantSku.split("-");
+  if (parts.length >= 2) {
+    return `${parts[0]}-${parts[1]}`;
+  }
+  return variantSku;
+}
 
 /* ─── Mock data: producto existente ─── */
 const MOCK_PRODUCT = {
@@ -48,7 +57,8 @@ export function AdminEditProductForm() {
   const p = useMemo(() => {
     if (dbProduct) {
       const firstSku =
-        dbProduct.variants?.[0]?.sku || `NRT-${dbProduct.name.slice(0, 3).toUpperCase()}-01`;
+        getBaseSkuFromVariant(dbProduct.variants?.[0]?.sku) ||
+        `NRT-${dbProduct.name.slice(0, 3).toUpperCase()}-0001`;
       return {
         id: dbProduct.id,
         name: dbProduct.name,
@@ -129,11 +139,14 @@ export function AdminEditProductForm() {
 
   // ── Marcas desde la DB ───────────────────────────────────────────────────
   const { data: brands, isLoading: brandsLoading, isError: brandsError } = useBrands();
+  const { data: allProducts = [] } = useProducts();
   const [brandId, setBrandId] = useState("");
 
   useEffect(() => {
     if (!brandId && brands && brands.length > 0) {
+      const prefixFromSku = p.sku?.split("-")[0]?.toUpperCase();
       const match =
+        (prefixFromSku ? brands.find((b) => b.skuPrefix.toUpperCase() === prefixFromSku) : null) ||
         brands.find((b) => b.name.toLowerCase() === p.brand.toLowerCase()) ||
         brands.find((b) => b.name.toLowerCase().includes(p.brand.toLowerCase())) ||
         brands.find((b) => p.brand.toLowerCase().includes(b.name.toLowerCase())) ||
@@ -142,7 +155,46 @@ export function AdminEditProductForm() {
         setBrandId(match.id);
       }
     }
-  }, [brands, brandId, p.brand]);
+  }, [brands, brandId, p.brand, p.sku]);
+
+  // ── SKU Base y auto-generado ─────────────────────────────────────────────
+  const [sku, setSku] = useState("");
+  const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
+
+  useEffect(() => {
+    if (p.sku && !sku && !skuManuallyEdited) {
+      setSku(getBaseSkuFromVariant(p.sku));
+    }
+  }, [p.sku, sku, skuManuallyEdited]);
+
+  // ── Auto-SKU dinámico: mientras elijo categoría y marca se va cambiando ──
+  useEffect(() => {
+    if (skuManuallyEdited) return;
+    if (!brandId && !categoryId) return;
+
+    const brand = brandId ? brands?.find((b) => b.id === brandId) : null;
+    const cat = categoryId ? categories?.find((c) => c.id === categoryId) : null;
+
+    const brandPrefix = brand?.skuPrefix?.trim().toUpperCase() ?? "???";
+    const catCode = cat
+      ? cat.name
+          .trim()
+          .replace(/[^A-Za-z]/g, "")
+          .slice(0, 3)
+          .toUpperCase() || "???"
+      : "???";
+
+    // Preservar el número del producto actual (ej. 0001, 0002...)
+    const matchNum = p.sku.match(/\d{3,4}/);
+    let numStr = matchNum ? matchNum[0].padStart(4, "0") : "";
+    if (!numStr) {
+      const idx = allProducts.findIndex((item) => item.id === p.id);
+      numStr = idx !== -1 ? String(idx + 1).padStart(4, "0") : "0001";
+    }
+
+    const autoSku = `${brandPrefix}-${catCode}${numStr}`;
+    setSku(autoSku);
+  }, [brandId, categoryId, brands, categories, skuManuallyEdited, allProducts, p.sku, p.id]);
 
   const margin = (((p.priceRetail - p.priceCost) / p.priceRetail) * 100).toFixed(1);
 
@@ -262,7 +314,42 @@ export function AdminEditProductForm() {
                   </div>
                 </div>
 
-                {/* SKU */}
+                {/* Marca */}
+                <div className="md:col-span-6 flex flex-col gap-1.5">
+                  <label
+                    className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
+                    htmlFor="prod-brand"
+                  >
+                    Marca / Firma
+                  </label>
+                  <div className="relative">
+                    {brandsError ? (
+                      <p className="font-inter text-[13px] text-red-600">Error al cargar marcas</p>
+                    ) : (
+                      <select
+                        id="prod-brand"
+                        value={brandId}
+                        onChange={(e) => setBrandId(e.target.value)}
+                        disabled={brandsLoading}
+                        className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] disabled:opacity-60"
+                      >
+                        <option value="">
+                          {brandsLoading ? "Cargando marcas…" : "Seleccionar marca"}
+                        </option>
+                        {brands?.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
+                      keyboard_arrow_down
+                    </span>
+                  </div>
+                </div>
+
+                {/* SKU Base */}
                 <div className="md:col-span-6 flex flex-col gap-1.5">
                   <label
                     className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
@@ -274,77 +361,63 @@ export function AdminEditProductForm() {
                     <input
                       id="prod-sku"
                       type="text"
-                      defaultValue={p.sku}
-                      className="w-full bg-[#faf3e4] px-4 py-3 font-mono text-[16px] text-[#1e1c13] uppercase tracking-wider focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
+                      value={sku}
+                      onChange={(e) => {
+                        setSku(e.target.value.toUpperCase());
+                        setSkuManuallyEdited(true);
+                      }}
+                      placeholder="NRT-CAM0001"
+                      className="w-full bg-[#faf3e4] pl-4 pr-10 py-3 font-mono text-[16px] text-[#1e1c13] uppercase tracking-wider focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                     />
-                    <span
-                      className="material-symbols-outlined absolute right-3 text-[#857466] text-[18px] cursor-pointer hover:text-[#673900]"
-                      title="SKU generado automáticamente"
-                    >
-                      info
-                    </span>
+                    {skuManuallyEdited && (
+                      <button
+                        type="button"
+                        title="Restaurar SKU automático"
+                        onClick={() => setSkuManuallyEdited(false)}
+                        className="absolute right-2.5 text-[#857466] hover:text-[#673900] transition-colors cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">refresh</span>
+                      </button>
+                    )}
                   </div>
+                  <span className="font-inter text-[11px] text-[#524438]">
+                    {skuManuallyEdited ? (
+                      <span className="text-[#c77d2e]">
+                        SKU personalizado — pulsá ↺ para restaurar el auto-generado.
+                      </span>
+                    ) : brandId || categoryId ? (
+                      <span className="text-[#33402f]">
+                        SKU generado automáticamente.
+                        {!brandId && " Seleccioná una marca para completarlo."}
+                        {!categoryId && " Seleccioná una categoría para completarlo."}
+                      </span>
+                    ) : (
+                      "Se generará al seleccionar marca o categoría."
+                    )}
+                  </span>
                 </div>
 
-                {/* Marca + Género */}
-                <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Marca */}
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
-                      htmlFor="prod-brand"
+                {/* Género */}
+                <div className="md:col-span-6 flex flex-col gap-1.5">
+                  <label
+                    className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
+                    htmlFor="prod-gender"
+                  >
+                    Género / Sexo
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="prod-gender"
+                      defaultValue={p.gender}
+                      className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                     >
-                      Marca / Firma
-                    </label>
-                    <div className="relative">
-                      {brandsError ? (
-                        <p className="font-inter text-[13px] text-red-600">
-                          Error al cargar marcas
-                        </p>
-                      ) : (
-                        <select
-                          id="prod-brand"
-                          value={brandId}
-                          onChange={(e) => setBrandId(e.target.value)}
-                          disabled={brandsLoading}
-                          className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] disabled:opacity-60"
-                        >
-                          <option value="">
-                            {brandsLoading ? "Cargando marcas…" : "Seleccionar marca"}
-                          </option>
-                          {brands?.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
-                        keyboard_arrow_down
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
-                      htmlFor="prod-gender"
-                    >
-                      Género / Sexo
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="prod-gender"
-                        defaultValue={p.gender}
-                        className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                      >
-                        <option>Hombre</option>
-                        <option>Mujer</option>
-                        <option>Unisex</option>
-                      </select>
-                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
-                        keyboard_arrow_down
-                      </span>
-                    </div>
+                      <option>Hombre</option>
+                      <option>Mujer</option>
+                      <option>Unisex</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
+                      keyboard_arrow_down
+                    </span>
                   </div>
                 </div>
 
