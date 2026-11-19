@@ -132,6 +132,8 @@ export function AdminProductForm() {
                 color: v.colorName,
                 colorHex: v.colorHex,
                 stock: v.stock,
+                // SKU base del producto (ej: NRT-CAM0006); el service lo guarda en la variante
+                sku: sku.trim() || undefined,
               }),
             }),
           ),

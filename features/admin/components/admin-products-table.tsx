@@ -67,6 +67,18 @@ function ActiveToggle({
   );
 }
 
+// ─── SKU base extractor ───────────────────────────────────────────────────────
+// El formato del variant SKU es: MARCA-CAT0001-CLR-TALLE
+// El SKU base del producto es:   MARCA-CAT0001  (primeros 2 segmentos)
+function extractBaseSku(variantSku: string): string {
+  const parts = variantSku.split("-");
+  // Si tiene al menos 3 partes (MARCA, CATNUM, resto) → tomar primeras 2
+  if (parts.length >= 3) {
+    return `${parts[0]}-${parts[1]}`;
+  }
+  return variantSku;
+}
+
 // ─── Color resolver helper ────────────────────────────────────────────────────
 function resolveColor(colorVal: string, colorsList?: ColorDto[]) {
   const isHex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(colorVal);
@@ -111,7 +123,7 @@ function VariantsRow({ productId, isOpen }: { productId: string; isOpen: boolean
       if (!map.has(sizeLabel)) {
         map.set(sizeLabel, {
           size: sizeLabel,
-          sku: v.sku,
+          sku: extractBaseSku(v.sku),
           total: 0,
           colors: [],
           alert: false,
