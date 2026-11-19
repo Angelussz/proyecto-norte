@@ -70,6 +70,10 @@ export function AdminAddBrandModal({
       alert("Por favor ingresa el nombre de la marca / firma.");
       return;
     }
+    if (skuPrefix.trim().length < 3) {
+      alert("El prefijo SKU de la marca debe tener exactamente 3 letras (Ej: NRT, ALB, ZAR).");
+      return;
+    }
 
     onSave({
       id: initialData?.id,
@@ -171,7 +175,10 @@ export function AdminAddBrandModal({
                 </span>
               </div>
               <span className="font-inter text-[11px] text-[#524438] mt-0.5">
-                Posición en SKU: <strong className="font-mono text-[#673900]">???-NRT-LNO</strong>
+                Posición en SKU:{" "}
+                <strong className="font-mono text-[#673900]">
+                  {(skuPrefix || "???").slice(0, 3)}CAM0001-CLR-M
+                </strong>
               </span>
             </div>
           </div>

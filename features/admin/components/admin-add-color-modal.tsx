@@ -81,6 +81,11 @@ export function AdminAddColorModal({
       alert("Por favor ingresa el nombre del color / tintura.");
       return;
     }
+    const trimmedSku = skuCode.trim();
+    if (trimmedSku.length > 0 && trimmedSku.length < 3) {
+      alert("El código SKU del color debe tener exactamente 3 letras.");
+      return;
+    }
 
     const formattedHex = hex.startsWith("#") ? hex.toUpperCase() : `#${hex.toUpperCase()}`;
     const autoSku = skuCode.trim()
@@ -195,7 +200,8 @@ export function AdminAddColorModal({
                 </span>
               </div>
               <span className="font-inter text-[11px] text-[#524438] mt-0.5">
-                Posición en SKU: <strong className="font-mono text-[#673900]">NRT-???-LNO</strong>
+                Posición en SKU:{" "}
+                <strong className="font-mono text-[#673900]">NRT-CAM0001-{skuCode || "???"}</strong>
               </span>
             </div>
           </div>

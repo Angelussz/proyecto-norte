@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   AdminInventoryVariantsSection,
@@ -34,6 +34,7 @@ export function AdminProductForm() {
   const [categoryId, setCategoryId] = useState("");
   const [brandId, setBrandId] = useState("");
   const [sku, setSku] = useState("");
+  const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
   const [gender, setGender] = useState("Unisex");
   const [description, setDescription] = useState("");
   const [material, setMaterial] = useState("");
@@ -52,6 +53,24 @@ export function AdminProductForm() {
   const margin = basePriceNum > 0 ? ((basePriceNum - unitCostNum) / basePriceNum) * 100 : 0;
   const marginStr = margin.toFixed(1);
   const profit = (basePriceNum - unitCostNum).toFixed(2);
+
+  // ── Auto-SKU: se genera cuando se seleccionan marca y categoría ──────────
+  useEffect(() => {
+    if (skuManuallyEdited) return;
+    if (!brandId || !categoryId) return;
+    const brand = brands?.find((b) => b.id === brandId);
+    const cat = categories?.find((c) => c.id === categoryId);
+    if (!brand || !cat) return;
+    const brandPrefix = brand.skuPrefix?.trim().toUpperCase() || "";
+    const catCode =
+      cat.name
+        .trim()
+        .replace(/[^A-Za-z]/g, "")
+        .slice(0, 3)
+        .toUpperCase() || "CAT";
+    const autoSku = `${brandPrefix}${catCode}0001`;
+    setSku(autoSku);
+  }, [brandId, categoryId, brands, categories, skuManuallyEdited]);
 
   // ── Imágenes (UI only) ────────────────────────────────────────────────────
   const [images] = useState([
@@ -255,6 +274,41 @@ export function AdminProductForm() {
                 </div>
               </div>
 
+              {/* Marca */}
+              <div className="md:col-span-6 flex flex-col gap-1.5">
+                <label
+                  className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
+                  htmlFor="prod-brand"
+                >
+                  Marca / Firma
+                </label>
+                <div className="relative">
+                  {brandsError ? (
+                    <p className="font-inter text-[13px] text-red-600">Error al cargar marcas</p>
+                  ) : (
+                    <select
+                      id="prod-brand"
+                      value={brandId}
+                      onChange={(e) => setBrandId(e.target.value)}
+                      disabled={brandsLoading}
+                      className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] disabled:opacity-60"
+                    >
+                      <option value="">
+                        {brandsLoading ? "Cargando marcas…" : "Seleccionar marca"}
+                      </option>
+                      {brands?.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
+                    keyboard_arrow_down
+                  </span>
+                </div>
+              </div>
+
               {/* SKU */}
               <div className="md:col-span-6 flex flex-col gap-1.5">
                 <label
@@ -263,76 +317,66 @@ export function AdminProductForm() {
                 >
                   SKU Base
                 </label>
-                <input
-                  id="prod-sku"
-                  type="text"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  placeholder="NRT-XXX-00"
-                  className="w-full bg-[#faf3e4] px-4 py-3 font-mono text-[16px] text-[#1e1c13] uppercase tracking-wider focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    id="prod-sku"
+                    type="text"
+                    value={sku}
+                    onChange={(e) => {
+                      setSku(e.target.value.toUpperCase());
+                      setSkuManuallyEdited(true);
+                    }}
+                    placeholder="NRTCAM0001"
+                    className="w-full bg-[#faf3e4] pl-4 pr-10 py-3 font-mono text-[16px] text-[#1e1c13] uppercase tracking-wider focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
+                  />
+                  {skuManuallyEdited && (
+                    <button
+                      type="button"
+                      title="Restaurar SKU automático"
+                      onClick={() => setSkuManuallyEdited(false)}
+                      className="absolute right-2.5 text-[#857466] hover:text-[#673900] transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">refresh</span>
+                    </button>
+                  )}
+                </div>
+                <span className="font-inter text-[11px] text-[#524438]">
+                  {skuManuallyEdited ? (
+                    <span className="text-[#c77d2e]">
+                      SKU personalizado — pulsá ↺ para restaurar el auto-generado.
+                    </span>
+                  ) : brandId && categoryId ? (
+                    <span className="text-[#33402f]">
+                      SKU generado automáticamente desde marca y categoría.
+                    </span>
+                  ) : (
+                    "Se generará al seleccionar marca y categoría."
+                  )}
+                </span>
               </div>
 
-              {/* Marca + Género */}
-              <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Marca */}
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
-                    htmlFor="prod-brand"
+              {/* Género */}
+              <div className="md:col-span-6 flex flex-col gap-1.5">
+                <label
+                  className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
+                  htmlFor="prod-gender"
+                >
+                  Género / Sexo
+                </label>
+                <div className="relative">
+                  <select
+                    id="prod-gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                   >
-                    Marca / Firma
-                  </label>
-                  <div className="relative">
-                    {brandsError ? (
-                      <p className="font-inter text-[13px] text-red-600">Error al cargar marcas</p>
-                    ) : (
-                      <select
-                        id="prod-brand"
-                        value={brandId}
-                        onChange={(e) => setBrandId(e.target.value)}
-                        disabled={brandsLoading}
-                        className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] disabled:opacity-60"
-                      >
-                        <option value="">
-                          {brandsLoading ? "Cargando marcas…" : "Seleccionar marca"}
-                        </option>
-                        {brands?.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
-                      keyboard_arrow_down
-                    </span>
-                  </div>
-                </div>
-
-                {/* Género */}
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
-                    htmlFor="prod-gender"
-                  >
-                    Género / Sexo
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="prod-gender"
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                      className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
-                    >
-                      <option>Hombre</option>
-                      <option>Mujer</option>
-                      <option>Unisex</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
-                      keyboard_arrow_down
-                    </span>
-                  </div>
+                    <option>Hombre</option>
+                    <option>Mujer</option>
+                    <option>Unisex</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#524438] text-[20px]">
+                    keyboard_arrow_down
+                  </span>
                 </div>
               </div>
 
