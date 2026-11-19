@@ -79,7 +79,7 @@ export async function GET() {
 
       return {
         id: p.id,
-        sku: p.variants[0]?.sku?.split("-").slice(0, 3).join("-") ?? p.id,
+        sku: p.variants[0]?.sku?.split("-").slice(0, 2).join("-") ?? p.id,
         category: p.category.name.toUpperCase(),
         name: p.name,
         pvp: `${Number(p.base_price).toFixed(2)} €`,

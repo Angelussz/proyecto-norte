@@ -47,7 +47,7 @@ interface Movement {
 export const INITIAL_PRODUCTS: ProductCard[] = [
   {
     id: "p1",
-    sku: "NRT-LNO-12",
+    sku: "NRT-CAM0001",
     category: "SOBRECAMISAS",
     name: "Sobrecamisa Lino Rústico Arena",
     pvp: "$165.00",
@@ -71,7 +71,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p2",
-    sku: "NRT-TRJ-02",
+    sku: "NRT-PAN0002",
     category: "PANTALONES",
     name: "Pantalón Traje Sastre Arena",
     pvp: "$145.00",
@@ -94,7 +94,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p3",
-    sku: "NRT-ZAP-01",
+    sku: "NRT-CAL0003",
     category: "CALZADO",
     name: "Zapatillas Esenciales Blancas",
     pvp: "$120.00",
@@ -119,7 +119,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p4",
-    sku: "NRT-CMS-04",
+    sku: "NRT-CAM0004",
     category: "CAMISAS",
     name: "Camisa Lino Cuello Mao",
     pvp: "$135.00",
@@ -143,7 +143,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p5",
-    sku: "NRT-SWT-07",
+    sku: "NRT-SUE0005",
     category: "SUÉTERES",
     name: "Suéter Punto Grueso Merino",
     pvp: "$195.00",
@@ -167,7 +167,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p6",
-    sku: "NRT-CHQ-09",
+    sku: "NRT-CHA0006",
     category: "CHAQUETAS",
     name: "Chaqueta Oversize Espiga",
     pvp: "$230.00",
@@ -188,7 +188,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p7",
-    sku: "NRT-BRM-03",
+    sku: "NRT-BER0007",
     category: "BERMUDAS",
     name: "Bermuda Lino Plisada",
     pvp: "$98.00",
@@ -245,7 +245,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p8",
-    sku: "NRT-ACC-01",
+    sku: "NRT-ACC0008",
     category: "ACCESORIOS",
     name: "Gorra Algodón Orgánico Lavado",
     pvp: "$45.00",
@@ -266,7 +266,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p9",
-    sku: "NRT-PLR-05",
+    sku: "NRT-CAM0009",
     category: "CAMISAS",
     name: "Remera Manga Larga Ribbed",
     pvp: "$78.00",
@@ -285,7 +285,7 @@ export const INITIAL_PRODUCTS: ProductCard[] = [
   },
   {
     id: "p10",
-    sku: "NRT-BOT-02",
+    sku: "NRT-CAL0010",
     category: "CALZADO",
     name: "Botines Chelsea Cuero Nobuk",
     pvp: "$210.00",
@@ -347,9 +347,18 @@ function calcTotal(stock: StockMatrix): number {
 }
 
 function getSizeSku(productSku: string, talle: string): string {
-  const cleanPrefix = productSku.replace(/-[A-Z]+-/, "-");
-  const sizeNum = talle.split(" ")[0].replace(/[^0-9A-Za-z]/g, "");
-  return `${cleanPrefix}-${sizeNum}`;
+  const cleanSize =
+    talle
+      .toUpperCase()
+      .replace(/^TALLA\s*/i, "")
+      .trim() || "U";
+  const parts = productSku.split("-");
+  if (parts.length >= 2) {
+    const brand = parts[0];
+    const catCodeNum = parts[1];
+    return `${brand}-${catCodeNum}-***-${cleanSize}`;
+  }
+  return `${productSku}-***-${cleanSize}`;
 }
 
 // ─── StockCell ────────────────────────────────────────────────────────────────
@@ -386,7 +395,7 @@ function StockCell({ value, onChange }: { value: number; onChange: (v: number) =
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const LS_KEY = "norte-inventory-v1";
+const LS_KEY = "norte-inventory-v2";
 
 function formatPvpToUsd(pvp?: string): string | undefined {
   if (!pvp) return undefined;

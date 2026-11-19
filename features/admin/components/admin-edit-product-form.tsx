@@ -19,10 +19,10 @@ function getBaseSkuFromVariant(variantSku?: string | null): string {
 
 /* ─── Mock data: producto existente ─── */
 const MOCK_PRODUCT = {
-  id: "NRT-LNO-12",
+  id: "NRT-CAM0001",
   name: "Sobrecamisa Lino Rústico Arena",
   category: "Camisas",
-  sku: "NRT-LNO-12",
+  sku: "NRT-CAM0001",
   brand: "NORTE Atelier",
   gender: "Unisex",
   slug: "sobrecamisa-lino-rustico-arena",
