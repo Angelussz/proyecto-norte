@@ -475,6 +475,7 @@ export function AdminInventoryView() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
   const [filterGender, setFilterGender] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [activeColorGroups, setActiveColorGroups] = useState<Record<string, number>>({});
   const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -536,6 +537,11 @@ export function AdminInventoryView() {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [openMenuId]);
+
+  // Resetear paginación al cambiar cualquier filtro o término de búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterCat, filterStatus, filterBrand, filterGender]);
 
   function handleDeleteProduct(productId: string) {
     const p = products.find((x) => x.id === productId);
@@ -756,6 +762,15 @@ export function AdminInventoryView() {
     }
     return true;
   });
+
+  const ITEMS_PER_PAGE = 4;
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, safeCurrentPage]);
 
   const totalPhysicalUnits = products.reduce((acc, p) => acc + p.totalStock, 0);
   const healthyCount = products.filter((p) => p.stockLevel === "healthy").length;
@@ -1066,23 +1081,51 @@ export function AdminInventoryView() {
           {/* Paginación */}
           <div className="flex items-center justify-between pb-2 border-b border-outline-variant/30">
             <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant">
-              Página 1 de 1 • {filteredProducts.length} prenda
+              Página {safeCurrentPage} de {totalPages} • {filteredProducts.length} prenda
               {filteredProducts.length !== 1 ? "s" : ""} registrada
               {filteredProducts.length !== 1 ? "s" : ""}
             </span>
-            <nav className="flex items-center gap-1.5">
+            <nav
+              className="flex items-center gap-1.5"
+              aria-label="Paginación superior de inventario"
+            >
               <button
-                disabled
-                className="px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 text-on-surface-variant/50 cursor-not-allowed bg-white"
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safeCurrentPage <= 1}
+                className={`px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 transition-colors ${
+                  safeCurrentPage <= 1
+                    ? "text-on-surface-variant/40 cursor-not-allowed bg-white"
+                    : "text-on-surface hover:bg-surface-container bg-white cursor-pointer"
+                }`}
+                title="Página anterior"
               >
                 ← Ant
               </button>
-              <button className="px-2.5 py-1 font-inter text-[11px] font-bold bg-primary text-white shadow-sm">
-                1
-              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-2.5 py-1 font-inter text-[11px] transition-colors ${
+                    pageNum === safeCurrentPage
+                      ? "font-bold bg-primary text-white shadow-sm"
+                      : "border border-outline-variant/60 text-on-surface hover:bg-surface-container bg-white cursor-pointer"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
               <button
-                disabled
-                className="px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 text-on-surface-variant/50 cursor-not-allowed bg-white"
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safeCurrentPage >= totalPages}
+                className={`px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 transition-colors ${
+                  safeCurrentPage >= totalPages
+                    ? "text-on-surface-variant/40 cursor-not-allowed bg-white"
+                    : "text-on-surface hover:bg-surface-container bg-white cursor-pointer"
+                }`}
+                title="Página siguiente"
               >
                 Sig →
               </button>
@@ -1097,7 +1140,7 @@ export function AdminInventoryView() {
               </span>
             </div>
           ) : (
-            filteredProducts.map((product) => (
+            paginatedProducts.map((product) => (
               <article
                 key={product.id}
                 className="bg-surface-container-low border border-outline-variant/30 shadow-sm"
@@ -1537,6 +1580,72 @@ export function AdminInventoryView() {
                 </div>
               </article>
             ))
+          )}
+
+          {/* Paginación Inferior */}
+          {filteredProducts.length > 0 && (
+            <div className="flex items-center justify-between pt-3 border-t border-outline-variant/30 mt-2">
+              <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant">
+                Mostrando {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
+                {Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredProducts.length)} de{" "}
+                {filteredProducts.length} prenda
+                {filteredProducts.length !== 1 ? "s" : ""}
+              </span>
+              <nav
+                className="flex items-center gap-1.5"
+                aria-label="Paginación inferior de inventario"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage((p) => Math.max(1, p - 1));
+                    window.scrollTo({ top: 380, behavior: "smooth" });
+                  }}
+                  disabled={safeCurrentPage <= 1}
+                  className={`px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 transition-colors ${
+                    safeCurrentPage <= 1
+                      ? "text-on-surface-variant/40 cursor-not-allowed bg-white"
+                      : "text-on-surface hover:bg-surface-container bg-white cursor-pointer"
+                  }`}
+                  title="Página anterior"
+                >
+                  ← Ant
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage(pageNum);
+                      window.scrollTo({ top: 380, behavior: "smooth" });
+                    }}
+                    className={`px-2.5 py-1 font-inter text-[11px] transition-colors ${
+                      pageNum === safeCurrentPage
+                        ? "font-bold bg-primary text-white shadow-sm"
+                        : "border border-outline-variant/60 text-on-surface hover:bg-surface-container bg-white cursor-pointer"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage((p) => Math.min(totalPages, p + 1));
+                    window.scrollTo({ top: 380, behavior: "smooth" });
+                  }}
+                  disabled={safeCurrentPage >= totalPages}
+                  className={`px-2.5 py-1 font-inter text-[11px] border border-outline-variant/60 transition-colors ${
+                    safeCurrentPage >= totalPages
+                      ? "text-on-surface-variant/40 cursor-not-allowed bg-white"
+                      : "text-on-surface hover:bg-surface-container bg-white cursor-pointer"
+                  }`}
+                  title="Página siguiente"
+                >
+                  Sig →
+                </button>
+              </nav>
+            </div>
           )}
         </div>
 
