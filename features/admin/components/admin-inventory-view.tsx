@@ -476,8 +476,6 @@ export function AdminInventoryView() {
   const [filterBrand, setFilterBrand] = useState("");
   const [filterGender, setFilterGender] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeColorGroups, setActiveColorGroups] = useState<Record<string, number>>({});
-  const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [colorModalProduct, setColorModalProduct] = useState<ProductCard | null>(null);
   const [sizeModalProduct, setSizeModalProduct] = useState<ProductCard | null>(null);
@@ -646,11 +644,6 @@ export function AdminInventoryView() {
 
     setToast(`Colores actualizados. Presioná "Actualizar Stock" para guardar.`);
     setTimeout(() => setToast(null), 3500);
-  }
-
-  function handleColorGroupSelect(productId: string, group: number) {
-    setActiveColorGroups((prev) => ({ ...prev, [productId]: group }));
-    setDismissedAlerts((prev) => ({ ...prev, [`${productId}-${group}`]: true }));
   }
 
   function toggleExpand(id: string) {
@@ -1356,73 +1349,13 @@ export function AdminInventoryView() {
                       </div>
 
                       {/* Matrix Bar Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 pb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[20px] text-primary">
-                            apps
-                          </span>
-                          <h4 className="font-inter text-[12px] font-bold uppercase tracking-wider text-on-surface">
-                            MATRIZ DE EXISTENCIAS POR TALLA Y COLOR
-                          </h4>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className="font-inter text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
-                            GRUPO COLORES:
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {/* Botón 1 */}
-                            <button
-                              type="button"
-                              onClick={() => handleColorGroupSelect(product.id, 1)}
-                              className={`w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
-                                (activeColorGroups[product.id] ?? 1) === 1
-                                  ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
-                                  : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
-                              }`}
-                            >
-                              1
-                            </button>
-
-                            {/* Botón 2 con alerta roja titilante (desaparece al hacer click) */}
-                            <button
-                              type="button"
-                              onClick={() => handleColorGroupSelect(product.id, 2)}
-                              className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
-                                (activeColorGroups[product.id] ?? 1) === 2
-                                  ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
-                                  : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
-                              }`}
-                            >
-                              2{/* Titilante Rojo */}
-                              {!dismissedAlerts[`${product.id}-2`] && (
-                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                                </span>
-                              )}
-                            </button>
-
-                            {/* Botón 3 con alerta naranja / mostaza titilante (desaparece al hacer click) */}
-                            <button
-                              type="button"
-                              onClick={() => handleColorGroupSelect(product.id, 3)}
-                              className={`relative w-7 h-7 flex items-center justify-center font-inter text-[12px] font-bold border transition-colors shadow-sm ${
-                                (activeColorGroups[product.id] ?? 1) === 3
-                                  ? "bg-[#eee8d9] text-on-surface border-outline-variant/80"
-                                  : "bg-white text-on-surface-variant hover:bg-surface-container border-outline-variant/60"
-                              }`}
-                            >
-                              3{/* Titilante Ámbar / Mostaza */}
-                              {!dismissedAlerts[`${product.id}-3`] && (
-                                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d97706]"></span>
-                                </span>
-                              )}
-                            </button>
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-2 pt-2 pb-1">
+                        <span className="material-symbols-outlined text-[20px] text-primary">
+                          apps
+                        </span>
+                        <h4 className="font-inter text-[12px] font-bold uppercase tracking-wider text-on-surface">
+                          MATRIZ DE EXISTENCIAS POR TALLA Y COLOR
+                        </h4>
                       </div>
 
                       {/* Matrix Table */}
