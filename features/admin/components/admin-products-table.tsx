@@ -120,6 +120,9 @@ function VariantsRow({ productId, isOpen }: { productId: string; isOpen: boolean
     >();
 
     for (const v of product.variants) {
+      // Ignorar variantes inactivas sin stock (eliminadas o archivadas)
+      if (v.active === false && v.stock === 0) continue;
+
       const sizeLabel = v.size
         ? v.size.toLowerCase().startsWith("talla")
           ? v.size

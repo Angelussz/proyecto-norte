@@ -78,3 +78,50 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return handleAdminError(err, "PATCH /api/admin/products/[id]/variants/[variantId]");
   }
 }
+
+/**
+ * DELETE /api/admin/products/[id]/variants/[variantId]
+ * Elimina una variante del producto. Solo es posible si no tiene ventas asociadas.
+ */
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  try {
+    const { id: productId, variantId } = await params;
+
+    const existing = await prisma.productVariants.findUnique({
+      where: { id: variantId },
+      select: { id: true, product_id: true },
+    });
+
+    if (!existing) {
+      throw new ProductAdminError("NOT_FOUND", `No existe la variante ${variantId}`);
+    }
+    if (existing.product_id !== productId) {
+      throw new ProductAdminError(
+        "VALIDATION",
+        `La variante ${variantId} no pertenece al producto ${productId}`,
+      );
+    }
+
+    try {
+      await prisma.productVariants.delete({ where: { id: variantId } });
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code: string }).code === "P2003"
+      ) {
+        await prisma.productVariants.update({
+          where: { id: variantId },
+          data: { active: false, stock: 0 },
+        });
+        return NextResponse.json({ success: true, deactivated: true });
+      }
+      throw error;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return handleAdminError(err, "DELETE /api/admin/products/[id]/variants/[variantId]");
+  }
+}
