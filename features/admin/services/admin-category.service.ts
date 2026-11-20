@@ -32,6 +32,7 @@ function toDto(cat: {
   active: boolean;
   size_system_ids: string[];
   parent_category_id: string | null;
+  _count?: { products: number };
 }): AdminCategoryDto {
   return {
     id: cat.id,
@@ -42,6 +43,7 @@ function toDto(cat: {
     active: cat.active,
     sizeSystemIds: cat.size_system_ids,
     parentId: cat.parent_category_id,
+    productCount: cat._count?.products ?? 0,
   };
 }
 
@@ -58,6 +60,11 @@ export async function listAdminCategories(): Promise<AdminCategoryDto[]> {
       active: true,
       size_system_ids: true,
       parent_category_id: true,
+      _count: {
+        select: {
+          products: { where: { active: true } },
+        },
+      },
     },
   });
   return rows.map(toDto);
@@ -87,6 +94,7 @@ export async function createAdminCategory(
       active: true,
       size_system_ids: true,
       parent_category_id: true,
+      _count: { select: { products: { where: { active: true } } } },
     },
   });
   return toDto(row);
@@ -118,6 +126,7 @@ export async function updateAdminCategory(
       active: true,
       size_system_ids: true,
       parent_category_id: true,
+      _count: { select: { products: { where: { active: true } } } },
     },
   });
   return toDto(row);

@@ -14,6 +14,8 @@ export interface AdminCategoryDto {
   /** IDs de los SizeSystem (dentro de SizeGroup) habilitados para esta categoría */
   sizeSystemIds: string[];
   parentId: string | null;
+  /** Cantidad de productos activos asignados a esta categoría */
+  productCount: number;
 }
 
 export interface CreateAdminCategoryBody {

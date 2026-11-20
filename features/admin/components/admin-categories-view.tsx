@@ -31,6 +31,8 @@ export type CategoryItem = {
   systemSizes: string[];
   uniqueSizes: string[];
   addedSizes: string[];
+  /** Productos activos asignados a esta categoría (desde la BD) */
+  productCount: number;
 };
 
 export interface SizeSystemCatalogItem {
@@ -164,6 +166,7 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     systemSizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
     addedSizes: [],
+    productCount: 0,
   },
   {
     id: "cat-2",
@@ -189,6 +192,7 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     systemSizes: ["36", "38", "40", "42", "44", "46", "48"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
     addedSizes: [],
+    productCount: 0,
   },
   {
     id: "cat-3",
@@ -214,6 +218,7 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     systemSizes: ["38", "39", "40", "41", "42", "43", "44", "45"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
     addedSizes: [],
+    productCount: 0,
   },
   {
     id: "cat-4",
@@ -239,6 +244,7 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     systemSizes: ["S", "M", "L", "XL", "XXL", "3XL"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
     addedSizes: [],
+    productCount: 0,
   },
   {
     id: "cat-5",
@@ -264,6 +270,7 @@ const INITIAL_CATEGORIES: CategoryItem[] = [
     systemSizes: ["S", "M", "L", "XL"],
     uniqueSizes: ["Talle Único", "Talle Ajustable"],
     addedSizes: [],
+    productCount: 0,
   },
 ];
 
@@ -304,6 +311,7 @@ function dtoToCategoryItem(dto: AdminCategoryDto): CategoryItem {
     systemSizes: systems[0]?.sizes ?? [],
     uniqueSizes: [],
     addedSizes: [],
+    productCount: dto.productCount,
   };
 }
 
@@ -454,6 +462,7 @@ export function AdminCategoriesView() {
       systemSizes: defaultSystems[0].sizes,
       uniqueSizes: defaultSystems[1].sizes,
       addedSizes: [],
+      productCount: 0,
     };
 
     setCategories((prev) => [...prev, newCat]);
@@ -723,7 +732,9 @@ export function AdminCategoriesView() {
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="font-headline text-[38px] text-[#1e1c13] leading-none">38</span>
+                  <span className="font-headline text-[38px] text-[#1e1c13] leading-none">
+                    {categories.reduce((sum, c) => sum + (c.productCount ?? 0), 0)}
+                  </span>
                   <span className="text-[12px] uppercase tracking-wider font-semibold text-[#524438]">
                     PRENDAS TOTALES
                   </span>
