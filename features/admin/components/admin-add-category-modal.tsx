@@ -11,7 +11,7 @@ export interface CreateCategoryData {
 interface AdminAddCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: CreateCategoryData) => void;
+  onSave: (data: CreateCategoryData) => Promise<void> | void;
 }
 
 export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCategoryModalProps) {
@@ -19,6 +19,7 @@ export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCateg
   const [sku, setSku] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset fields when opening
   useEffect(() => {
@@ -44,8 +45,10 @@ export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCateg
 
   if (!isOpen) return null;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const trimmedName = name.trim();
     if (!trimmedName) {
       setError("El nombre de la categoría es obligatorio");
@@ -61,14 +64,22 @@ export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCateg
         .toUpperCase()
         .replace(/[^A-Z]/g, "X");
 
-    onSave({
-      name: trimmedName.toUpperCase(),
-      sku: trimmedSku,
-      description:
-        description.trim() || "Nueva categoría registrada en el catálogo textil de NORTE Atelier.",
-    });
-
-    onClose();
+    try {
+      setIsSubmitting(true);
+      setError("");
+      await onSave({
+        name: trimmedName.toUpperCase(),
+        sku: trimmedSku,
+        description:
+          description.trim() ||
+          "Nueva categoría registrada en el catálogo textil de NORTE Atelier.",
+      });
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al crear la categoría");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -207,10 +218,13 @@ export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCateg
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[17px] uppercase tracking-wider transition-all duration-150 shadow-sm active:translate-y-px flex items-center gap-1.5 cursor-pointer"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[17px] uppercase tracking-wider transition-all duration-150 shadow-sm active:translate-y-px flex items-center gap-1.5 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              <span>+ CREAR CATEGORÍA</span>
+              <span className="material-symbols-outlined text-[16px]">
+                {isSubmitting ? "hourglass_top" : "add"}
+              </span>
+              <span>{isSubmitting ? "CREANDO…" : "+ CREAR CATEGORÍA"}</span>
             </button>
           </div>
         </form>

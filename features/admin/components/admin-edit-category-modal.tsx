@@ -28,8 +28,8 @@ interface AdminEditCategoryModalProps {
   category: EditableCategory | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedCategory: EditableCategory) => void;
-  onDelete: (categoryId: string) => void;
+  onSave: (updatedCategory: EditableCategory) => Promise<void> | void;
+  onDelete: (categoryId: string) => Promise<void> | void;
 }
 
 const CATALOG_SYSTEM_OPTIONS: AssignedSizeSystem[] = [
@@ -96,6 +96,7 @@ export function AdminEditCategoryModal({
   const [assignedSystems, setAssignedSystems] = useState<AssignedSizeSystem[]>([]);
   const [selectedCatalogSystemId, setSelectedCatalogSystemId] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Drag and drop reordering state for systems
   const [draggedSystemIndex, setDraggedSystemIndex] = useState<number | null>(null);
@@ -228,9 +229,9 @@ export function AdminEditCategoryModal({
     setDragOverIndex(null);
   }
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!category) return;
+    if (!category || isSubmitting) return;
     const trimmedName = name.trim();
     if (!trimmedName) {
       setError("El nombre de la categoría es obligatorio");
@@ -257,13 +258,30 @@ export function AdminEditCategoryModal({
       uniqueSizes: assignedSystems[1]?.sizes || category.uniqueSizes,
     };
 
-    onSave(updated);
-    onClose();
+    try {
+      setIsSubmitting(true);
+      setError("");
+      await onSave(updated);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al actualizar la categoría");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  function handleDeleteClick() {
-    if (!category) return;
-    onDelete(category.id);
+  async function handleDeleteClick() {
+    if (!category || isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      setError("");
+      await onDelete(category.id);
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al eliminar la categoría");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -518,7 +536,8 @@ export function AdminEditCategoryModal({
               <button
                 type="button"
                 onClick={handleDeleteClick}
-                className="font-inter text-[11px] text-[#ba1a1a] hover:underline uppercase font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="font-inter text-[11px] text-[#ba1a1a] hover:underline uppercase font-semibold flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">delete</span>
                 <span>Eliminar Categoría</span>
@@ -529,16 +548,20 @@ export function AdminEditCategoryModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-[#524438] hover:text-[#1e1c13] hover:bg-[#eee8d9] font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-[#524438] hover:text-[#1e1c13] hover:bg-[#eee8d9] font-inter text-[11px] uppercase tracking-wider font-semibold transition-colors cursor-pointer disabled:opacity-50"
               >
                 CANCELAR
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[17px] uppercase tracking-wider transition-all duration-150 shadow-sm active:translate-y-px flex items-center gap-1.5 cursor-pointer"
+                disabled={isSubmitting}
+                className="px-5 py-2.5 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[17px] uppercase tracking-wider transition-all duration-150 shadow-sm active:translate-y-px flex items-center gap-1.5 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[16px]">check</span>
-                <span>GUARDAR CAMBIOS</span>
+                <span className="material-symbols-outlined text-[16px]">
+                  {isSubmitting ? "hourglass_top" : "check"}
+                </span>
+                <span>{isSubmitting ? "GUARDANDO…" : "GUARDAR CAMBIOS"}</span>
               </button>
             </div>
           </div>

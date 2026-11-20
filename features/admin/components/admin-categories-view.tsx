@@ -332,7 +332,7 @@ export function AdminCategoriesView() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryItem | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; isError?: boolean } | null>(null);
 
   // Limpiar localStorage legacy al montar (ya no se usa)
   useEffect(() => {
@@ -357,9 +357,10 @@ export function AdminCategoriesView() {
     return JSON.stringify(categories) !== JSON.stringify(savedSnapshot);
   }, [categories, savedSnapshot]);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+  function showToast(info: string | { message: string; isError?: boolean }) {
+    const toastObj = typeof info === "string" ? { message: info, isError: false } : info;
+    setToast(toastObj);
+    setTimeout(() => setToast(null), 4000);
   }
 
   // ─── Handlers locales (no persisten de inmediato en DB) ───────────────────
@@ -429,14 +430,7 @@ export function AdminCategoriesView() {
     setEditingCategory(null);
   }
 
-  function handleSaveNewCategory(data: CreateCategoryData) {
-    const slug = `/${data.name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")}`;
-
+  async function handleSaveNewCategory(data: CreateCategoryData) {
     const defaultSystems: AssignedSizeSystem[] = [
       {
         id: "alfa_std",
@@ -450,30 +444,88 @@ export function AdminCategoriesView() {
       },
     ];
 
-    const newCat: CategoryItem = {
-      id: `temp-${Date.now()}`,
-      name: data.name,
-      sku: data.sku || `NRT-${data.name.substring(0, 3).toUpperCase()}`,
-      slug,
-      active: true,
-      description: data.description || "",
-      systems: defaultSystems,
-      systemName: defaultSystems[0].name,
-      systemSizes: defaultSystems[0].sizes,
-      uniqueSizes: defaultSystems[1].sizes,
-      addedSizes: [],
-      productCount: 0,
-    };
+    const sizeSystemIds = defaultSystems.map((s) => s.id);
 
-    setCategories((prev) => [...prev, newCat]);
-    setIsAddModalOpen(false);
+    await createMutation.mutateAsync({
+      name: data.name,
+      sku: data.sku,
+      description: data.description,
+      active: true,
+      sizeSystemIds,
+    });
+
+    const fresh = await refetch();
+    if (fresh.data) {
+      const mapped = fresh.data.map(dtoToCategoryItem);
+      setCategories(mapped);
+      setSavedSnapshot(structuredClone(mapped));
+    }
+    showToast({
+      message: `Categoría "${data.name}" creada y guardada con éxito en la base de datos.`,
+      isError: false,
+    });
   }
 
-  function handleSaveEditedCategory(updated: EditableCategory) {
-    setCategories((prev) =>
-      prev.map((c) => (c.id === updated.id ? ({ ...c, ...updated } as CategoryItem) : c)),
-    );
-    setEditingCategory(null);
+  async function handleSaveEditedCategory(updated: EditableCategory) {
+    const sizeSystemIds = (updated.systems ?? []).map((s) => {
+      const found = SIZE_SYSTEM_CATALOG.find((c) => c.id === s.id || c.systemName === s.name);
+      return found?.id ?? s.id;
+    });
+
+    await updateMutation.mutateAsync({
+      id: updated.id,
+      body: {
+        name: updated.name,
+        sku: updated.sku,
+        description: updated.description,
+        active: updated.active,
+        sizeSystemIds,
+      },
+    });
+
+    const fresh = await refetch();
+    if (fresh.data) {
+      const mapped = fresh.data.map(dtoToCategoryItem);
+      setCategories(mapped);
+      setSavedSnapshot(structuredClone(mapped));
+    }
+    showToast({
+      message: `Categoría "${updated.name}" actualizada con éxito en la base de datos.`,
+      isError: false,
+    });
+  }
+
+  async function handleConfirmDelete() {
+    if (!categoryToDelete) return;
+    const catName = categoryToDelete.name;
+    const catId = categoryToDelete.id;
+    try {
+      setIsSaving(true);
+      if (!catId.startsWith("temp-")) {
+        await deleteMutation.mutateAsync(catId);
+        const fresh = await refetch();
+        if (fresh.data) {
+          const mapped = fresh.data.map(dtoToCategoryItem);
+          setCategories(mapped);
+          setSavedSnapshot(structuredClone(mapped));
+        }
+      } else {
+        setCategories((prev) => prev.filter((c) => c.id !== catId));
+      }
+      showToast({
+        message: `Categoría "${catName}" eliminada correctamente.`,
+        isError: false,
+      });
+    } catch (err: unknown) {
+      console.error("[handleConfirmDelete]", err);
+      showToast({
+        message: err instanceof Error ? err.message : "Error al eliminar la categoría.",
+        isError: true,
+      });
+    } finally {
+      setIsSaving(false);
+      setCategoryToDelete(null);
+    }
   }
 
   // ─── Descartar cambios locales ───────────────────────────────────────────
@@ -559,10 +611,16 @@ export function AdminCategoriesView() {
         setSavedSnapshot(structuredClone(categories));
       }
 
-      showToast("Cambios guardados correctamente en la base de datos.");
+      showToast({
+        message: "Cambios guardados correctamente en la base de datos.",
+        isError: false,
+      });
     } catch (err: unknown) {
       console.error("[handleSaveChanges]", err);
-      showToast(err instanceof Error ? err.message : "Error al guardar cambios.");
+      showToast({
+        message: err instanceof Error ? err.message : "Error al guardar cambios.",
+        isError: true,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -1080,8 +1138,8 @@ export function AdminCategoriesView() {
                 <strong className="text-[#1e1c13] font-semibold">{categoryToDelete.name}</strong>?
               </p>
               <p className="text-[12px] text-on-surface-variant">
-                Esta categoría dejará de estar disponible en el catálogo. Podrás descartar los
-                cambios en la barra inferior o guardarlos para aplicarlos en la base de datos.
+                Esta acción eliminará la categoría de la base de datos de forma permanente si no
+                posee prendas asignadas.
               </p>
             </div>
 
@@ -1089,22 +1147,21 @@ export function AdminCategoriesView() {
               <button
                 type="button"
                 onClick={() => setCategoryToDelete(null)}
-                className="px-4 py-2 bg-white text-[#524438] hover:text-[#1e1c13] font-headline text-[15px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors cursor-pointer"
+                disabled={isSaving}
+                className="px-4 py-2 bg-white text-[#524438] hover:text-[#1e1c13] font-headline text-[15px] uppercase tracking-wider border border-[#d8c3b2]/50 transition-colors cursor-pointer disabled:opacity-50"
               >
                 CANCELAR
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const name = categoryToDelete.name;
-                  deleteCategory(categoryToDelete.id);
-                  setCategoryToDelete(null);
-                  showToast(`Categoría "${name}" eliminada (cambios sin guardar).`);
-                }}
-                className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+                onClick={handleConfirmDelete}
+                disabled={isSaving}
+                className="px-5 py-2 bg-[#ba1a1a] hover:bg-[#93000a] disabled:opacity-50 text-white font-headline text-[15px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[16px]">delete</span>
-                <span>SÍ, ELIMINAR</span>
+                <span className="material-symbols-outlined text-[16px]">
+                  {isSaving ? "hourglass_top" : "delete"}
+                </span>
+                <span>{isSaving ? "ELIMINANDO…" : "SÍ, ELIMINAR"}</span>
               </button>
             </div>
           </div>
@@ -1113,9 +1170,21 @@ export function AdminCategoriesView() {
 
       {/* ── Toast de confirmación ── */}
       {toast && (
-        <div className="fixed bottom-24 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-mustard font-inter text-[13px] shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <span className="material-symbols-outlined text-mustard text-[18px]">check_circle</span>
-          <span>{toast}</span>
+        <div
+          className={`fixed bottom-24 right-6 z-50 px-5 py-3 border-l-4 font-inter text-[13px] shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+            toast.isError
+              ? "bg-[#331111] text-[#ffdada] border-[#ba1a1a]"
+              : "bg-[#1e1c13] text-[#fff9ed] border-mustard"
+          }`}
+        >
+          <span
+            className={`material-symbols-outlined text-[18px] ${
+              toast.isError ? "text-[#ff8888]" : "text-mustard"
+            }`}
+          >
+            {toast.isError ? "error" : "check_circle"}
+          </span>
+          <span>{toast.message}</span>
         </div>
       )}
     </main>
