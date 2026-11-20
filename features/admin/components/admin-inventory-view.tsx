@@ -1272,7 +1272,7 @@ export function AdminInventoryView() {
                       </button>
                       {openMenuId === product.id && (
                         <div
-                          className="absolute right-0 top-full mt-1 z-30 bg-white border border-outline-variant/40 shadow-lg min-w-[190px]"
+                          className="absolute right-0 top-full mt-1 z-30 bg-white border border-outline-variant/40 shadow-lg min-w-[180px]"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <a
@@ -1283,10 +1283,12 @@ export function AdminInventoryView() {
                               e.stopPropagation();
                               setOpenMenuId(null);
                             }}
-                            className="flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-on-surface hover:bg-surface-container transition-colors cursor-pointer border-b border-outline-variant/20"
+                            className="flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
                           >
-                            <ExternalLink className="w-4 h-4 text-primary shrink-0" />
-                            <span>Ver en tienda</span>
+                            <span className="material-symbols-outlined text-[16px]">
+                              open_in_new
+                            </span>
+                            Ver en tienda
                           </a>
                           <Link
                             href={`/admin/productos/editar/${product.id}`}
@@ -1306,7 +1308,7 @@ export function AdminInventoryView() {
                               setOpenMenuId(null);
                               handleDeleteProduct(product.id);
                             }}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-error hover:bg-error-container transition-colors cursor-pointer text-left border-t border-outline-variant/20"
+                            className="w-full flex items-center gap-2 px-4 py-2.5 font-inter text-[13px] text-error hover:bg-error-container transition-colors cursor-pointer text-left"
                           >
                             <span className="material-symbols-outlined text-[16px]">delete</span>
                             Eliminar
