@@ -150,9 +150,13 @@ export function AdminEditProductForm() {
   }, [dbProduct, inventoryProduct]);
 
   // 5. Variantes iniciales estructuradas para el componente de inventario
+  // IMPORTANTE: si el producto existe en la BD (dbProduct), SIEMPRE usamos
+  // las variantes de la BD aunque estén vacías. Nunca mezclamos con datos mock
+  // del inventario local para evitar variantes fantasma.
   const initialVariants = useMemo<VariantRow[]>(() => {
-    if (dbProduct?.variants && dbProduct.variants.length > 0) {
-      return dbProduct.variants.map((v) => {
+    if (dbProduct) {
+      // Producto real de BD: usar sus variantes (puede ser [])
+      return (dbProduct.variants ?? []).map((v) => {
         const found = globalColors.find(
           (c) =>
             c.hex.toLowerCase() === v.color.toLowerCase() ||
@@ -167,6 +171,7 @@ export function AdminEditProductForm() {
       });
     }
 
+    // Solo para productos que NO están en la BD (solo en inventario local/mock)
     if (inventoryProduct) {
       const rows: VariantRow[] = [];
       inventoryProduct.sizes.forEach((sz) => {
