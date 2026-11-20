@@ -86,7 +86,10 @@ export function useUpdateProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: fetchUpdateProduct,
-    onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: PRODUCTS_KEY });
+      void qc.invalidateQueries({ queryKey: ["admin-product", variables.id] });
+    },
   });
 }
 

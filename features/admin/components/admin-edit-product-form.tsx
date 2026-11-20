@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AdminInventoryVariantsSection,
   type VariantRow,
@@ -82,6 +83,7 @@ export function AdminEditProductForm() {
   const { data: globalColors = [] } = useColors();
   const { data: allProducts = [] } = useProducts();
 
+  const queryClient = useQueryClient();
   const updateProduct = useUpdateProduct();
   const deleteProductMutation = useDeleteProduct();
 
@@ -413,8 +415,15 @@ export function AdminEditProductForm() {
         type: "success",
         message: "¡Cambios guardados correctamente! Redirigiendo a productos…",
       });
+      // Invalidar caché de React Query para que la lista y el detalle reflejen
+      // los cambios de variantes guardados vía fetch directo (sin pasar por el mutation)
+      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      if (dbProduct) {
+        await queryClient.invalidateQueries({ queryKey: ["admin-product", dbProduct.id] });
+      }
       setTimeout(() => {
         router.push("/admin/productos");
+        router.refresh();
       }, 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error desconocido al guardar.";
