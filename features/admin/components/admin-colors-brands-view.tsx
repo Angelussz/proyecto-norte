@@ -632,7 +632,7 @@ export function AdminColorsBrandsView() {
                     maxLength={3}
                     value={newBrandSku}
                     onChange={(e) => setNewBrandSku(e.target.value.toUpperCase())}
-                    placeholder="???-cam0001-..."
+                    placeholder="???-cam0001-"
                     className="w-full bg-surface-container-lowest pl-3 pr-8 py-2 text-on-surface font-mono text-[13px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                   />
                   <span
@@ -799,7 +799,7 @@ export function AdminColorsBrandsView() {
                     maxLength={3}
                     value={newColorSku}
                     onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
-                    placeholder="....-???-xl"
+                    placeholder="-???-xl"
                     className="w-full bg-surface-container-lowest pl-3 pr-8 py-2.5 text-on-surface font-mono text-[13px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                   />
                   <span
