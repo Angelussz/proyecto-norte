@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { AdminAddInventoryColorModal } from "./admin-add-inventory-color-modal";
 import { AdminAddInventorySizeModal } from "./admin-add-inventory-size-modal";
+import { useCategories } from "@/features/category/hooks/useCategories";
 import { useSizeGroups } from "@/features/admin/hooks/useSizeGroups";
 import { buildSizeOrderMap, sortSizesBySystem } from "@/lib/sort-sizes";
 import {
@@ -442,6 +443,7 @@ export function getInventoryProductById(id: string): ProductCard | undefined {
 
 export function AdminInventoryView() {
   const { data: apiProducts, isLoading, isError, refetch } = useInventoryProducts();
+  const { data: categories = [] } = useCategories();
   const updateInventoryMutation = useUpdateInventoryProduct();
   const deleteProductMutation = useDeleteInventoryProduct();
 
@@ -785,8 +787,12 @@ export function AdminInventoryView() {
       const matches = p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
       if (!matches) return false;
     }
-    if (filterCat && p.category.toLowerCase() !== filterCat.toLowerCase()) {
-      return false;
+    if (filterCat) {
+      const qCat = filterCat.toLowerCase();
+      const pCat = p.category.toLowerCase();
+      if (pCat !== qCat && !pCat.includes(qCat) && !qCat.includes(pCat)) {
+        return false;
+      }
     }
     if (filterStatus && p.stockLevel !== filterStatus) {
       return false;
@@ -819,7 +825,6 @@ export function AdminInventoryView() {
   const healthyCount = products.filter((p) => p.stockLevel === "healthy").length;
   const lowCount = products.filter((p) => p.stockLevel === "low").length;
   const criticalCount = products.filter((p) => p.stockLevel === "critical").length;
-  const availableCategories = Array.from(new Set(products.map((p) => p.category)));
 
   const totalColorClass = (level: ProductCard["stockLevel"]) =>
     level === "healthy" ? "text-secondary" : level === "low" ? "text-mustard" : "text-error";
@@ -1036,9 +1041,9 @@ export function AdminInventoryView() {
                   className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
                 >
                   <option value="">Categoría: Todas</option>
-                  {availableCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat.charAt(0) + cat.slice(1).toLowerCase()}
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
                     </option>
                   ))}
                 </select>
