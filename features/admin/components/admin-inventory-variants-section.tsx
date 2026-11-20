@@ -30,6 +30,7 @@ export interface SizeConfig {
 interface Props {
   onVariantsChange?: (variants: VariantRow[]) => void;
   categoryName?: string;
+  initialVariants?: VariantRow[];
 }
 
 // ─── Mapa de keywords: nombre de categoría → palabras clave del título del grupo ─
@@ -99,7 +100,11 @@ function getGroupKeywordsForCategory(categoryName: string): string[] | null {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function AdminInventoryVariantsSection({ onVariantsChange, categoryName }: Props) {
+export function AdminInventoryVariantsSection({
+  onVariantsChange,
+  categoryName,
+  initialVariants,
+}: Props) {
   // ── Catálogos desde la DB ─────────────────────────────────────────────────
   const { data: colorsData } = useColors();
   const { data: sizeGroupsData } = useSizeGroups();
@@ -172,6 +177,41 @@ export function AdminInventoryVariantsSection({ onVariantsChange, categoryName }
 
   // ── Estado de tallas configuradas ─────────────────────────────────────────
   const [sizes, setSizes] = useState<SizeConfig[]>([]);
+
+  // Inicializar variantes si vienen pre-cargadas (ej. al editar producto)
+  const initialLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!initialVariants || initialVariants.length === 0 || initialLoadedRef.current) return;
+    initialLoadedRef.current = true;
+
+    const sizeMap = new Map<string, { name: string; hex: string; stock: number }[]>();
+    const colorNamesSet = new Set<string>();
+
+    initialVariants.forEach((v) => {
+      colorNamesSet.add(v.colorName);
+      if (!sizeMap.has(v.size)) {
+        sizeMap.set(v.size, []);
+      }
+      sizeMap.get(v.size)!.push({
+        name: v.colorName,
+        hex: v.colorHex,
+        stock: v.stock,
+      });
+    });
+
+    const loadedSizes: SizeConfig[] = Array.from(sizeMap.entries()).map(([sz, clrs], index) => ({
+      size: sz,
+      label: sz,
+      open: index === 0,
+      colors: clrs,
+    }));
+
+    setSizes(loadedSizes);
+    setSelectedSizeKeys(Array.from(sizeMap.keys()));
+    const colorsArr = Array.from(colorNamesSet);
+    setAppliedColorNames(colorsArr);
+    setSelectedColorNames(colorsArr);
+  }, [initialVariants]);
 
   // Cuando cambia la categoría, limpiar las tallas ya agregadas que no pertenezcan
   // a los grupos válidos para esa categoría

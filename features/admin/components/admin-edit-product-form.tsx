@@ -1,12 +1,30 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { AdminInventoryVariantsSection } from "@/features/admin/components/admin-inventory-variants-section";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import {
+  AdminInventoryVariantsSection,
+  type VariantRow,
+} from "@/features/admin/components/admin-inventory-variants-section";
 import { useCategories } from "@/features/category/hooks/useCategories";
 import { useBrands } from "@/features/admin/hooks/useBrands";
-import { useProduct, useProducts } from "@/features/admin/hooks/useProducts";
+import { useColors } from "@/features/admin/hooks/useColors";
+import {
+  useProduct,
+  useProducts,
+  useUpdateProduct,
+  useDeleteProduct,
+} from "@/features/admin/hooks/useProducts";
 import { getInventoryProductById } from "@/features/admin/components/admin-inventory-view";
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 function getBaseSkuFromVariant(variantSku?: string | null): string {
   if (!variantSku) return "";
@@ -17,7 +35,7 @@ function getBaseSkuFromVariant(variantSku?: string | null): string {
   return variantSku;
 }
 
-/* ─── Mock data: producto existente ─── */
+/* ─── Mock data fallback si no se encuentra producto ─── */
 const MOCK_PRODUCT = {
   id: "NRT-CAM0001",
   name: "Sobrecamisa Lino Rústico Arena",
@@ -42,6 +60,7 @@ const MOCK_PRODUCT = {
 };
 
 export function AdminEditProductForm() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const rawId = (params?.id as string) || searchParams?.get("id") || "";
@@ -52,8 +71,21 @@ export function AdminEditProductForm() {
   }, [rawId]);
 
   // 2. Buscar en base de datos si es id de producto existente
-  const { data: dbProduct } = useProduct(rawId && rawId.length > 10 ? rawId : null);
+  const isLocalOnly = /^p\d+$/i.test(rawId);
+  const { data: dbProduct, isLoading: dbProductLoading } = useProduct(
+    rawId && !isLocalOnly ? rawId : null,
+  );
 
+  // 3. Catálogos globales
+  const { data: categories, isLoading: catsLoading, isError: catsError } = useCategories();
+  const { data: brands, isLoading: brandsLoading, isError: brandsError } = useBrands();
+  const { data: globalColors = [] } = useColors();
+  const { data: allProducts = [] } = useProducts();
+
+  const updateProduct = useUpdateProduct();
+  const deleteProductMutation = useDeleteProduct();
+
+  // 4. Datos del producto resueltos
   const p = useMemo(() => {
     if (dbProduct) {
       const firstSku =
@@ -66,7 +98,7 @@ export function AdminEditProductForm() {
         sku: firstSku,
         brand: "NORTE Atelier",
         gender: "Unisex",
-        slug: dbProduct.slug || dbProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        slug: dbProduct.slug || slugify(dbProduct.name),
         description: dbProduct.description || "",
         care:
           dbProduct.material ||
@@ -96,7 +128,7 @@ export function AdminEditProductForm() {
         sku: inventoryProduct.sku,
         brand: "NORTE Atelier",
         gender: "Unisex",
-        slug: inventoryProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        slug: slugify(inventoryProduct.name),
         description: `Pieza artesanal perteneciente a la línea de ${inventoryProduct.category.toLowerCase()}. Confección con materiales seleccionados y patronaje atemporal de atelier.`,
         care: "Confección artesanal. Limpieza profesional o ciclo delicado según directriz técnica.",
         priceRetail: validPrice,
@@ -115,14 +147,78 @@ export function AdminEditProductForm() {
     return MOCK_PRODUCT;
   }, [dbProduct, inventoryProduct]);
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // 5. Variantes iniciales estructuradas para el componente de inventario
+  const initialVariants = useMemo<VariantRow[]>(() => {
+    if (dbProduct?.variants && dbProduct.variants.length > 0) {
+      return dbProduct.variants.map((v) => {
+        const found = globalColors.find(
+          (c) =>
+            c.hex.toLowerCase() === v.color.toLowerCase() ||
+            c.name.toLowerCase() === v.color.toLowerCase(),
+        );
+        return {
+          size: v.size,
+          colorName: found?.name || v.color,
+          colorHex: found?.hex || (v.color.startsWith("#") ? v.color : "#4F583D"),
+          stock: v.stock,
+        };
+      });
+    }
 
-  // ── Categorías desde la DB ───────────────────────────────────────────────
-  const { data: categories, isLoading: catsLoading, isError: catsError } = useCategories();
+    if (inventoryProduct) {
+      const rows: VariantRow[] = [];
+      inventoryProduct.sizes.forEach((sz) => {
+        inventoryProduct.colors.forEach((col) => {
+          const val = inventoryProduct.stock[sz]?.[col.name] ?? 0;
+          rows.push({
+            size: sz,
+            colorName: col.name,
+            colorHex: col.hex,
+            stock: val,
+          });
+        });
+      });
+      return rows;
+    }
+
+    return [];
+  }, [dbProduct, inventoryProduct, globalColors]);
+
+  // ── Estados controlados del formulario ────────────────────────────────────
+  const [name, setName] = useState(p.name);
   const [categoryId, setCategoryId] = useState("");
+  const [brandId, setBrandId] = useState("");
+  const [sku, setSku] = useState("");
+  const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
+  const [gender, setGender] = useState(p.gender);
+  const [description, setDescription] = useState(p.description);
+  const [material, setMaterial] = useState(p.care);
+  const [basePrice, setBasePrice] = useState(String(p.priceRetail));
+  const [unitCost, setUnitCost] = useState(String(p.priceCost));
+  const [active, setActive] = useState(p.status);
+  const [variants, setVariants] = useState<VariantRow[]>([]);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
+  // Sincronizar estados cuando se cargan los datos del producto
   useEffect(() => {
-    if (categories && categories.length > 0) {
+    if (p.name) setName(p.name);
+    if (p.gender) setGender(p.gender);
+    if (p.description) setDescription(p.description);
+    if (p.care) setMaterial(p.care);
+    if (p.priceRetail !== undefined) setBasePrice(String(p.priceRetail));
+    if (p.priceCost !== undefined) setUnitCost(String(p.priceCost));
+    if (p.status !== undefined) setActive(p.status);
+    if (p.sku && !skuManuallyEdited) setSku(getBaseSkuFromVariant(p.sku));
+  }, [p]);
+
+  // Sincronizar categoría
+  useEffect(() => {
+    if (categories && categories.length > 0 && !categoryId) {
       const match =
         categories.find((c) => c.name.toLowerCase() === p.category.toLowerCase()) ||
         categories.find((c) => p.category.toLowerCase().includes(c.name.toLowerCase())) ||
@@ -132,16 +228,12 @@ export function AdminEditProductForm() {
         setCategoryId(match.id);
       }
     }
-  }, [categories, p.category]);
+  }, [categories, p.category, categoryId]);
 
   const selectedCategoryName =
     categories?.find((c) => c.id === categoryId)?.name ?? (categoryId ? "" : p.category);
 
-  // ── Marcas desde la DB ───────────────────────────────────────────────────
-  const { data: brands, isLoading: brandsLoading, isError: brandsError } = useBrands();
-  const { data: allProducts = [] } = useProducts();
-  const [brandId, setBrandId] = useState("");
-
+  // Sincronizar marca
   useEffect(() => {
     if (!brandId && brands && brands.length > 0) {
       const prefixFromSku = p.sku?.split("-")[0]?.toUpperCase();
@@ -157,17 +249,7 @@ export function AdminEditProductForm() {
     }
   }, [brands, brandId, p.brand, p.sku]);
 
-  // ── SKU Base y auto-generado ─────────────────────────────────────────────
-  const [sku, setSku] = useState("");
-  const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
-
-  useEffect(() => {
-    if (p.sku && !sku && !skuManuallyEdited) {
-      setSku(getBaseSkuFromVariant(p.sku));
-    }
-  }, [p.sku, sku, skuManuallyEdited]);
-
-  // ── Auto-SKU dinámico: mientras elijo categoría y marca se va cambiando ──
+  // Auto-SKU dinámico: mientras elijo categoría y marca se va cambiando
   useEffect(() => {
     if (skuManuallyEdited) return;
     if (!brandId && !categoryId) return;
@@ -196,19 +278,204 @@ export function AdminEditProductForm() {
     setSku(autoSku);
   }, [brandId, categoryId, brands, categories, skuManuallyEdited, allProducts, p.sku, p.id]);
 
-  const margin = (((p.priceRetail - p.priceCost) / p.priceRetail) * 100).toFixed(1);
+  // Derivados de precio
+  const basePriceNum = parseFloat(basePrice) || 0;
+  const unitCostNum = parseFloat(unitCost) || 0;
+  const margin = basePriceNum > 0 ? ((basePriceNum - unitCostNum) / basePriceNum) * 100 : 0;
+  const marginStr = margin.toFixed(1);
+  const profit = (basePriceNum - unitCostNum).toFixed(2);
+  const currentSlug = slugify(name);
+
+  // ── Guardar Cambios ───────────────────────────────────────────────────────
+  async function handleSave() {
+    if (!name.trim()) {
+      setNotification({ type: "error", message: "El nombre de la prenda es obligatorio." });
+      return;
+    }
+    if (!categoryId) {
+      setNotification({ type: "error", message: "Seleccioná una categoría." });
+      return;
+    }
+    if (!material.trim()) {
+      setNotification({ type: "error", message: "La composición/material es obligatoria." });
+      return;
+    }
+    if (!basePrice || basePriceNum <= 0) {
+      setNotification({ type: "error", message: "El precio de venta debe ser mayor a 0." });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // 1. Si es producto de la base de datos
+      if (dbProduct) {
+        const form = new FormData();
+        form.set("name", name.trim());
+        form.set("category_id", categoryId);
+        form.set("material", material.trim());
+        form.set("base_price", String(basePriceNum));
+        if (description.trim()) form.set("description", description.trim());
+        form.set("slug", currentSlug);
+        form.set("active", String(active));
+
+        await updateProduct.mutateAsync({ id: dbProduct.id, form });
+
+        // Actualizar o crear variantes
+        const variantsToSave = variants.filter((v) => v.stock > 0);
+        if (variantsToSave.length > 0) {
+          await Promise.all(
+            variantsToSave.map(async (v) => {
+              const existingVar = dbProduct.variants?.find(
+                (ex) =>
+                  ex.size.toLowerCase() === v.size.toLowerCase() &&
+                  (ex.color.toLowerCase() === v.colorHex.toLowerCase() ||
+                    ex.color.toLowerCase() === v.colorName.toLowerCase()),
+              );
+
+              if (existingVar) {
+                await fetch(`/api/admin/products/${dbProduct.id}/variants/${existingVar.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    stock: v.stock,
+                    price: basePriceNum,
+                    unitCost: unitCostNum,
+                  }),
+                });
+              } else {
+                const colorCode =
+                  globalColors.find(
+                    (c) =>
+                      c.hex.toLowerCase() === v.colorHex.toLowerCase() ||
+                      c.name.toLowerCase() === v.colorName.toLowerCase(),
+                  )?.skuCode ||
+                  v.colorName
+                    .replace(/[^A-Za-z]/g, "")
+                    .slice(0, 3)
+                    .toUpperCase() ||
+                  "STD";
+                const cleanSize =
+                  v.size
+                    .toUpperCase()
+                    .replace(/^TALLA\s*/i, "")
+                    .trim() || "U";
+                const variantSku = sku.trim()
+                  ? `${sku.trim()}-${colorCode}-${cleanSize}`
+                  : undefined;
+
+                await fetch(`/api/admin/products/${dbProduct.id}/variants`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    size: v.size,
+                    color: v.colorName,
+                    colorHex: v.colorHex,
+                    stock: v.stock,
+                    sku: variantSku,
+                    price: basePriceNum,
+                    unitCost: unitCostNum,
+                  }),
+                });
+              }
+            }),
+          );
+        }
+      }
+
+      // 2. Si también está en inventario local/localStorage, actualizarlo
+      if (inventoryProduct) {
+        try {
+          const raw = localStorage.getItem("norte-inventory-v3");
+          if (raw) {
+            const list = JSON.parse(raw);
+            const idx = list.findIndex(
+              (item: { id: string; sku: string }) =>
+                item.id === inventoryProduct.id || item.sku === inventoryProduct.sku,
+            );
+            if (idx !== -1) {
+              const updatedItem = {
+                ...list[idx],
+                name: name.trim(),
+                sku: sku.trim() || list[idx].sku,
+                category: selectedCategoryName || list[idx].category,
+                pvp: `$${basePriceNum.toFixed(2)}`,
+              };
+              list[idx] = updatedItem;
+              localStorage.setItem("norte-inventory-v3", JSON.stringify(list));
+            }
+          }
+        } catch (e) {
+          console.warn("No se pudo actualizar localStorage:", e);
+        }
+      }
+
+      setNotification({
+        type: "success",
+        message: "¡Cambios guardados correctamente! Redirigiendo a productos…",
+      });
+      setTimeout(() => {
+        router.push("/admin/productos");
+      }, 1500);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido al guardar.";
+      setNotification({ type: "error", message: msg });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // ── Eliminar Producto ─────────────────────────────────────────────────────
+  async function handleDelete() {
+    try {
+      if (dbProduct) {
+        await deleteProductMutation.mutateAsync(dbProduct.id);
+      }
+      setShowDeleteModal(false);
+      setNotification({
+        type: "success",
+        message: "¡Prenda eliminada correctamente! Redirigiendo a productos…",
+      });
+      setTimeout(() => {
+        router.push("/admin/productos");
+      }, 1200);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al eliminar la prenda.";
+      setNotification({ type: "error", message: msg });
+    }
+  }
+
+  function handleDiscard() {
+    router.back();
+  }
 
   return (
     <>
-      <div
-        key={p.id}
-        className="w-full max-w-[1400px] mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8"
-      >
+      <div className="w-full max-w-[1400px] mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8">
+        {/* ── Banner de Notificación ── */}
+        {notification && (
+          <div
+            className={`px-6 py-4 font-inter text-[14px] flex items-center justify-between gap-4 shadow-sm ${
+              notification.type === "success"
+                ? "bg-[#33402f] text-[#fff9ed]"
+                : "bg-red-700 text-white"
+            }`}
+          >
+            <span>{notification.message}</span>
+            <button
+              type="button"
+              onClick={() => setNotification(null)}
+              className="text-white/70 hover:text-white text-[18px] leading-none"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* ── Header ── */}
         <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-[#eee8d9]">
           <div className="flex flex-col gap-1 max-w-3xl">
             <h1 className="font-headline text-[48px] leading-none text-[#1e1c13] uppercase tracking-tight">
-              EDITAR PRODUCTO: {p.name}
+              EDITAR PRODUCTO: {name || p.name}
             </h1>
             <p className="font-inter text-[12px] text-[#524438] mt-1">
               Última edición por <strong className="text-[#1e1c13]">{p.lastEditedBy}</strong> el{" "}
@@ -220,24 +487,29 @@ export function AdminEditProductForm() {
             <button
               type="button"
               onClick={() => setShowDeleteModal(true)}
-              className="px-4 py-3 border border-red-300 text-red-600 hover:bg-red-50 font-inter text-[11px] uppercase tracking-widest transition-colors flex items-center gap-2"
+              className="px-4 py-3 border border-red-300 text-red-600 hover:bg-red-50 font-inter text-[11px] uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[16px]">delete</span>
               ELIMINAR
             </button>
             <button
               type="button"
-              className="px-4 py-3 bg-[#eee8d9] hover:bg-[#e8e2d4] text-[#1e1c13] font-inter text-[12px] uppercase tracking-widest transition-colors flex items-center gap-2"
+              onClick={handleDiscard}
+              className="px-4 py-3 bg-[#eee8d9] hover:bg-[#e8e2d4] text-[#1e1c13] font-inter text-[12px] uppercase tracking-widest transition-colors flex items-center gap-2 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[18px]">visibility</span>
-              VISTA PREVIA
+              <span className="material-symbols-outlined text-[18px]">close</span>
+              DESCARTAR
             </button>
             <button
               type="button"
-              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2"
+              onClick={handleSave}
+              disabled={isSaving || updateProduct.isPending}
+              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
             >
-              GUARDAR CAMBIOS
-              <span className="material-symbols-outlined text-[18px]">check</span>
+              {isSaving || updateProduct.isPending ? "GUARDANDO…" : "GUARDAR CAMBIOS"}
+              {!(isSaving || updateProduct.isPending) && (
+                <span className="material-symbols-outlined text-[18px]">check</span>
+              )}
             </button>
           </div>
         </header>
@@ -272,7 +544,9 @@ export function AdminEditProductForm() {
                   <input
                     id="prod-name"
                     type="text"
-                    defaultValue={p.name}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ej. Sobrecamisa Lino Rústico Arena"
                     className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[16px] text-[#1e1c13] placeholder:text-[#857466] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                   />
                 </div>
@@ -408,7 +682,8 @@ export function AdminEditProductForm() {
                   <div className="relative">
                     <select
                       id="prod-gender"
-                      defaultValue={p.gender}
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
                       className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                     >
                       <option>Hombre</option>
@@ -431,15 +706,9 @@ export function AdminEditProductForm() {
                       URL Slug:
                     </span>
                     <span className="font-inter text-[12px] text-[#673900] truncate">
-                      norteatelier.com/shop/{p.slug}
+                      norteatelier.com/shop/{currentSlug || p.slug}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="text-[#c77d2e] hover:text-[#673900] font-inter text-[10px] uppercase tracking-widest font-semibold shrink-0"
-                  >
-                    EDITAR
-                  </button>
                 </div>
 
                 {/* Descripción */}
@@ -448,27 +717,12 @@ export function AdminEditProductForm() {
                     <label className="font-inter text-[11px] uppercase tracking-wider text-[#524438]">
                       Descripción Editorial &amp; Silueta
                     </label>
-                    <div className="flex items-center gap-1 bg-[#f4eddf] px-2 py-0.5">
-                      {[
-                        "format_bold",
-                        "format_italic",
-                        "link",
-                        "format_list_bulleted",
-                        "format_quote",
-                      ].map((icon) => (
-                        <button
-                          key={icon}
-                          type="button"
-                          className="p-1 hover:bg-[#e8e2d4] text-[#524438] hover:text-[#1e1c13]"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">{icon}</span>
-                        </button>
-                      ))}
-                    </div>
                   </div>
                   <textarea
                     rows={4}
-                    defaultValue={p.description}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Descripción editorial de la prenda…"
                     className="w-full bg-[#faf3e4] p-4 font-inter text-[14px] text-[#1e1c13] leading-relaxed focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900] resize-none"
                   />
                 </div>
@@ -484,7 +738,9 @@ export function AdminEditProductForm() {
                   <input
                     id="prod-care"
                     type="text"
-                    defaultValue={p.care}
+                    value={material}
+                    onChange={(e) => setMaterial(e.target.value)}
+                    placeholder="Ej. 100% Lino Europeo certificado Master of Linen..."
                     className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                   />
                 </div>
@@ -607,7 +863,8 @@ export function AdminEditProductForm() {
                       id="price-retail"
                       type="number"
                       step="0.50"
-                      defaultValue={p.priceRetail}
+                      value={basePrice}
+                      onChange={(e) => setBasePrice(e.target.value)}
                       className="w-full bg-[#faf3e4] pl-8 pr-3 py-3 font-headline text-[20px] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                     />
                   </div>
@@ -632,7 +889,8 @@ export function AdminEditProductForm() {
                       id="price-cost"
                       type="number"
                       step="0.50"
-                      defaultValue={p.priceCost}
+                      value={unitCost}
+                      onChange={(e) => setUnitCost(e.target.value)}
                       className="w-full bg-[#faf3e4] pl-8 pr-3 py-3 font-headline text-[20px] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                     />
                   </div>
@@ -648,14 +906,17 @@ export function AdminEditProductForm() {
                   </span>
                   <div className="flex items-baseline gap-2">
                     <span className="font-headline text-[36px] text-[#673900] leading-none">
-                      {margin}%
+                      {marginStr}%
                     </span>
                     <span className="font-inter text-[10px] uppercase text-[#33402f] font-semibold">
-                      (${(p.priceRetail - p.priceCost).toFixed(2)})
+                      (${profit})
                     </span>
                   </div>
                   <div className="w-full h-1.5 bg-[#eee8d9] overflow-hidden">
-                    <div className="h-full bg-[#673900]" style={{ width: `${margin}%` }} />
+                    <div
+                      className="h-full bg-[#673900] transition-all"
+                      style={{ width: `${Math.min(margin, 100)}%` }}
+                    />
                   </div>
                 </div>
               </div>
@@ -722,43 +983,49 @@ export function AdminEditProductForm() {
                 </span>
               </div>
               <div className="flex flex-col gap-4">
-                {[
-                  {
-                    label: "Estado de Venta",
-                    desc: "Visible en tienda ahora",
-                    checked: p.status,
-                  },
-                  {
-                    label: "Destacado en Home",
-                    desc: "Aparece en sección Novedades",
-                    checked: p.featured,
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between p-3 bg-[#faf3e4]"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-inter text-[10px] uppercase tracking-wider text-[#1e1c13] font-semibold">
-                        {item.label}
-                      </span>
-                      <span className="font-inter text-[12px] text-[#524438]">{item.desc}</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        defaultChecked={item.checked}
-                        className="sr-only peer"
-                        type="checkbox"
-                      />
-                      <div className="w-11 h-6 bg-[#eee8d9] peer-focus:outline-none peer-checked:bg-[#c77d2e] transition-colors relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
-                    </label>
+                <div className="flex items-center justify-between p-3 bg-[#faf3e4]">
+                  <div className="flex flex-col">
+                    <span className="font-inter text-[10px] uppercase tracking-wider text-[#1e1c13] font-semibold">
+                      Estado de Venta
+                    </span>
+                    <span className="font-inter text-[12px] text-[#524438]">
+                      {active ? "Visible en tienda ahora" : "Oculto (borrador)"}
+                    </span>
                   </div>
-                ))}
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      checked={active}
+                      onChange={(e) => setActive(e.target.checked)}
+                      className="sr-only peer"
+                      type="checkbox"
+                    />
+                    <div className="w-11 h-6 bg-[#eee8d9] peer-focus:outline-none peer-checked:bg-[#c77d2e] transition-colors relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white">
+                  <div className="flex flex-col">
+                    <span className="font-inter text-[10px] uppercase tracking-wider text-[#1e1c13] font-semibold">
+                      Destacado en Home
+                    </span>
+                    <span className="font-inter text-[12px] text-[#524438]">
+                      Aparece en sección Novedades
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input defaultChecked={p.featured} className="sr-only peer" type="checkbox" />
+                    <div className="w-11 h-6 bg-[#eee8d9] peer-focus:outline-none peer-checked:bg-[#c77d2e] transition-colors relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
               </div>
             </section>
 
             {/* ── CARD 2: INVENTARIO, TALLES Y COLORES ── */}
-            <AdminInventoryVariantsSection categoryName={selectedCategoryName} />
+            <AdminInventoryVariantsSection
+              categoryName={selectedCategoryName}
+              initialVariants={initialVariants}
+              onVariantsChange={setVariants}
+            />
           </aside>
         </div>
 
@@ -767,29 +1034,29 @@ export function AdminEditProductForm() {
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#c77d2e] animate-pulse" />
             <span className="font-inter text-[12px] text-[#e0dacb]">
-              Cambios sin guardar · Editando: {p.name}
+              {isSaving || updateProduct.isPending
+                ? "Guardando cambios…"
+                : `Editando: ${name || p.name}`}
             </span>
           </div>
           <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
             <button
               type="button"
-              className="px-4 py-3 bg-white/10 hover:bg-white/15 text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors"
+              onClick={handleDiscard}
+              className="px-4 py-3 bg-white/10 hover:bg-white/15 text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
             >
               DESCARTAR CAMBIOS
             </button>
             <button
               type="button"
-              className="px-4 py-3 bg-white/10 hover:bg-white/15 text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest flex items-center gap-1.5 transition-colors"
+              onClick={handleSave}
+              disabled={isSaving || updateProduct.isPending}
+              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[16px]">visibility</span>
-              VISTA PREVIA
-            </button>
-            <button
-              type="button"
-              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors"
-            >
-              GUARDAR CAMBIOS
-              <span className="material-symbols-outlined text-[18px]">check</span>
+              {isSaving || updateProduct.isPending ? "GUARDANDO…" : "GUARDAR CAMBIOS"}
+              {!(isSaving || updateProduct.isPending) && (
+                <span className="material-symbols-outlined text-[18px]">check</span>
+              )}
             </button>
           </div>
         </div>
@@ -809,7 +1076,7 @@ export function AdminEditProductForm() {
             </div>
             <p className="font-inter text-[14px] text-[#524438] leading-relaxed">
               ¿Estás seguro de que quieres eliminar{" "}
-              <strong className="text-[#1e1c13]">{p.name}</strong>? Esta acción no se puede
+              <strong className="text-[#1e1c13]">{name || p.name}</strong>? Esta acción no se puede
               deshacer.
             </p>
             <div className="bg-[#faf3e4] p-3 flex items-start gap-2">
@@ -825,15 +1092,17 @@ export function AdminEditProductForm() {
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="px-6 py-3 bg-[#eee8d9] hover:bg-[#e8e2d4] text-[#1e1c13] font-inter text-[12px] uppercase tracking-widest transition-colors"
+                className="px-6 py-3 bg-[#eee8d9] hover:bg-[#e8e2d4] text-[#1e1c13] font-inter text-[12px] uppercase tracking-widest transition-colors cursor-pointer"
               >
                 CANCELAR
               </button>
               <button
                 type="button"
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-inter text-[12px] uppercase tracking-widest transition-colors"
+                onClick={handleDelete}
+                disabled={deleteProductMutation.isPending}
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-inter text-[12px] uppercase tracking-widest transition-colors flex items-center gap-1.5 cursor-pointer"
               >
-                SÍ, ELIMINAR
+                {deleteProductMutation.isPending ? "ELIMINANDO…" : "SÍ, ELIMINAR"}
               </button>
             </div>
           </div>
