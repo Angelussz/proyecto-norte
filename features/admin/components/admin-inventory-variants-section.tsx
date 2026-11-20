@@ -109,10 +109,11 @@ export function AdminInventoryVariantsSection({
   const { data: colorsData } = useColors();
   const { data: sizeGroupsData } = useSizeGroups();
 
-  // Aplanar colores activos del catálogo
+  // Aplanar colores activos del catálogo y ordenarlos alfabéticamente (A-Z)
   const catalogColors: ColorItem[] = (colorsData ?? [])
     .filter((c) => c.active)
-    .map((c) => ({ name: c.name, hex: c.hex }));
+    .map((c) => ({ name: c.name, hex: c.hex }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
 
   // Filtrar grupos según la categoría seleccionada
   const groupKeywords = categoryName ? getGroupKeywordsForCategory(categoryName) : null;

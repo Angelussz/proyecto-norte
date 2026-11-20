@@ -28,9 +28,12 @@ export function AdminAddInventoryColorModal({
 }: AdminAddInventoryColorModalProps) {
   const { data: colorsData, isLoading } = useColors();
 
-  // Solo colores activos del catálogo real de la DB
+  // Solo colores activos del catálogo real de la DB ordenados alfabéticamente
   const catalogColors = useMemo<ColorVariant[]>(() => {
-    return (colorsData ?? []).filter((c) => c.active).map((c) => ({ name: c.name, hex: c.hex }));
+    return (colorsData ?? [])
+      .filter((c) => c.active)
+      .map((c) => ({ name: c.name, hex: c.hex }))
+      .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
   }, [colorsData]);
 
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
