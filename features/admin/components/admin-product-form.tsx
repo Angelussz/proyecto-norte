@@ -89,7 +89,7 @@ export function AdminProductForm() {
   ]);
 
   // ── Guardar ───────────────────────────────────────────────────────────────
-  async function handleSave() {
+  async function handleSave(forceActive?: boolean) {
     if (!name.trim()) {
       setNotification({ type: "error", message: "El nombre del producto es obligatorio." });
       return;
@@ -107,6 +107,7 @@ export function AdminProductForm() {
       return;
     }
 
+    const effectiveActive = forceActive !== undefined ? forceActive : active;
     const form = new FormData();
     form.set("name", name.trim());
     form.set("category_id", categoryId);
@@ -114,7 +115,7 @@ export function AdminProductForm() {
     form.set("base_price", String(basePriceNum));
     if (description.trim()) form.set("description", description.trim());
     if (slug) form.set("slug", slug);
-    form.set("active", String(active));
+    form.set("active", String(effectiveActive));
 
     try {
       const created = await createProduct.mutateAsync(form);
@@ -125,7 +126,7 @@ export function AdminProductForm() {
       const variantsToSave = variants.filter((v) => v.stock > 0);
       if (variantsToSave.length > 0) {
         await Promise.all(
-          variantsToSave.map((v) => {
+          variantsToSave.map(async (v) => {
             const colorCode =
               globalColors?.find(
                 (c) =>
@@ -145,7 +146,7 @@ export function AdminProductForm() {
                 .trim() || "U";
             const variantSku = sku.trim() ? `${sku.trim()}-${colorCode}-${cleanSize}` : undefined;
 
-            return fetch(`/api/admin/products/${productId}/variants`, {
+            const res = await fetch(`/api/admin/products/${productId}/variants`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -154,13 +155,29 @@ export function AdminProductForm() {
                 colorHex: v.colorHex,
                 stock: v.stock,
                 sku: variantSku,
+                price: basePriceNum,
+                unitCost: unitCostNum,
               }),
             });
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(
+                errData.error || `Error al guardar variante ${v.size} / ${v.colorName}`,
+              );
+            }
           }),
         );
       }
 
-      setNotification({ type: "success", message: "¡Producto publicado correctamente!" });
+      setNotification({
+        type: "success",
+        message: effectiveActive
+          ? "¡Producto publicado correctamente! Redirigiendo a productos…"
+          : "¡Borrador guardado correctamente! Redirigiendo a productos…",
+      });
+      setTimeout(() => {
+        router.push("/admin/productos");
+      }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido al guardar.";
       setNotification({ type: "error", message });
@@ -215,9 +232,9 @@ export function AdminProductForm() {
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={createProduct.isPending}
-            className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2"
+            className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
           >
             {createProduct.isPending ? "GUARDANDO…" : "GUARDAR Y PUBLICAR"}
             {!createProduct.isPending && (
@@ -796,15 +813,17 @@ export function AdminProductForm() {
           </button>
           <button
             type="button"
-            className="px-4 py-3 bg-white/10 hover:bg-white/15 text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors"
+            onClick={() => handleSave(false)}
+            disabled={createProduct.isPending}
+            className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-50 text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
           >
             GUARDAR BORRADOR
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={createProduct.isPending}
-            className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors"
+            className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
           >
             {createProduct.isPending ? "PUBLICANDO…" : "PUBLICAR PRODUCTO"}
             {!createProduct.isPending && (
