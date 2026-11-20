@@ -3,6 +3,7 @@
 import { useMemo, useState, Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ProductListItem } from "@/features/admin/types/product.interface";
 import type { ColorDto } from "@/features/admin/types/brand-color.interface";
@@ -588,17 +589,36 @@ export function AdminProductsTable({
                       {/* Nombre & categoría */}
                       <td className="py-3 px-4">
                         <div className="flex flex-col min-w-0">
-                          <span
-                            className={cn(
-                              "text-[16px] font-inter font-medium text-on-surface transition-colors",
-                              product.active
-                                ? "group-hover/row:text-primary"
-                                : "line-through text-outline",
-                              hasVariants && "font-semibold",
-                            )}
-                          >
-                            {product.name}
-                          </span>
+                          {/* Enlace al detalle del producto en la tienda con tooltip al hover */}
+                          <div className="relative inline-flex items-center group/tooltip w-fit">
+                            <a
+                              href={`/product/${product.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="group/link inline-flex items-center gap-1.5"
+                            >
+                              <span
+                                className={cn(
+                                  "text-[16px] font-inter font-medium text-on-surface transition-colors",
+                                  "group-hover/link:text-primary hover:underline underline-offset-4 decoration-primary/50 cursor-pointer",
+                                  !product.active && "line-through text-outline",
+                                  hasVariants && "font-semibold",
+                                )}
+                              >
+                                {product.name}
+                              </span>
+                              <ExternalLink className="w-3.5 h-3.5 text-on-surface-variant/40 group-hover/link:text-primary transition-colors shrink-0" />
+                            </a>
+
+                            {/* Tooltip visible al pasar el cursor */}
+                            <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/tooltip:flex items-center gap-1 px-2.5 py-1 bg-[#1e1c13] text-[#fff9ed] text-[10px] font-inter tracking-wider uppercase font-semibold shadow-lg whitespace-nowrap z-30 pointer-events-none animate-in fade-in duration-150">
+                              <span>Ver en tienda</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                              <div className="absolute top-full left-3 -mt-px border-4 border-transparent border-t-[#1e1c13]" />
+                            </div>
+                          </div>
+
                           <span
                             className={cn(
                               "text-[10px] font-inter text-on-surface-variant uppercase tracking-wider block my-0.5",
