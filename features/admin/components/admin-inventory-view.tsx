@@ -7,32 +7,16 @@ import { AdminAddInventoryColorModal } from "./admin-add-inventory-color-modal";
 import { AdminAddInventorySizeModal } from "./admin-add-inventory-size-modal";
 import { useSizeGroups } from "@/features/admin/hooks/useSizeGroups";
 import { buildSizeOrderMap, sortSizesBySystem } from "@/lib/sort-sizes";
+import {
+  useInventoryProducts,
+  useUpdateInventoryProduct,
+  useDeleteInventoryProduct,
+  type ColorVariant,
+  type StockMatrix,
+  type InventoryProductCard as ProductCard,
+} from "@/features/admin/hooks/useInventory";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface ColorVariant {
-  name: string;
-  hex: string;
-}
-
-interface StockMatrix {
-  [talle: string]: { [color: string]: number | null | undefined };
-}
-
-interface ProductCard {
-  id: string;
-  sku: string;
-  category: string;
-  name: string;
-  pvp?: string;
-  sizes: string[];
-  colors: ColorVariant[];
-  stock: StockMatrix;
-  totalStock: number;
-  stockLevel: "healthy" | "low" | "critical";
-  expanded: boolean;
-  image: string;
-}
+export type { ColorVariant, StockMatrix, ProductCard };
 
 interface Movement {
   id: string;
@@ -457,20 +441,16 @@ export function getInventoryProductById(id: string): ProductCard | undefined {
 }
 
 export function AdminInventoryView() {
-  const [products, setProducts] = useState<ProductCard[]>(() => loadFromLS() ?? INITIAL_PRODUCTS);
+  const { data: apiProducts, isLoading, isError, refetch } = useInventoryProducts();
+  const updateInventoryMutation = useUpdateInventoryProduct();
+  const deleteProductMutation = useDeleteInventoryProduct();
+
+  const [products, setProducts] = useState<ProductCard[]>([]);
   // Snapshot completo del producto guardado (sizes + colors + stock).
   // Solo se actualiza al presionar "Actualizar Stock". Permite Descartar TODO.
   const [savedSnapshots, setSavedSnapshots] = useState<
     Record<string, Pick<ProductCard, "sizes" | "colors" | "stock">>
-  >(() => {
-    const base = loadFromLS() ?? INITIAL_PRODUCTS;
-    return Object.fromEntries(
-      base.map((p) => [
-        p.id,
-        structuredClone({ sizes: p.sizes, colors: p.colors, stock: p.stock }),
-      ]),
-    );
-  });
+  >({});
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -484,17 +464,49 @@ export function AdminInventoryView() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Sincronizar datos reales de la base de datos con TanStack React Query
+  useEffect(() => {
+    if (!apiProducts) return;
+
+    setProducts((prev) => {
+      if (prev.length === 0) return apiProducts;
+      return apiProducts.map((apiP) => {
+        const localP = prev.find((p) => p.id === apiP.id);
+        if (!localP) return apiP;
+        const expanded = localP.expanded;
+        const snap = savedSnapshots[apiP.id];
+        const isDirty =
+          snap &&
+          (JSON.stringify(localP.sizes) !== JSON.stringify(snap.sizes) ||
+            JSON.stringify(localP.colors) !== JSON.stringify(snap.colors) ||
+            JSON.stringify(localP.stock) !== JSON.stringify(snap.stock));
+
+        return isDirty ? { ...localP, expanded } : { ...apiP, expanded };
+      });
+    });
+
+    setSavedSnapshots((prev) => {
+      const next = { ...prev };
+      for (const p of apiProducts) {
+        if (!next[p.id]) {
+          next[p.id] = structuredClone({ sizes: p.sizes, colors: p.colors, stock: p.stock });
+        }
+      }
+      return next;
+    });
+  }, [apiProducts]);
+
   // Orden canónico de talles desde la DB (misma fuente que el modal de talles)
   const { data: sizeGroupsData } = useSizeGroups();
   const sizeOrderMap = useMemo(() => buildSizeOrderMap(sizeGroupsData ?? []), [sizeGroupsData]);
 
   // Cuando llega el mapa canónico de la DB, re-ordena talles y colores de todos
-  // los productos cargados (desde localStorage o INITIAL_PRODUCTS).
-  // Solo se ejecuta una vez: cuando sizeOrderMap pasa de vacío a tener datos.
+  // los productos cargados.
   const sortAppliedRef = useRef(false);
   useEffect(() => {
-    if (sizeOrderMap.size === 0) return; // todavía no llegaron los datos
-    if (sortAppliedRef.current) return; // ya se aplicó en esta sesión
+    if (sizeOrderMap.size === 0) return;
+    if (products.length === 0) return;
+    if (sortAppliedRef.current) return;
     sortAppliedRef.current = true;
 
     setProducts((prev) => {
@@ -510,8 +522,7 @@ export function AdminInventoryView() {
         });
         return { ...p, sizes: orderedSizes, colors: sortedColors, stock: reorderedStock };
       });
-      // Sincronizar snapshots con el orden correcto (para que Descartar
-      // también restaure al orden ordenado, no al desordenado original).
+      // Sincronizar snapshots con el orden correcto
       setSavedSnapshots(
         Object.fromEntries(
           sorted.map((p) => [
@@ -522,7 +533,7 @@ export function AdminInventoryView() {
       );
       return sorted;
     });
-  }, [sizeOrderMap]);
+  }, [sizeOrderMap, products.length]);
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -549,15 +560,42 @@ export function AdminInventoryView() {
     setOpenMenuId(null);
   }
 
-  function handleConfirmDeleteProduct() {
+  async function handleConfirmDeleteProduct() {
     if (!productToDelete) return;
     const p = productToDelete;
-    const updated = products.filter((x) => x.id !== p.id);
-    setProducts(updated);
-    persistProducts(updated);
-    setProductToDelete(null);
-    setToast(`"${p.name}" eliminado del inventario.`);
-    setTimeout(() => setToast(null), 3000);
+    try {
+      await deleteProductMutation.mutateAsync(p.id);
+      setProducts((prev) => prev.filter((x) => x.id !== p.id));
+      setProductToDelete(null);
+      setToast(`"${p.name}" eliminado del inventario.`);
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Error al eliminar el producto");
+      setTimeout(() => setToast(null), 4000);
+    }
+  }
+
+  function handleDeleteSize(productId: string, talle: string) {
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+        const nextSizes = p.sizes.filter((s) => s !== talle);
+        const nextStock = { ...p.stock };
+        delete nextStock[talle];
+        const newTotal = calcTotal(nextStock);
+        const newLevel: "healthy" | "low" | "critical" =
+          newTotal === 0 ? "critical" : newTotal < 15 ? "low" : "healthy";
+        return {
+          ...p,
+          sizes: nextSizes,
+          stock: nextStock,
+          totalStock: newTotal,
+          stockLevel: newLevel,
+        };
+      }),
+    );
+    setToast(`Talle "${talle}" eliminado. Presioná "Actualizar Stock" para guardar.`);
+    setTimeout(() => setToast(null), 3500);
   }
 
   function handleSaveSizes(productId: string, newSizes: string[]) {
@@ -664,32 +702,43 @@ export function AdminInventoryView() {
     );
   }
 
-  function saveMatrix(productId: string) {
+  async function saveMatrix(productId: string) {
     const current = products.find((x) => x.id === productId);
     if (!current) return;
 
-    const newTotal = calcTotal(current.stock);
-    const newLevel: "healthy" | "low" | "critical" =
-      newTotal === 0 ? "critical" : newTotal < 15 ? "low" : "healthy";
-
-    const updatedProducts = products.map((p) =>
-      p.id !== productId ? p : { ...p, totalStock: newTotal, stockLevel: newLevel },
-    );
-
-    // Guardar snapshot completo: sizes + colors + stock
-    setSavedSnapshots((prev) => ({
-      ...prev,
-      [productId]: structuredClone({
+    try {
+      await updateInventoryMutation.mutateAsync({
+        productId,
         sizes: current.sizes,
         colors: current.colors,
         stock: current.stock,
-      }),
-    }));
-    setProducts(updatedProducts);
-    persistProducts(updatedProducts);
+      });
 
-    setToast(`Stock de "${current.name}" guardado correctamente.`);
-    setTimeout(() => setToast(null), 3000);
+      const newTotal = calcTotal(current.stock);
+      const newLevel: "healthy" | "low" | "critical" =
+        newTotal === 0 ? "critical" : newTotal < 15 ? "low" : "healthy";
+
+      const updatedProducts = products.map((p) =>
+        p.id !== productId ? p : { ...p, totalStock: newTotal, stockLevel: newLevel },
+      );
+
+      // Guardar snapshot completo: sizes + colors + stock
+      setSavedSnapshots((prev) => ({
+        ...prev,
+        [productId]: structuredClone({
+          sizes: current.sizes,
+          colors: current.colors,
+          stock: current.stock,
+        }),
+      }));
+      setProducts(updatedProducts);
+
+      setToast(`Stock de "${current.name}" guardado correctamente en la base de datos.`);
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Error al guardar el stock");
+      setTimeout(() => setToast(null), 4000);
+    }
   }
 
   function discardMatrix(productId: string) {
@@ -1127,7 +1176,32 @@ export function AdminInventoryView() {
           </div>
 
           {/* Product Cards */}
-          {filteredProducts.length === 0 ? (
+          {isLoading && products.length === 0 ? (
+            <div className="bg-surface-container-low border border-outline-variant/30 p-16 text-center flex flex-col items-center justify-center gap-3">
+              <span className="material-symbols-outlined text-[32px] text-primary animate-spin">
+                progress_activity
+              </span>
+              <span className="font-inter text-[13px] text-on-surface-variant uppercase tracking-wider">
+                Cargando inventario desde la base de datos...
+              </span>
+            </div>
+          ) : isError && products.length === 0 ? (
+            <div className="bg-surface-container-low border border-error/30 p-12 text-center flex flex-col items-center gap-4">
+              <span className="material-symbols-outlined text-[32px] text-error">
+                error_outline
+              </span>
+              <span className="font-inter text-[13px] text-error">
+                No se pudo conectar con la base de datos de inventario.
+              </span>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="px-5 py-2 bg-primary text-white font-headline text-[13px] uppercase tracking-wider hover:bg-primary-container transition-colors cursor-pointer"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="bg-surface-container-low border border-outline-variant/30 p-12 text-center">
               <span className="font-inter text-[13px] text-on-surface-variant">
                 No se encontraron prendas con los filtros aplicados.
@@ -1491,7 +1565,8 @@ export function AdminInventoryView() {
                                       <button
                                         type="button"
                                         title="Eliminar fila"
-                                        className="p-1 text-on-surface-variant hover:text-error transition-colors"
+                                        onClick={() => handleDeleteSize(product.id, talle)}
+                                        className="p-1 text-on-surface-variant hover:text-error transition-colors cursor-pointer"
                                       >
                                         <span className="material-symbols-outlined text-[18px]">
                                           delete_outline
