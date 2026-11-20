@@ -355,7 +355,10 @@ export async function listProducts(): Promise<ProductListItem[]> {
     orderBy: { created_at: "desc" },
     include: {
       category: { select: { name: true } },
-      variants: { select: { stock: true, sku: true } },
+      variants: {
+        where: { active: true },
+        select: { stock: true, sku: true },
+      },
     },
   });
   return products.map((p) => ({
@@ -379,7 +382,9 @@ export async function getProductById(id: string) {
     where: { id },
     include: {
       category: { select: { name: true } },
-      variants: true,
+      variants: {
+        where: { active: true },
+      },
     },
   });
   if (!p) throw new ProductAdminError("NOT_FOUND", `No existe el producto ${id}`);
