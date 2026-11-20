@@ -632,8 +632,8 @@ export function AdminColorsBrandsView() {
                     maxLength={3}
                     value={newBrandSku}
                     onChange={(e) => setNewBrandSku(e.target.value.toUpperCase())}
-                    placeholder="???-NRT-LNO"
-                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                    placeholder="???-cam0001-..."
+                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2 text-on-surface font-mono text-[13px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                   />
                   <span
                     className="material-symbols-outlined absolute right-2 text-outline hover:text-primary text-[15px] cursor-help transition-colors select-none"
@@ -799,8 +799,8 @@ export function AdminColorsBrandsView() {
                     maxLength={3}
                     value={newColorSku}
                     onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
-                    placeholder="NRT-???-LNO"
-                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2.5 text-on-surface font-mono text-[14px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                    placeholder="....-???-xl"
+                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2.5 text-on-surface font-mono text-[13px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                   />
                   <span
                     className="material-symbols-outlined absolute right-2 text-outline hover:text-primary text-[15px] cursor-help transition-colors select-none"

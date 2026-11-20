@@ -189,7 +189,7 @@ export function AdminAddColorModal({
                   maxLength={3}
                   value={skuCode}
                   onChange={(e) => setSkuCode(e.target.value.toUpperCase())}
-                  placeholder="Ej: VRD"
+                  placeholder="....-???-xl"
                   className="w-full bg-white pl-4 pr-9 py-2 text-[#1e1c13] font-mono text-[13px] uppercase border border-[#d8c3b2]/60 focus:border-[#673900] focus:outline-none placeholder:text-[#857466]/70 transition-colors"
                 />
                 <span
@@ -201,7 +201,9 @@ export function AdminAddColorModal({
               </div>
               <span className="font-inter text-[11px] text-[#524438] mt-0.5">
                 Posición en SKU:{" "}
-                <strong className="font-mono text-[#673900]">NRT-CAM0001-{skuCode || "???"}</strong>
+                <strong className="font-mono text-[#673900]">
+                  ...-{(skuCode || "???").slice(0, 3)}-XL
+                </strong>
               </span>
             </div>
           </div>
