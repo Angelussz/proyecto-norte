@@ -106,51 +106,84 @@ function VariantsRow({ productId, isOpen }: { productId: string; isOpen: boolean
   const { data: globalColors = [] } = useColors();
 
   const groupedVariants = useMemo(() => {
-    if (!product?.variants) return [];
+    if (!product?.variants || product.variants.length === 0) return [];
 
-    const map = new Map<
-      string,
-      {
-        size: string;
-        sku: string;
-        total: number;
-        colors: Array<{ hex: string; name: string; stock: number }>;
-        alert: boolean;
-      }
-    >();
-
+    // 1. Recopilar todos los colores únicos que maneja este producto
+    const productColorsMap = new Map<string, { hex: string; name: string }>();
     for (const v of product.variants) {
-      // Ignorar variantes inactivas sin stock (eliminadas o archivadas)
       if (v.active === false && v.stock === 0) continue;
+      const resolved = resolveColor(v.colorHex || v.color, globalColors);
+      const norm = resolved.name.toLowerCase();
+      if (!productColorsMap.has(norm)) {
+        productColorsMap.set(norm, resolved);
+      }
+    }
+    const allColorsList = Array.from(productColorsMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, "es", { sensitivity: "base" }),
+    );
 
+    // 2. Recopilar todas las tallas únicas presentes en el producto
+    const sizeLabelsMap = new Map<string, { rawSize: string; sampleSku: string }>();
+    for (const v of product.variants) {
+      if (v.active === false && v.stock === 0) continue;
       const sizeLabel = v.size
         ? v.size.toLowerCase().startsWith("talla")
           ? v.size
           : `Talla ${v.size}`
         : "Talla Única";
-      const resolved = resolveColor(v.colorHex || v.color, globalColors);
-
-      if (!map.has(sizeLabel)) {
-        map.set(sizeLabel, {
-          size: sizeLabel,
-          sku: formatMatrixSku(v.sku, v.size),
-          total: 0,
-          colors: [],
-          alert: false,
-        });
+      if (!sizeLabelsMap.has(sizeLabel)) {
+        sizeLabelsMap.set(sizeLabel, { rawSize: v.size, sampleSku: v.sku });
       }
-
-      const group = map.get(sizeLabel)!;
-      group.total += v.stock;
-      group.colors.push({
-        hex: resolved.hex,
-        name: resolved.name,
-        stock: v.stock,
-      });
-      group.alert = group.total <= 2;
     }
 
-    return Array.from(map.values());
+    // 3. Para cada talla, construir la matriz con TODOS los colores del producto.
+    // Si la variante tiene stock 0 (o no tenía unidades para esa talla), se muestra con 0
+    // para que quede constancia visual de que no hay stock disponible.
+    const result: Array<{
+      size: string;
+      sku: string;
+      total: number;
+      colors: Array<{ hex: string; name: string; stock: number }>;
+      alert: boolean;
+    }> = [];
+
+    for (const [sizeLabel, { rawSize, sampleSku }] of sizeLabelsMap.entries()) {
+      let total = 0;
+      const colors = allColorsList.map((col) => {
+        const match = product.variants.find((v) => {
+          if (v.active === false && v.stock === 0) return false;
+          const currentSizeLabel = v.size
+            ? v.size.toLowerCase().startsWith("talla")
+              ? v.size
+              : `Talla ${v.size}`
+            : "Talla Única";
+          if (currentSizeLabel.toLowerCase() !== sizeLabel.toLowerCase()) return false;
+          const resolved = resolveColor(v.colorHex || v.color, globalColors);
+          return (
+            resolved.name.toLowerCase() === col.name.toLowerCase() ||
+            resolved.hex.toLowerCase() === col.hex.toLowerCase()
+          );
+        });
+
+        const stock = match && typeof match.stock === "number" ? Math.max(0, match.stock) : 0;
+        total += stock;
+        return {
+          hex: col.hex,
+          name: col.name,
+          stock,
+        };
+      });
+
+      result.push({
+        size: sizeLabel,
+        sku: formatMatrixSku(sampleSku, rawSize),
+        total,
+        colors,
+        alert: total <= 2,
+      });
+    }
+
+    return result;
   }, [product, globalColors]);
 
   return (
@@ -230,11 +263,23 @@ function VariantsRow({ productId, isOpen }: { productId: string; isOpen: boolean
                       {variant.colors.map((color, idx) => (
                         <div
                           key={`${color.hex}-${idx}`}
-                          className="relative flex items-center justify-center border border-outline-variant/60 w-5 h-5"
+                          className={cn(
+                            "relative flex items-center justify-center border w-5 h-5 transition-transform",
+                            color.stock === 0
+                              ? "border-outline-variant/40 opacity-70"
+                              : "border-outline-variant/60 shadow-xs",
+                          )}
                           style={{ backgroundColor: color.hex }}
-                          title={`${color.name}: ${color.stock} uds`}
+                          title={`${color.name}: ${color.stock} uds${color.stock === 0 ? " (Sin stock)" : ""}`}
                         >
-                          <span className="absolute -top-1.5 -right-1.5 bg-surface text-on-surface border border-outline-variant font-mono text-[9px] leading-tight px-1 font-bold">
+                          <span
+                            className={cn(
+                              "absolute -top-1.5 -right-1.5 border font-mono text-[9px] leading-tight px-1 font-bold",
+                              color.stock === 0
+                                ? "bg-surface text-error border-error/50"
+                                : "bg-surface text-on-surface border-outline-variant",
+                            )}
+                          >
                             {color.stock}
                           </span>
                         </div>
