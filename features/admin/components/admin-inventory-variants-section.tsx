@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useColors } from "@/features/admin/hooks/useColors";
 import { useSizeGroups } from "@/features/admin/hooks/useSizeGroups";
@@ -180,10 +181,14 @@ export function AdminInventoryVariantsSection({
   const [sizes, setSizes] = useState<SizeConfig[]>([]);
 
   // Inicializar variantes si vienen pre-cargadas (ej. al editar producto)
-  const initialLoadedRef = useRef(false);
+  const lastLoadedKeyRef = useRef<string>("");
   useEffect(() => {
-    if (!initialVariants || initialVariants.length === 0 || initialLoadedRef.current) return;
-    initialLoadedRef.current = true;
+    if (!initialVariants || initialVariants.length === 0) return;
+    const currentKey = initialVariants
+      .map((v) => `${v.size}-${v.colorName}-${v.colorHex}-${v.stock}`)
+      .join("|");
+    if (lastLoadedKeyRef.current === currentKey) return;
+    lastLoadedKeyRef.current = currentKey;
 
     const sizeMap = new Map<string, { name: string; hex: string; stock: number }[]>();
     const colorNamesSet = new Set<string>();
@@ -214,15 +219,20 @@ export function AdminInventoryVariantsSection({
     setSelectedColorNames(colorsArr);
   }, [initialVariants]);
 
-  // Cuando cambia la categoría, limpiar las tallas ya agregadas que no pertenezcan
-  // a los grupos válidos para esa categoría
+  // Cuando cambia la categoría (manualmente por el usuario), limpiar las tallas
+  // ya agregadas que no pertenezcan a los grupos válidos para esa nueva categoría.
+  const prevCategoryRef = useRef<string | undefined>(categoryName);
   useEffect(() => {
-    if (!groupKeywords) return; // sin filtro, no limpiamos nada
+    // Si no cambió la categoría respecto al render previo, no hacer nada
+    if (prevCategoryRef.current === categoryName) return;
+    prevCategoryRef.current = categoryName;
+
+    if (!groupKeywords || uniqueSizes.length === 0) return;
     const validSizeValues = new Set(uniqueSizes.map((s) => s.size));
     setSizes((prev) => prev.filter((s) => validSizeValues.has(s.size)));
     setSelectedSizeKeys((prev) => prev.filter((key) => validSizeValues.has(key)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryName]);
+  }, [categoryName, uniqueSizes, groupKeywords]);
 
   // ── Callback: notificar variantes al padre ─────────────────────────────────
   const buildVariantRows = useCallback(
@@ -365,6 +375,24 @@ export function AdminInventoryVariantsSection({
           ? {
               ...s,
               colors: s.colors.map((c, j) => (j === cIdx ? { ...c, stock: Math.max(0, val) } : c)),
+            }
+          : s,
+      ),
+    );
+  }
+
+  function removeSize(sizeKey: string) {
+    setSizes((prev) => prev.filter((s) => s.size !== sizeKey));
+    setSelectedSizeKeys((prev) => prev.filter((k) => k !== sizeKey));
+  }
+
+  function removeColor(sIdx: number, cIdx: number) {
+    setSizes((prev) =>
+      prev.map((s, i) =>
+        i === sIdx
+          ? {
+              ...s,
+              colors: s.colors.filter((_, j) => j !== cIdx),
             }
           : s,
       ),
@@ -695,9 +723,22 @@ export function AdminInventoryVariantsSection({
                     TALLA {size.size} ({size.label})
                   </span>
                 </div>
-                <span className="px-2 py-0.5 bg-[#eee8d9] font-inter text-[10px] font-bold uppercase tracking-wider text-[#1e1c13]">
-                  {sizeTotal} UDS
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-[#eee8d9] font-inter text-[10px] font-bold uppercase tracking-wider text-[#1e1c13]">
+                    {sizeTotal} UDS
+                  </span>
+                  <button
+                    type="button"
+                    title={`Eliminar talla ${size.size}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeSize(size.size);
+                    }}
+                    className="p-1 text-[#857466] hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/10 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Accordion Body */}
@@ -742,6 +783,14 @@ export function AdminInventoryVariantsSection({
                             className="w-6 h-6 flex items-center justify-center bg-[#faf3e4] hover:bg-[#f2e7d3] text-[#1e1c13] font-bold text-[14px] transition-colors"
                           >
                             +
+                          </button>
+                          <button
+                            type="button"
+                            title={`Eliminar color ${color.name}`}
+                            onClick={() => removeColor(sIdx, cIdx)}
+                            className="p-1 text-[#857466] hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/10 transition-colors ml-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
