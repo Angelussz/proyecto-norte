@@ -190,31 +190,56 @@ export function AdminInventoryVariantsSection({
     if (lastLoadedKeyRef.current === currentKey) return;
     lastLoadedKeyRef.current = currentKey;
 
-    const sizeMap = new Map<string, { name: string; hex: string; stock: number }[]>();
-    const colorNamesSet = new Set<string>();
-
+    // 1. Recopilar todos los colores únicos que maneja este producto
+    const colorsMap = new Map<string, { name: string; hex: string }>();
     initialVariants.forEach((v) => {
-      colorNamesSet.add(v.colorName);
-      if (!sizeMap.has(v.size)) {
-        sizeMap.set(v.size, []);
+      const norm = v.colorName.trim();
+      if (!colorsMap.has(norm)) {
+        colorsMap.set(norm, { name: norm, hex: v.colorHex });
       }
-      sizeMap.get(v.size)!.push({
-        name: v.colorName,
-        hex: v.colorHex,
-        stock: v.stock,
-      });
     });
 
-    const loadedSizes: SizeConfig[] = Array.from(sizeMap.entries()).map(([sz, clrs], index) => ({
-      size: sz,
-      label: sz,
-      open: index === 0,
-      colors: clrs,
-    }));
+    const allColors = Array.from(colorsMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, "es", { sensitivity: "base" }),
+    );
+
+    // 2. Recopilar todas las tallas únicas en orden
+    const sizesOrdered: string[] = [];
+    initialVariants.forEach((v) => {
+      if (!sizesOrdered.includes(v.size)) {
+        sizesOrdered.push(v.size);
+      }
+    });
+
+    // 3. Para cada talla, asegurar que contenga TODOS los colores del producto.
+    // Si la variante no existía para esa talla (o tenía stock 0), se incluye con stock 0
+    // para que el usuario pueda verla en la lista y aumentarle la cantidad según haga falta.
+    const loadedSizes: SizeConfig[] = sizesOrdered.map((sz, index) => {
+      const colorsForSize = allColors.map((col) => {
+        const match = initialVariants.find(
+          (v) =>
+            v.size.toLowerCase() === sz.toLowerCase() &&
+            (v.colorName.toLowerCase() === col.name.toLowerCase() ||
+              v.colorHex.toLowerCase() === col.hex.toLowerCase()),
+        );
+        return {
+          name: col.name,
+          hex: col.hex,
+          stock: match && typeof match.stock === "number" ? Math.max(0, match.stock) : 0,
+        };
+      });
+
+      return {
+        size: sz,
+        label: sz,
+        open: index === 0,
+        colors: colorsForSize,
+      };
+    });
 
     setSizes(loadedSizes);
-    setSelectedSizeKeys(Array.from(sizeMap.keys()));
-    const colorsArr = Array.from(colorNamesSet);
+    setSelectedSizeKeys(sizesOrdered);
+    const colorsArr = allColors.map((c) => c.name);
     setAppliedColorNames(colorsArr);
     setSelectedColorNames(colorsArr);
   }, [initialVariants]);

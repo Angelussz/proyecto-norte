@@ -327,66 +327,87 @@ export function AdminEditProductForm() {
 
         await updateProduct.mutateAsync({ id: dbProduct.id, form });
 
-        // Actualizar o crear variantes
-        const variantsToSave = variants.filter((v) => v.stock > 0);
-        if (variantsToSave.length > 0) {
-          await Promise.all(
-            variantsToSave.map(async (v) => {
-              const existingVar = dbProduct.variants?.find(
-                (ex) =>
-                  ex.size.toLowerCase() === v.size.toLowerCase() &&
-                  (ex.color.toLowerCase() === v.colorHex.toLowerCase() ||
-                    ex.color.toLowerCase() === v.colorName.toLowerCase()),
-              );
+        // Variantes: sincronizar la BD con el estado del form
+        // — Se guardan/actualizan TODAS las variantes presentes en el formulario (incluso si tienen stock 0).
+        // — Solo se eliminan de la BD las variantes que el usuario quitó explícitamente del formulario
+        //   (con el botón de papelera o deseleccionándolas del desplegable).
+        const existingDbVariants = dbProduct.variants ?? [];
 
-              if (existingVar) {
-                await fetch(`/api/admin/products/${dbProduct.id}/variants/${existingVar.id}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    stock: v.stock,
-                    price: basePriceNum,
-                    unitCost: unitCostNum,
-                  }),
-                });
-              } else {
-                const colorCode =
-                  globalColors.find(
-                    (c) =>
-                      c.hex.toLowerCase() === v.colorHex.toLowerCase() ||
-                      c.name.toLowerCase() === v.colorName.toLowerCase(),
-                  )?.skuCode ||
-                  v.colorName
-                    .replace(/[^A-Za-z]/g, "")
-                    .slice(0, 3)
-                    .toUpperCase() ||
-                  "STD";
-                const cleanSize =
-                  v.size
-                    .toUpperCase()
-                    .replace(/^TALLA\s*/i, "")
-                    .trim() || "U";
-                const variantSku = sku.trim()
-                  ? `${sku.trim()}-${colorCode}-${cleanSize}`
-                  : undefined;
-
-                await fetch(`/api/admin/products/${dbProduct.id}/variants`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    size: v.size,
-                    color: v.colorName,
-                    colorHex: v.colorHex,
-                    stock: v.stock,
-                    sku: variantSku,
-                    price: basePriceNum,
-                    unitCost: unitCostNum,
-                  }),
-                });
-              }
-            }),
+        // 1. Eliminar de la BD las variantes que ya no están en el form
+        const toDelete = existingDbVariants.filter((dbVar) => {
+          const stillPresent = variants.some(
+            (v) =>
+              v.size.toLowerCase() === dbVar.size.toLowerCase() &&
+              (v.colorHex.toLowerCase() === dbVar.color.toLowerCase() ||
+                v.colorName.toLowerCase() === dbVar.color.toLowerCase()),
           );
-        }
+          return !stillPresent;
+        });
+        await Promise.all(
+          toDelete.map((dbVar) =>
+            fetch(`/api/admin/products/${dbProduct.id}/variants/${dbVar.id}`, {
+              method: "DELETE",
+            }),
+          ),
+        );
+
+        // 2. PATCH variantes existentes / POST variantes nuevas (incluso con stock >= 0)
+        await Promise.all(
+          variants.map(async (v) => {
+            const existingVar = existingDbVariants.find(
+              (ex) =>
+                ex.size.toLowerCase() === v.size.toLowerCase() &&
+                (ex.color.toLowerCase() === v.colorHex.toLowerCase() ||
+                  ex.color.toLowerCase() === v.colorName.toLowerCase()),
+            );
+
+            const safeStock = Math.max(0, Number(v.stock) || 0);
+
+            if (existingVar) {
+              await fetch(`/api/admin/products/${dbProduct.id}/variants/${existingVar.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  stock: safeStock,
+                  price: basePriceNum,
+                  unitCost: unitCostNum,
+                }),
+              });
+            } else {
+              const colorCode =
+                globalColors.find(
+                  (c) =>
+                    c.hex.toLowerCase() === v.colorHex.toLowerCase() ||
+                    c.name.toLowerCase() === v.colorName.toLowerCase(),
+                )?.skuCode ||
+                v.colorName
+                  .replace(/[^A-Za-z]/g, "")
+                  .slice(0, 3)
+                  .toUpperCase() ||
+                "STD";
+              const cleanSize =
+                v.size
+                  .toUpperCase()
+                  .replace(/^TALLA\s*/i, "")
+                  .trim() || "U";
+              const variantSku = sku.trim() ? `${sku.trim()}-${colorCode}-${cleanSize}` : undefined;
+
+              await fetch(`/api/admin/products/${dbProduct.id}/variants`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  size: v.size,
+                  color: v.colorName,
+                  colorHex: v.colorHex,
+                  stock: safeStock,
+                  sku: variantSku,
+                  price: basePriceNum,
+                  unitCost: unitCostNum,
+                }),
+              });
+            }
+          }),
+        );
       }
 
       // 2. Si también está en inventario local/localStorage, actualizarlo
