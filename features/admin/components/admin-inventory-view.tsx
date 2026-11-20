@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { AdminAddInventoryColorModal } from "./admin-add-inventory-color-modal";
 import { AdminAddInventorySizeModal } from "./admin-add-inventory-size-modal";
 import { useSizeGroups } from "@/features/admin/hooks/useSizeGroups";
@@ -1138,14 +1139,20 @@ export function AdminInventoryView() {
                 key={product.id}
                 className="bg-surface-container-low border border-outline-variant/30 shadow-sm"
               >
-                {/* Header */}
-                <div className="p-4 bg-surface-container flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {/* Header de producto clickeable para expandir/contraer matriz */}
+                <div
+                  onClick={() => toggleExpand(product.id)}
+                  className="p-4 bg-surface-container flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-surface-container-high/60 transition-colors select-none"
+                >
                   <div className="flex items-center gap-4">
                     {/* Toggle */}
                     <button
                       type="button"
-                      onClick={() => toggleExpand(product.id)}
-                      className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpand(product.id);
+                      }}
+                      className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors shrink-0 cursor-pointer"
                       title="Expandir / Contraer Matriz"
                     >
                       <span
@@ -1174,9 +1181,30 @@ export function AdminInventoryView() {
                           SKU: {product.sku}
                         </span>
                       </div>
-                      <h2 className="font-headline text-[22px] tracking-wide text-on-surface uppercase leading-tight">
-                        {product.name}
-                      </h2>
+
+                      {/* Enlace al detalle del producto en la tienda con tooltip al hover */}
+                      <div className="relative inline-flex items-center group/tooltip w-fit">
+                        <a
+                          href={`/product/${product.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="group/link inline-flex items-center gap-2"
+                        >
+                          <h2 className="font-headline text-[22px] tracking-wide text-on-surface uppercase leading-tight group-hover/link:text-primary hover:underline underline-offset-4 decoration-primary/50 transition-colors cursor-pointer">
+                            {product.name}
+                          </h2>
+                          <ExternalLink className="w-4 h-4 text-on-surface-variant/40 group-hover/link:text-primary transition-colors shrink-0" />
+                        </a>
+
+                        {/* Tooltip visible al pasar el cursor */}
+                        <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/tooltip:flex items-center gap-1 px-2.5 py-1 bg-[#1e1c13] text-[#fff9ed] text-[10px] font-inter tracking-wider uppercase font-semibold shadow-lg whitespace-nowrap z-30 pointer-events-none animate-in fade-in duration-150">
+                          <span>Ver en tienda</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <div className="absolute top-full left-3 -mt-px border-4 border-transparent border-t-[#1e1c13]" />
+                        </div>
+                      </div>
+
                       <div className="flex items-center gap-3 font-inter text-[12px] text-on-surface-variant flex-wrap">
                         {product.pvp && (
                           <>
