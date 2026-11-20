@@ -224,7 +224,7 @@ export function AdminAddCategoryModal({ isOpen, onClose, onSave }: AdminAddCateg
               <span className="material-symbols-outlined text-[16px]">
                 {isSubmitting ? "hourglass_top" : "add"}
               </span>
-              <span>{isSubmitting ? "CREANDO…" : "+ CREAR CATEGORÍA"}</span>
+              <span>{isSubmitting ? "CREANDO…" : "CREAR CATEGORÍA"}</span>
             </button>
           </div>
         </form>
