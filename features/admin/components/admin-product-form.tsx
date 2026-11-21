@@ -314,6 +314,8 @@ export function AdminProductForm() {
                 <input
                   id="prod-name"
                   type="text"
+                  autoComplete="off"
+                  suppressHydrationWarning
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ej. Sobrecamisa Lino Rústico Arena"
@@ -337,6 +339,8 @@ export function AdminProductForm() {
                   ) : (
                     <select
                       id="prod-category"
+                      autoComplete="off"
+                      suppressHydrationWarning
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
                       disabled={catsLoading}
@@ -372,6 +376,8 @@ export function AdminProductForm() {
                   ) : (
                     <select
                       id="prod-brand"
+                      autoComplete="off"
+                      suppressHydrationWarning
                       value={brandId}
                       onChange={(e) => setBrandId(e.target.value)}
                       disabled={brandsLoading}
@@ -405,6 +411,8 @@ export function AdminProductForm() {
                   <input
                     id="prod-sku"
                     type="text"
+                    autoComplete="off"
+                    suppressHydrationWarning
                     value={sku}
                     onChange={(e) => {
                       setSku(e.target.value.toUpperCase());
@@ -452,6 +460,8 @@ export function AdminProductForm() {
                 <div className="relative">
                   <select
                     id="prod-gender"
+                    autoComplete="off"
+                    suppressHydrationWarning
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full bg-[#faf3e4] px-4 py-3 font-inter text-[14px] text-[#1e1c13] appearance-none focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
@@ -505,6 +515,8 @@ export function AdminProductForm() {
                 </div>
                 <textarea
                   rows={4}
+                  autoComplete="off"
+                  suppressHydrationWarning
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Descripción editorial de la pieza…"
@@ -523,6 +535,8 @@ export function AdminProductForm() {
                 <input
                   id="prod-care"
                   type="text"
+                  autoComplete="off"
+                  suppressHydrationWarning
                   value={material}
                   onChange={(e) => setMaterial(e.target.value)}
                   placeholder="100% Lino Europeo certificado. Lavar en seco o ciclo delicado 30°C."
@@ -550,6 +564,7 @@ export function AdminProductForm() {
             <input
               ref={fileInputRef}
               type="file"
+              suppressHydrationWarning
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={(e) => {
@@ -645,7 +660,12 @@ export function AdminProductForm() {
                 </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input defaultChecked className="sr-only peer" type="checkbox" />
+                <input
+                  defaultChecked
+                  suppressHydrationWarning
+                  className="sr-only peer"
+                  type="checkbox"
+                />
                 <div className="w-11 h-6 bg-[#eee8d9] peer-focus:outline-none peer-checked:bg-[#673900] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-5 after:w-5 after:transition-all" />
               </label>
             </div>
@@ -681,6 +701,8 @@ export function AdminProductForm() {
                   <input
                     id="price-retail"
                     type="number"
+                    autoComplete="off"
+                    suppressHydrationWarning
                     step="0.50"
                     min="0"
                     value={basePrice}
@@ -709,6 +731,8 @@ export function AdminProductForm() {
                   <input
                     id="price-cost"
                     type="number"
+                    autoComplete="off"
+                    suppressHydrationWarning
                     step="0.50"
                     min="0"
                     value={unitCost}
@@ -753,6 +777,8 @@ export function AdminProductForm() {
                 <div className="flex items-center w-full bg-[#faf3e4] px-4 py-3 gap-2 focus-within:ring-1 focus-within:ring-[#673900] focus-within:bg-[#fff9ed]">
                   <input
                     type="number"
+                    autoComplete="off"
+                    suppressHydrationWarning
                     min={0}
                     max={100}
                     defaultValue={21}
@@ -777,6 +803,8 @@ export function AdminProductForm() {
                     <span className="font-inter text-[12px] text-[#524438]">Tarifa especial -</span>
                     <input
                       type="number"
+                      autoComplete="off"
+                      suppressHydrationWarning
                       min={0}
                       max={100}
                       defaultValue={15}
@@ -786,7 +814,12 @@ export function AdminProductForm() {
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-2">
-                  <input defaultChecked className="sr-only peer" type="checkbox" />
+                  <input
+                    defaultChecked
+                    suppressHydrationWarning
+                    className="sr-only peer"
+                    type="checkbox"
+                  />
                   <div className="w-10 h-5 bg-[#eee8d9] peer-focus:outline-none peer-checked:bg-[#c77d2e] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-4 after:w-4 after:transition-all" />
                 </label>
               </div>
@@ -819,6 +852,7 @@ export function AdminProductForm() {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     checked={active}
+                    suppressHydrationWarning
                     onChange={(e) => setActive(e.target.checked)}
                     className="sr-only peer"
                     type="checkbox"
@@ -838,7 +872,12 @@ export function AdminProductForm() {
                   </span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input defaultChecked className="sr-only peer" type="checkbox" />
+                  <input
+                    defaultChecked
+                    suppressHydrationWarning
+                    className="sr-only peer"
+                    type="checkbox"
+                  />
                   <div className="w-11 h-6 bg-[#eee8d9] peer-focus:outline-none peer-checked:bg-[#c77d2e] transition-colors relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
                 </label>
               </div>

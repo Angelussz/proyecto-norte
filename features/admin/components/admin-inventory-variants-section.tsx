@@ -508,6 +508,8 @@ export function AdminInventoryVariantsSection({
           </span>
           <input
             type="text"
+            autoComplete="off"
+            suppressHydrationWarning
             placeholder="Escribir o buscar color..."
             value={colorSearch}
             onChange={(e) => {
@@ -628,6 +630,8 @@ export function AdminInventoryVariantsSection({
           </span>
           <input
             type="text"
+            autoComplete="off"
+            suppressHydrationWarning
             placeholder="Escribir o buscar talle..."
             value={sizeSearch}
             onChange={(e) => {
@@ -795,6 +799,8 @@ export function AdminInventoryVariantsSection({
                           </button>
                           <input
                             type="number"
+                            autoComplete="off"
+                            suppressHydrationWarning
                             min={0}
                             value={color.stock}
                             onChange={(e) =>
