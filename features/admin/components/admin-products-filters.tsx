@@ -36,6 +36,8 @@ export function AdminProductsFilters({
               </span>
               <input
                 type="text"
+                autoComplete="off"
+                suppressHydrationWarning
                 value={search}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Buscar por nombre, SKU"

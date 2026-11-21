@@ -1026,6 +1026,8 @@ export function AdminInventoryView() {
                 </span>
                 <input
                   type="text"
+                  autoComplete="off"
+                  suppressHydrationWarning
                   placeholder="Buscar por nombre, SKU"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
