@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   AdminInventoryVariantsSection,
@@ -81,12 +81,12 @@ export function AdminProductForm() {
     setSku(autoSku);
   }, [brandId, categoryId, brands, categories, skuManuallyEdited, allProducts]);
 
-  // ── Imágenes (UI only) ────────────────────────────────────────────────────
-  const [images] = useState([
-    { label: "PORTADA EDITORIAL", size: "2.4 MB • 3000x4000", featured: true },
-    { label: "", size: "1.9 MB • 3000x4000", featured: false },
-    { label: "", size: "2.1 MB • 3000x4000", featured: false },
-  ]);
+  // ── Imágenes ──────────────────────────────────────────────────────────────
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Guardar ───────────────────────────────────────────────────────────────
   async function handleSave(forceActive?: boolean) {
@@ -108,6 +108,31 @@ export function AdminProductForm() {
     }
 
     const effectiveActive = forceActive !== undefined ? forceActive : active;
+
+    // Subir imagen al servidor si hay una seleccionada
+    let uploadedImageUrl: string | null = null;
+    if (selectedFile) {
+      setImageUploading(true);
+      try {
+        const imgForm = new FormData();
+        imgForm.set("image", selectedFile);
+        const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: imgForm });
+        const uploadData = (await uploadRes.json()) as { url?: string; error?: string };
+        if (!uploadRes.ok || !uploadData.url) {
+          throw new Error(uploadData.error ?? "Error al subir la imagen");
+        }
+        uploadedImageUrl = uploadData.url;
+      } catch (err) {
+        setImageUploading(false);
+        setNotification({
+          type: "error",
+          message: err instanceof Error ? err.message : "Error al subir imagen",
+        });
+        return;
+      }
+      setImageUploading(false);
+    }
+
     const form = new FormData();
     form.set("name", name.trim());
     form.set("category_id", categoryId);
@@ -116,6 +141,7 @@ export function AdminProductForm() {
     if (description.trim()) form.set("description", description.trim());
     if (slug) form.set("slug", slug);
     form.set("active", String(effectiveActive));
+    if (uploadedImageUrl) form.set("image_url", uploadedImageUrl);
 
     try {
       const created = await createProduct.mutateAsync(form);
@@ -188,6 +214,14 @@ export function AdminProductForm() {
     router.back();
   }
 
+  function handleFileSelect(file: File) {
+    if (!file) return;
+    setSelectedFile(file);
+    setImageUploadError(null);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  }
+
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8">
       {/* ── Notificación ── */}
@@ -233,11 +267,15 @@ export function AdminProductForm() {
           <button
             type="button"
             onClick={() => handleSave(true)}
-            disabled={createProduct.isPending}
+            disabled={createProduct.isPending || imageUploading}
             className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
           >
-            {createProduct.isPending ? "GUARDANDO…" : "GUARDAR Y PUBLICAR"}
-            {!createProduct.isPending && (
+            {imageUploading
+              ? "SUBIENDO IMAGEN…"
+              : createProduct.isPending
+                ? "GUARDANDO…"
+                : "GUARDAR Y PUBLICAR"}
+            {!createProduct.isPending && !imageUploading && (
               <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             )}
           </button>
@@ -504,12 +542,34 @@ export function AdminProductForm() {
                 </h2>
               </div>
               <span className="font-inter text-[10px] uppercase tracking-widest text-[#524438]">
-                {images.length}/8 FOTOS CARGADAS
+                {previewUrl ? "1/8 FOTOS CARGADAS" : "0/8 FOTOS CARGADAS"}
               </span>
             </div>
 
+            {/* Input oculto */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileSelect(file);
+                e.target.value = "";
+              }}
+            />
+
             {/* Dropzone */}
-            <div className="w-full p-8 bg-[#faf3e4] hover:bg-[#f4eddf] transition-colors flex flex-col items-center justify-center text-center cursor-pointer group">
+            <div
+              className="w-full p-8 bg-[#faf3e4] hover:bg-[#f4eddf] transition-colors flex flex-col items-center justify-center text-center cursor-pointer group"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleFileSelect(file);
+              }}
+            >
               <div className="w-12 h-12 bg-[#eee8d9] group-hover:bg-[#ffdcc0] flex items-center justify-center mb-4 transition-colors">
                 <span className="material-symbols-outlined text-[26px] text-[#673900]">
                   add_photo_alternate
@@ -527,42 +587,52 @@ export function AdminProductForm() {
               </span>
             </div>
 
-            {/* Uploaded images */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              {images.map((img, i) => (
-                <div key={i} className="relative group bg-[#f4eddf] flex flex-col">
+            {/* Error de upload */}
+            {imageUploadError && (
+              <p className="font-inter text-[13px] text-red-600">{imageUploadError}</p>
+            )}
+
+            {/* Preview de imagen seleccionada */}
+            {previewUrl && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                <div className="relative group bg-[#f4eddf] flex flex-col">
                   <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb]">
-                    <div className="w-full h-full bg-[#e0dacb] flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[40px] text-[#857466]">
-                        image
-                      </span>
-                    </div>
-                    {img.featured && (
-                      <span className="absolute top-2 left-2 bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold">
-                        PORTADA EDITORIAL
-                      </span>
-                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previewUrl}
+                      alt="Portada editorial"
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-2 left-2 bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold">
+                      PORTADA EDITORIAL
+                    </span>
                     <button
                       type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                      }}
                       className="absolute top-2 right-2 w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
                     >
                       <span className="material-symbols-outlined text-[16px]">delete</span>
                     </button>
                   </div>
                   <div className="p-3 bg-[#faf3e4] flex items-center justify-between">
-                    <span className="font-inter text-[12px] text-[#524438]">{img.size}</span>
-                    {img.featured && (
-                      <span
-                        className="material-symbols-outlined text-[18px] text-[#c77d2e]"
-                        title="Imagen destacada"
-                      >
-                        star
-                      </span>
-                    )}
+                    <span className="font-inter text-[12px] text-[#524438] truncate">
+                      {selectedFile?.name ?? "portada.jpg"} &bull;{" "}
+                      {selectedFile ? (selectedFile.size / 1024 / 1024).toFixed(1) + " MB" : ""}
+                    </span>
+                    <span
+                      className="material-symbols-outlined text-[18px] text-[#c77d2e]"
+                      title="Imagen destacada"
+                    >
+                      star
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
             {/* Gallery toggle */}
             <div className="flex items-center justify-between pt-1 bg-[#faf3e4] p-4">
@@ -798,9 +868,11 @@ export function AdminProductForm() {
         <div className="flex items-center gap-3">
           <span className="w-2.5 h-2.5 rounded-full bg-[#c77d2e] animate-pulse" />
           <span className="font-inter text-[12px] text-[#e0dacb]">
-            {createProduct.isPending
-              ? "Guardando producto…"
-              : "Cambios sin guardar • Borrador nuevo"}
+            {imageUploading
+              ? "Subiendo imagen…"
+              : createProduct.isPending
+                ? "Guardando producto…"
+                : "Cambios sin guardar • Borrador nuevo"}
           </span>
         </div>
         <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
@@ -814,7 +886,7 @@ export function AdminProductForm() {
           <button
             type="button"
             onClick={() => handleSave(false)}
-            disabled={createProduct.isPending}
+            disabled={createProduct.isPending || imageUploading}
             className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-50 text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
           >
             GUARDAR BORRADOR
@@ -822,11 +894,15 @@ export function AdminProductForm() {
           <button
             type="button"
             onClick={() => handleSave(true)}
-            disabled={createProduct.isPending}
+            disabled={createProduct.isPending || imageUploading}
             className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
           >
-            {createProduct.isPending ? "PUBLICANDO…" : "PUBLICAR PRODUCTO"}
-            {!createProduct.isPending && (
+            {imageUploading
+              ? "SUBIENDO IMAGEN…"
+              : createProduct.isPending
+                ? "PUBLICANDO…"
+                : "PUBLICAR PRODUCTO"}
+            {!createProduct.isPending && !imageUploading && (
               <span className="material-symbols-outlined text-[18px]">check</span>
             )}
           </button>

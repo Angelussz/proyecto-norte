@@ -168,7 +168,7 @@ async function assertCategory(categoryId: string) {
     throw new ProductAdminError("CATEGORY_NOT_FOUND", `No existe la categoría ${categoryId}`);
 }
 
-/** Crea un producto. Campos de FormData: name*, category_id*, material*, base_price*, slug?, description?, active?, image? (File) */
+/** Crea un producto. Campos de FormData: name*, category_id*, material*, base_price*, slug?, description?, active?, image? (File), image_url? (URL texto directo) */
 export async function createProduct(form: FormData) {
   const name = field(form, "name");
   const categoryId = field(form, "category_id");
@@ -182,7 +182,12 @@ export async function createProduct(form: FormData) {
   const basePrice = parsePrice(rawPrice);
   const active = parseActive(field(form, "active"));
   await assertCategory(categoryId);
-  const image = await imageFromForm(form);
+
+  // Prioridad: si viene image_url (URL de texto, e.g. upload local previo), úsala directo.
+  // Si viene image (File), súbela a Cloudinary (flujo original).
+  const directImageUrl = field(form, "image_url");
+  const image = directImageUrl ? null : await imageFromForm(form);
+
   const data: Prisma.ProductsCreateInput = {
     name,
     slug: field(form, "slug") ?? slugify(name),
@@ -190,7 +195,7 @@ export async function createProduct(form: FormData) {
     material,
     base_price: basePrice,
     active,
-    image_url: image?.secureUrl ?? null,
+    image_url: directImageUrl ?? image?.secureUrl ?? null,
     image_url_id: image?.publicId ?? null,
     category: { connect: { id: categoryId } },
   };

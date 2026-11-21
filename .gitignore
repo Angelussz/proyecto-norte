@@ -61,3 +61,6 @@ modelo1-norte/
 
 #opencode
 opencode.json
+# uploads (imágenes locales dev)
+public/uploads/products/*
+!public/uploads/products/.gitkeep
