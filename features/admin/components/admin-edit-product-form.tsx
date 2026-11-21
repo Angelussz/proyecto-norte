@@ -965,13 +965,15 @@ export function AdminEditProductForm() {
                   <div className="flex items-center w-full bg-[#faf3e4] px-4 py-3 gap-2 focus-within:ring-1 focus-within:ring-[#673900] focus-within:bg-[#fff9ed]">
                     <input
                       type="number"
+                      autoComplete="off"
+                      suppressHydrationWarning
                       min={0}
                       max={100}
                       defaultValue={p.vat}
                       className="w-12 text-center font-mono text-[14px] font-semibold bg-white border border-[#eee8d9] py-0.5 focus:outline-none focus:ring-1 focus:ring-[#673900] text-[#1e1c13]"
                     />
                     <span className="font-inter text-[14px] text-[#1e1c13] flex-1 truncate">
-                      % IVA General Ropa y Calzado (España/UE)
+                      % IVA
                     </span>
                     <span className="material-symbols-outlined text-[#524438] text-[20px] pointer-events-none">
                       percent

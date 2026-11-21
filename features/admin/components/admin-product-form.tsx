@@ -785,7 +785,7 @@ export function AdminProductForm() {
                     className="w-12 text-center font-mono text-[14px] font-semibold bg-white border border-[#eee8d9] py-0.5 focus:outline-none focus:ring-1 focus:ring-[#673900] text-[#1e1c13]"
                   />
                   <span className="font-inter text-[14px] text-[#1e1c13] flex-1 truncate">
-                    % IVA General Ropa y Calzado (España/UE)
+                    % IVA
                   </span>
                   <span className="material-symbols-outlined text-[#524438] text-[20px] pointer-events-none">
                     percent
