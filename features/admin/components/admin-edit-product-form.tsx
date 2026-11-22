@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -197,6 +197,8 @@ export function AdminEditProductForm() {
   const [brandId, setBrandId] = useState("");
   const [sku, setSku] = useState("");
   const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
+  const [isSkuEditable, setIsSkuEditable] = useState(false);
+  const skuInputRef = useRef<HTMLInputElement>(null);
   const [gender, setGender] = useState(p.gender);
   const [description, setDescription] = useState(p.description);
   const [material, setMaterial] = useState(p.care);
@@ -660,48 +662,83 @@ export function AdminEditProductForm() {
 
                 {/* SKU Base */}
                 <div className="md:col-span-6 flex flex-col gap-1.5">
-                  <label
-                    className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
-                    htmlFor="prod-sku"
-                  >
-                    SKU Base
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label
+                      className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
+                      htmlFor="prod-sku"
+                    >
+                      SKU Base
+                    </label>
+                    <span className="font-mono text-[10px] text-[#857466] uppercase">
+                      {!isSkuEditable ? "🔒 Protegido" : "✏️ Editable"}
+                    </span>
+                  </div>
                   <div className="relative flex items-center">
                     <input
+                      ref={skuInputRef}
                       id="prod-sku"
                       type="text"
+                      readOnly={!isSkuEditable}
+                      autoComplete="off"
+                      suppressHydrationWarning
                       value={sku}
                       onChange={(e) => {
                         setSku(e.target.value.toUpperCase());
                         setSkuManuallyEdited(true);
                       }}
                       placeholder="NRT-CAM0001"
-                      className="w-full bg-[#faf3e4] pl-4 pr-10 py-3 font-mono text-[16px] text-[#1e1c13] uppercase tracking-wider focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
+                      className={`w-full pl-4 pr-20 py-3 font-mono text-[16px] uppercase tracking-wider transition-colors ${
+                        !isSkuEditable
+                          ? "bg-[#ede6d6] text-[#524438] cursor-not-allowed select-all focus:outline-none"
+                          : "bg-[#faf3e4] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
+                      }`}
                     />
-                    {skuManuallyEdited && (
+                    <div className="absolute right-2 flex items-center gap-1">
+                      {skuManuallyEdited && (
+                        <button
+                          type="button"
+                          title="Restaurar SKU automático"
+                          onClick={() => {
+                            setSkuManuallyEdited(false);
+                            setIsSkuEditable(false);
+                          }}
+                          className="p-1 text-[#857466] hover:text-[#673900] transition-colors cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">refresh</span>
+                        </button>
+                      )}
                       <button
                         type="button"
-                        title="Restaurar SKU automático"
-                        onClick={() => setSkuManuallyEdited(false)}
-                        className="absolute right-2.5 text-[#857466] hover:text-[#673900] transition-colors cursor-pointer"
+                        title={isSkuEditable ? "Bloquear SKU" : "Habilitar edición manual de SKU"}
+                        onClick={() => {
+                          if (!isSkuEditable) {
+                            setIsSkuEditable(true);
+                            setTimeout(() => skuInputRef.current?.focus(), 50);
+                          } else {
+                            setIsSkuEditable(false);
+                          }
+                        }}
+                        className="px-2 py-1 bg-white/70 hover:bg-white text-[15px] transition-colors cursor-pointer rounded shadow-xs flex items-center justify-center border border-[#d8d0c0]"
                       >
-                        <span className="material-symbols-outlined text-[18px]">refresh</span>
+                        {isSkuEditable ? "🔒" : "✏️"}
                       </button>
-                    )}
+                    </div>
                   </div>
                   <span className="font-inter text-[11px] text-[#524438]">
-                    {skuManuallyEdited ? (
-                      <span className="text-[#c77d2e]">
-                        SKU personalizado — pulsá ↺ para restaurar el auto-generado.
-                      </span>
-                    ) : brandId || categoryId ? (
-                      <span className="text-[#33402f]">
-                        SKU generado automáticamente.
-                        {!brandId && " Seleccioná una marca para completarlo."}
-                        {!categoryId && " Seleccioná una categoría para completarlo."}
-                      </span>
+                    {!isSkuEditable ? (
+                      brandId || categoryId ? (
+                        <span className="text-[#33402f]">
+                          SKU generado automáticamente. Bloqueado por seguridad. Hacé clic en ✏️
+                          para editarlo.
+                        </span>
+                      ) : (
+                        "Se generará al seleccionar marca o categoría. Hacé clic en ✏️ para ingresar uno manual."
+                      )
                     ) : (
-                      "Se generará al seleccionar marca o categoría."
+                      <span className="text-[#c77d2e]">
+                        Modo edición manual activo. Pulsá ↺ para restaurar el automático o 🔒 para
+                        bloquear.
+                      </span>
                     )}
                   </span>
                 </div>
