@@ -213,6 +213,111 @@ export function AdminEditProductForm() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // ── Galería multimedia ────────────────────────────────────────────────────
+  interface MediaItem {
+    id: string;
+    file: File;
+    previewUrl: string;
+    name: string;
+    sizeFormatted: string;
+    isFeatured: boolean;
+    type: "image" | "video";
+  }
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dragAllowedIndex, setDragAllowedIndex] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      media.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+    };
+  }, [media]);
+
+  function handleFilesSelect(files: FileList | File[]) {
+    const filesArray = Array.from(files);
+    if (!filesArray.length) return;
+    setMediaUploadError(null);
+
+    const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
+    const allowedVideoMimes = ["video/mp4", "video/webm"];
+    const maxImageBytes = 15 * 1024 * 1024;
+    const maxVideoBytes = 50 * 1024 * 1024;
+
+    const validFiles: File[] = [];
+    for (const file of filesArray) {
+      const isImage = allowedImageMimes.includes(file.type);
+      const isVideo = allowedVideoMimes.includes(file.type);
+      if (!isImage && !isVideo) {
+        setMediaUploadError("Solo se admiten formatos JPG, PNG, WebP o videos MP4, WebM.");
+        continue;
+      }
+      if (isImage && file.size > maxImageBytes) {
+        setMediaUploadError(`La imagen "${file.name}" supera el límite de 15 MB.`);
+        continue;
+      }
+      if (isVideo && file.size > maxVideoBytes) {
+        setMediaUploadError(`El video "${file.name}" supera el límite de 50 MB.`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (!validFiles.length) return;
+
+    setMedia((prev) => {
+      const availableSlots = 8 - prev.length;
+      if (availableSlots <= 0) {
+        setMediaUploadError("Has alcanzado el límite máximo de 8 archivos.");
+        return prev;
+      }
+      const filesToProcess = validFiles.slice(0, availableSlots);
+      if (validFiles.length > availableSlots) {
+        setMediaUploadError(
+          `Solo se pueden cargar hasta 8 archivos en total (se agregaron ${availableSlots}).`,
+        );
+      }
+      const newEntries: MediaItem[] = filesToProcess.map((file, idx) => ({
+        id: `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        name: file.name,
+        sizeFormatted: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        isFeatured: prev.length === 0 && idx === 0 && !file.type.startsWith("video/"),
+        type: file.type.startsWith("video/") ? "video" : "image",
+      }));
+      return [...prev, ...newEntries];
+    });
+  }
+
+  function handleRemoveMedia(id: string) {
+    setMedia((prev) => {
+      const target = prev.find((m) => m.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      const remaining = prev.filter((m) => m.id !== id);
+      if (target?.isFeatured && remaining.length > 0 && remaining[0].type === "image") {
+        remaining[0].isFeatured = true;
+      }
+      return remaining;
+    });
+  }
+
+  function reorderMedia(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return;
+    setMedia((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next.map((m, idx) => ({
+        ...m,
+        isFeatured: idx === 0 && m.type === "image",
+      }));
+    });
+  }
+
   // Sincronizar estados cuando se cargan los datos del producto
   useEffect(() => {
     if (p.name) setName(p.name);
@@ -316,6 +421,61 @@ export function AdminEditProductForm() {
 
     setIsSaving(true);
     try {
+      // Subir nuevos archivos multimedia si los hay
+      let uploadedImageUrl: string | null = null;
+      let uploadedVideoUrl: string | null = null;
+
+      if (media.length > 0) {
+        setMediaUploading(true);
+        try {
+          const onlyImages = media.filter((m) => m.type === "image");
+          const onlyVideos = media.filter((m) => m.type === "video");
+
+          if (onlyImages.length > 0) {
+            const featured = onlyImages.find((m) => m.isFeatured) ?? onlyImages[0];
+            const imgForm = new FormData();
+            imgForm.set("image", featured.file);
+            const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: imgForm });
+            const uploadData = (await uploadRes.json()) as { url?: string; error?: string };
+            if (!uploadRes.ok || !uploadData.url) {
+              throw new Error(uploadData.error ?? "Error al subir la imagen de portada");
+            }
+            uploadedImageUrl = uploadData.url;
+
+            const additionalImages = onlyImages.filter((m) => m.id !== featured.id);
+            await Promise.all(
+              additionalImages.map(async (other) => {
+                const otherForm = new FormData();
+                otherForm.set("image", other.file);
+                await fetch("/api/admin/upload", { method: "POST", body: otherForm }).catch(
+                  () => null,
+                );
+              }),
+            );
+          }
+
+          if (onlyVideos.length > 0) {
+            const videoForm = new FormData();
+            videoForm.set("image", onlyVideos[0].file);
+            const videoRes = await fetch("/api/admin/upload", { method: "POST", body: videoForm });
+            const videoData = (await videoRes.json()) as { url?: string; error?: string };
+            if (!videoRes.ok || !videoData.url) {
+              throw new Error(videoData.error ?? "Error al subir el video editorial");
+            }
+            uploadedVideoUrl = videoData.url;
+          }
+        } catch (err) {
+          setMediaUploading(false);
+          setNotification({
+            type: "error",
+            message: err instanceof Error ? err.message : "Error al subir archivos multimedia",
+          });
+          setIsSaving(false);
+          return;
+        }
+        setMediaUploading(false);
+      }
+
       // 1. Si es producto de la base de datos
       if (dbProduct) {
         const form = new FormData();
@@ -326,6 +486,8 @@ export function AdminEditProductForm() {
         if (description.trim()) form.set("description", description.trim());
         form.set("slug", currentSlug);
         form.set("active", String(active));
+        if (uploadedImageUrl) form.set("image_url", uploadedImageUrl);
+        if (uploadedVideoUrl) form.set("video_url", uploadedVideoUrl);
 
         await updateProduct.mutateAsync({ id: dbProduct.id, form });
 
@@ -540,10 +702,14 @@ export function AdminEditProductForm() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSaving || updateProduct.isPending}
+              disabled={isSaving || updateProduct.isPending || mediaUploading}
               className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
             >
-              {isSaving || updateProduct.isPending ? "GUARDANDO…" : "GUARDAR CAMBIOS"}
+              {mediaUploading
+                ? "SUBIENDO ARCHIVOS…"
+                : isSaving || updateProduct.isPending
+                  ? "GUARDANDO…"
+                  : "GUARDAR CAMBIOS"}
               {!(isSaving || updateProduct.isPending) && (
                 <span className="material-symbols-outlined text-[18px]">check</span>
               )}
@@ -829,70 +995,216 @@ export function AdminEditProductForm() {
                 <div className="flex items-center gap-3">
                   <span className="w-2 h-2 bg-[#c77d2e]" />
                   <h2 className="font-headline text-[24px] uppercase tracking-wide text-[#1e1c13]">
-                    GALERÍA MULTIMEDIA
+                    GALERÍA MULTIMEDIA Y FOTOGRAFÍA EDITORIAL
                   </h2>
                 </div>
                 <span className="font-inter text-[10px] uppercase tracking-widest text-[#524438]">
-                  3/8 FOTOS
+                  {media.length}/8 ARCHIVOS CARGADOS
                 </span>
               </div>
+
+              {/* Input oculto */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                suppressHydrationWarning
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleFilesSelect(e.target.files);
+                  e.target.value = "";
+                }}
+              />
 
               {/* Dropzone */}
-              <div className="w-full p-6 bg-[#faf3e4] hover:bg-[#f4eddf] transition-colors flex flex-col items-center justify-center text-center cursor-pointer group border-2 border-dashed border-[#e0dacb] hover:border-[#c77d2e]">
-                <span className="material-symbols-outlined text-[28px] text-[#673900] mb-2">
-                  add_photo_alternate
-                </span>
-                <p className="font-headline text-[18px] uppercase text-[#1e1c13] tracking-wider">
-                  Añadir fotografías
+              <div
+                className={`w-full p-8 bg-[#faf3e4] hover:bg-[#f4eddf] transition-colors flex flex-col items-center justify-center text-center group ${
+                  media.length >= 8 ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                }`}
+                onClick={() => {
+                  if (media.length < 8) fileInputRef.current?.click();
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (media.length < 8 && e.dataTransfer.files) {
+                    handleFilesSelect(e.dataTransfer.files);
+                  }
+                }}
+              >
+                <div className="w-12 h-12 bg-[#eee8d9] group-hover:bg-[#ffdcc0] flex items-center justify-center mb-4 transition-colors">
+                  <span className="material-symbols-outlined text-[26px] text-[#673900]">
+                    perm_media
+                  </span>
+                </div>
+                <p className="font-headline text-[20px] uppercase text-[#1e1c13] tracking-wider">
+                  {media.length >= 8
+                    ? "Límite máximo de 8 archivos alcanzado"
+                    : "Arrastra fotografías o videos editoriales"}
                 </p>
-                <p className="font-inter text-[11px] text-[#524438] mt-1">
-                  JPG, PNG, WebP — proporción 3:4 — máx. 12MB
+                <p className="font-inter text-[12px] text-[#524438] mt-1">
+                  Imágenes JPG, PNG, WebP máx. 15 MB · Videos MP4, WebM máx. 50 MB
                 </p>
+                {media.length < 8 && (
+                  <span className="mt-4 px-4 py-1.5 bg-white font-inter text-[10px] uppercase tracking-widest text-[#1e1c13] shadow-sm">
+                    SELECCIONAR DESDE DISPOSITIVO
+                  </span>
+                )}
               </div>
 
-              {/* Uploaded images */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { label: "PORTADA EDITORIAL", size: "2.4 MB • 3000x4000", featured: true },
-                  { label: "", size: "1.9 MB • 3000x4000", featured: false },
-                  { label: "", size: "2.1 MB • 3000x4000", featured: false },
-                ].map((img, i) => (
-                  <div key={i} className="relative group bg-[#f4eddf] flex flex-col">
-                    <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb] flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[40px] text-[#857466]">
-                        image
-                      </span>
-                      {img.featured && (
-                        <span className="absolute top-2 left-2 bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold">
-                          PORTADA EDITORIAL
-                        </span>
-                      )}
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          className="w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-3 bg-[#faf3e4] flex items-center justify-between">
-                      <span className="font-inter text-[12px] text-[#524438]">{img.size}</span>
-                      {img.featured && (
-                        <span
-                          className="material-symbols-outlined text-[18px] text-[#c77d2e]"
-                          title="Imagen destacada"
-                        >
-                          star
-                        </span>
-                      )}
-                    </div>
+              {/* Error */}
+              {mediaUploadError && (
+                <p className="font-inter text-[13px] text-red-600">{mediaUploadError}</p>
+              )}
+
+              {/* Galería */}
+              {media.length > 0 && (
+                <div className="flex flex-col gap-2 pt-1">
+                  <div className="flex items-center gap-1.5 text-[#524438] text-[12px] font-inter">
+                    <span className="material-symbols-outlined text-[16px] text-[#c77d2e]">
+                      drag_indicator
+                    </span>
+                    <span>
+                      Mantené presionado el ícono{" "}
+                      <span className="font-mono font-bold text-[#1e1c13]">:::</span> para arrastrar
+                      el archivo y cambiarla de lugar. La primera imagen (#1) será la portada.
+                    </span>
                   </div>
-                ))}
-              </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {media.map((item, index) => {
+                      const isDragging = draggedIndex === index;
+                      const isDragOver = dragOverIndex === index;
+
+                      return (
+                        <div
+                          key={item.id}
+                          draggable={dragAllowedIndex === index}
+                          onDragStart={(e) => {
+                            setDraggedIndex(index);
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", String(index));
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                            if (dragOverIndex !== index) setDragOverIndex(index);
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverIndex === index) setDragOverIndex(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (draggedIndex !== null && draggedIndex !== index) {
+                              reorderMedia(draggedIndex, index);
+                            }
+                            setDragAllowedIndex(null);
+                            setDraggedIndex(null);
+                            setDragOverIndex(null);
+                          }}
+                          onDragEnd={() => {
+                            setDragAllowedIndex(null);
+                            setDraggedIndex(null);
+                            setDragOverIndex(null);
+                          }}
+                          className={`relative group bg-[#f4eddf] flex flex-col border transition-all select-none ${
+                            isDragging
+                              ? "opacity-40 scale-95 border-dashed border-[#c77d2e]"
+                              : isDragOver
+                                ? "ring-2 ring-[#673900] scale-[1.02] border-[#673900]"
+                                : item.isFeatured
+                                  ? "border-[#c77d2e] shadow-md"
+                                  : "border-[#e0dacb] hover:border-[#857466]"
+                          }`}
+                        >
+                          <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb]">
+                            {item.type === "video" ? (
+                              <video
+                                src={item.previewUrl}
+                                className="w-full h-full object-cover pointer-events-none"
+                                muted
+                                loop
+                                autoPlay
+                                playsInline
+                              />
+                            ) : (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={item.previewUrl}
+                                alt={item.name}
+                                className="w-full h-full object-cover pointer-events-none"
+                              />
+                            )}
+
+                            {/* Badge */}
+                            <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
+                              <span className="bg-[#1e1c13]/85 text-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider">
+                                #{index + 1}
+                              </span>
+                              {item.type === "video" ? (
+                                <span className="bg-[#673900] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
+                                  VIDEO
+                                </span>
+                              ) : (
+                                item.isFeatured && (
+                                  <span className="bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
+                                    PORTADA
+                                  </span>
+                                )
+                              )}
+                            </div>
+
+                            {/* Botón eliminar */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveMedia(item.id);
+                              }}
+                              title="Eliminar archivo"
+                              className="absolute top-2 right-2 w-7 h-7 bg-[#1e1c13]/85 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm z-10"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </div>
+
+                          {/* Pie de tarjeta */}
+                          <div className="p-3 bg-[#faf3e4] flex items-center justify-between gap-2">
+                            <div className="flex flex-col min-w-0">
+                              <span
+                                className="font-inter text-[11px] text-[#1e1c13] truncate font-medium"
+                                title={item.name}
+                              >
+                                {item.name}
+                              </span>
+                              <span className="font-inter text-[10px] text-[#524438]">
+                                {item.sizeFormatted}
+                              </span>
+                            </div>
+                            <div
+                              onMouseDown={() => setDragAllowedIndex(index)}
+                              onMouseUp={() => setDragAllowedIndex(null)}
+                              onTouchStart={() => setDragAllowedIndex(index)}
+                              onTouchEnd={() => setDragAllowedIndex(null)}
+                              title="Mantené presionado aquí para arrastrar y cambiar de lugar"
+                              className="p-1 text-[#857466] hover:text-[#673900] active:text-[#673900] hover:bg-[#eee8d9] transition-colors cursor-grab active:cursor-grabbing shrink-0"
+                            >
+                              <span className="material-symbols-outlined text-[20px] pointer-events-none select-none">
+                                drag_indicator
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Toggle Portada Dinámica */}
-              <div className="flex items-center justify-between bg-[#faf3e4] p-4">
+              <div className="flex items-center justify-between pt-1 bg-[#faf3e4] p-4">
                 <div className="flex flex-col">
                   <span className="font-inter text-[11px] uppercase tracking-wider text-[#1e1c13] font-semibold">
                     Portada Dinámica en Vitrina
