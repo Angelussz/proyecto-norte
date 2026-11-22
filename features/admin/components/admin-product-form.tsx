@@ -540,24 +540,12 @@ export function AdminProductForm() {
 
               {/* SKU */}
               <div className="md:col-span-6 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <label
-                    className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
-                    htmlFor="prod-sku"
-                  >
-                    SKU Base
-                  </label>
-                  <div className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider">
-                    <span className="material-symbols-outlined text-[13px] text-[#857466]">
-                      {!isSkuEditable ? "lock" : "edit"}
-                    </span>
-                    <span
-                      className={!isSkuEditable ? "text-[#857466]" : "text-[#c77d2e] font-semibold"}
-                    >
-                      {!isSkuEditable ? "Auto-generado" : "Edición manual"}
-                    </span>
-                  </div>
-                </div>
+                <label
+                  className="font-inter text-[11px] uppercase tracking-wider text-[#524438]"
+                  htmlFor="prod-sku"
+                >
+                  SKU Base
+                </label>
                 <div className="relative flex items-center">
                   <input
                     ref={skuInputRef}
@@ -608,7 +596,7 @@ export function AdminProductForm() {
                         )}
                         <button
                           type="button"
-                          title="Fijar y bloquear SKU"
+                          title="Confirmar SKU"
                           onClick={() => setIsSkuEditable(false)}
                           className="w-8 h-8 flex items-center justify-center bg-[#673900] hover:bg-[#894d00] text-white transition-colors cursor-pointer"
                         >
@@ -622,7 +610,7 @@ export function AdminProductForm() {
                   {!isSkuEditable ? (
                     brandId || categoryId ? (
                       <span className="text-[#33402f]">
-                        SKU generado automáticamente y protegido. Pulsá el botón de edición para
+                        SKU generado automáticamente. Podés pulsar el botón de edición para
                         personalizarlo.
                       </span>
                     ) : (
@@ -631,7 +619,7 @@ export function AdminProductForm() {
                   ) : (
                     <span className="text-[#c77d2e]">
                       Modo edición manual activo. Pulsá ↺ para restaurar el auto-generado o ✓ para
-                      fijar y bloquear.
+                      confirmar.
                     </span>
                   )}
                 </span>
