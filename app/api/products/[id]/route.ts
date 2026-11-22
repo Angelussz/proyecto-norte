@@ -64,6 +64,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         price: Number(variant.price),
       })),
       images,
+      video_url: product.video_url,
     };
 
     // Sugerencias: misma categoría, excluyendo el producto actual.

@@ -20,6 +20,7 @@ export interface ProductDto {
   basePrice: number;
   active: boolean;
   imageUrl: string | null;
+  videoUrl?: string | null;
   categoryId: string;
   categoryName: string;
   createdAt: string;
@@ -54,6 +55,7 @@ export interface ProductListItem {
   basePrice: number;
   active: boolean;
   imageUrl: string | null;
+  videoUrl?: string | null;
   categoryId: string;
   categoryName: string;
   variantCount: number;

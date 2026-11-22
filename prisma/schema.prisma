@@ -127,6 +127,7 @@ model Products {
   active       Boolean  @default(true)
   image_url    String?
   image_url_id String?
+  video_url    String?
   created_at   DateTime @default(now())
 
   category Categories       @relation(fields: [category_id], references: [id], onDelete: Restrict)

@@ -98,6 +98,7 @@ function toDto(product: any) {
     active: product.active,
     image_url: product.image_url,
     image_url_id: product.image_url_id,
+    video_url: product.video_url,
     created_at:
       product.created_at instanceof Date ? product.created_at.toISOString() : product.created_at,
   };
@@ -186,6 +187,7 @@ export async function createProduct(form: FormData) {
   // Prioridad: si viene image_url (URL de texto, e.g. upload local previo), úsala directo.
   // Si viene image (File), súbela a Cloudinary (flujo original).
   const directImageUrl = field(form, "image_url");
+  const directVideoUrl = field(form, "video_url");
   const image = directImageUrl ? null : await imageFromForm(form);
 
   const data: Prisma.ProductsCreateInput = {
@@ -197,6 +199,7 @@ export async function createProduct(form: FormData) {
     active,
     image_url: directImageUrl ?? image?.secureUrl ?? null,
     image_url_id: image?.publicId ?? null,
+    video_url: directVideoUrl ?? null,
     category: { connect: { id: categoryId } },
   };
 
@@ -252,6 +255,11 @@ export async function updateProduct(id: string, form: FormData) {
     await assertCategory(categoryId);
     data.category = { connect: { id: categoryId } };
   }
+
+  const directImageUrl = field(form, "image_url");
+  const directVideoUrl = field(form, "video_url");
+  if (directImageUrl !== null) data.image_url = directImageUrl || null;
+  if (directVideoUrl !== null) data.video_url = directVideoUrl || null;
 
   const image = await imageFromForm(form, existing.image_url_id);
   if (image) {
@@ -373,6 +381,7 @@ export async function listProducts(): Promise<ProductListItem[]> {
     basePrice: Number(p.base_price),
     active: p.active,
     imageUrl: p.image_url,
+    videoUrl: p.video_url,
     categoryId: p.category_id,
     categoryName: p.category.name,
     variantCount: p.variants.length,
@@ -402,6 +411,7 @@ export async function getProductById(id: string) {
     basePrice: Number(p.base_price),
     active: p.active,
     imageUrl: p.image_url,
+    videoUrl: p.video_url,
     categoryId: p.category_id,
     categoryName: p.category.name,
     createdAt: p.created_at.toISOString(),

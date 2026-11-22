@@ -29,6 +29,7 @@ export interface ProductFormImage {
   name: string;
   sizeFormatted: string;
   isFeatured: boolean;
+  type: "image" | "video";
 }
 
 export function AdminProductForm() {
@@ -127,41 +128,61 @@ export function AdminProductForm() {
 
     const effectiveActive = forceActive !== undefined ? forceActive : active;
 
-    // Subir imágenes al servidor si hay imágenes seleccionadas
+    // Subir imágenes y/o video al servidor
     let uploadedImageUrl: string | null = null;
+    let uploadedVideoUrl: string | null = null;
+
     if (images.length > 0) {
       setImageUploading(true);
       try {
-        const featured = images.find((img) => img.isFeatured) ?? images[0];
+        // Separar imágenes y videos
+        const onlyImages = images.filter((m) => m.type === "image");
+        const onlyVideos = images.filter((m) => m.type === "video");
 
-        // 1. Subir la imagen de portada
-        const imgForm = new FormData();
-        imgForm.set("image", featured.file);
-        const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: imgForm });
-        const uploadData = (await uploadRes.json()) as { url?: string; error?: string };
-        if (!uploadRes.ok || !uploadData.url) {
-          throw new Error(uploadData.error ?? "Error al subir la imagen de portada");
+        // 1. Subir la imagen de portada (primera imagen)
+        if (onlyImages.length > 0) {
+          const featured = onlyImages.find((img) => img.isFeatured) ?? onlyImages[0];
+          const imgForm = new FormData();
+          imgForm.set("image", featured.file);
+          const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: imgForm });
+          const uploadData = (await uploadRes.json()) as { url?: string; error?: string };
+          if (!uploadRes.ok || !uploadData.url) {
+            throw new Error(uploadData.error ?? "Error al subir la imagen de portada");
+          }
+          uploadedImageUrl = uploadData.url;
+
+          // Subir imágenes adicionales (no portada)
+          const additionalImages = onlyImages.filter((img) => img.id !== featured.id);
+          if (additionalImages.length > 0) {
+            await Promise.all(
+              additionalImages.map(async (other) => {
+                const otherForm = new FormData();
+                otherForm.set("image", other.file);
+                await fetch("/api/admin/upload", { method: "POST", body: otherForm }).catch(
+                  () => null,
+                );
+              }),
+            );
+          }
         }
-        uploadedImageUrl = uploadData.url;
 
-        // 2. Subir las imágenes adicionales para persistirlas en el servidor
-        const additionalImages = images.filter((img) => img.id !== featured.id);
-        if (additionalImages.length > 0) {
-          await Promise.all(
-            additionalImages.map(async (other) => {
-              const otherForm = new FormData();
-              otherForm.set("image", other.file);
-              await fetch("/api/admin/upload", { method: "POST", body: otherForm }).catch(
-                () => null,
-              );
-            }),
-          );
+        // 2. Subir video editorial (solo el primero)
+        if (onlyVideos.length > 0) {
+          const videoFile = onlyVideos[0];
+          const videoForm = new FormData();
+          videoForm.set("image", videoFile.file); // el endpoint acepta ambos con este key
+          const videoRes = await fetch("/api/admin/upload", { method: "POST", body: videoForm });
+          const videoData = (await videoRes.json()) as { url?: string; error?: string };
+          if (!videoRes.ok || !videoData.url) {
+            throw new Error(videoData.error ?? "Error al subir el video editorial");
+          }
+          uploadedVideoUrl = videoData.url;
         }
       } catch (err) {
         setImageUploading(false);
         setNotification({
           type: "error",
-          message: err instanceof Error ? err.message : "Error al subir imágenes",
+          message: err instanceof Error ? err.message : "Error al subir archivos multimedia",
         });
         return;
       }
@@ -177,6 +198,7 @@ export function AdminProductForm() {
     if (slug) form.set("slug", slug);
     form.set("active", String(effectiveActive));
     if (uploadedImageUrl) form.set("image_url", uploadedImageUrl);
+    if (uploadedVideoUrl) form.set("video_url", uploadedVideoUrl);
 
     try {
       const created = await createProduct.mutateAsync(form);
@@ -254,17 +276,26 @@ export function AdminProductForm() {
     if (!filesArray.length) return;
     setImageUploadError(null);
 
-    const allowedMimes = ["image/jpeg", "image/png", "image/webp"];
-    const maxBytes = 12 * 1024 * 1024; // 12 MB
+    const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
+    const allowedVideoMimes = ["video/mp4", "video/webm"];
+    const maxImageBytes = 15 * 1024 * 1024; // 15 MB
+    const maxVideoBytes = 50 * 1024 * 1024; // 50 MB
 
     const validFiles: File[] = [];
     for (const file of filesArray) {
-      if (!allowedMimes.includes(file.type)) {
-        setImageUploadError("Solo se admiten formatos JPG, PNG y WebP.");
+      const isImage = allowedImageMimes.includes(file.type);
+      const isVideo = allowedVideoMimes.includes(file.type);
+
+      if (!isImage && !isVideo) {
+        setImageUploadError("Solo se admiten formatos JPG, PNG, WebP o videos MP4, WebM.");
         continue;
       }
-      if (file.size > maxBytes) {
-        setImageUploadError(`La imagen "${file.name}" supera el límite de 12 MB.`);
+      if (isImage && file.size > maxImageBytes) {
+        setImageUploadError(`La imagen "${file.name}" supera el límite de 15 MB.`);
+        continue;
+      }
+      if (isVideo && file.size > maxVideoBytes) {
+        setImageUploadError(`El video "${file.name}" supera el límite de 50 MB.`);
         continue;
       }
       validFiles.push(file);
@@ -275,14 +306,14 @@ export function AdminProductForm() {
     setImages((prev) => {
       const availableSlots = 8 - prev.length;
       if (availableSlots <= 0) {
-        setImageUploadError("Has alcanzado el límite máximo de 8 fotos.");
+        setImageUploadError("Has alcanzado el límite máximo de 8 archivos.");
         return prev;
       }
 
       const filesToProcess = validFiles.slice(0, availableSlots);
       if (validFiles.length > availableSlots) {
         setImageUploadError(
-          `Solo se pueden cargar hasta 8 fotos en total (se agregaron ${availableSlots}).`,
+          `Solo se pueden cargar hasta 8 archivos en total (se agregaron ${availableSlots}).`,
         );
       }
 
@@ -292,7 +323,8 @@ export function AdminProductForm() {
         previewUrl: URL.createObjectURL(file),
         name: file.name,
         sizeFormatted: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        isFeatured: prev.length === 0 && idx === 0,
+        isFeatured: prev.length === 0 && idx === 0 && !file.type.startsWith("video/"),
+        type: file.type.startsWith("video/") ? "video" : "image",
       }));
 
       return [...prev, ...newEntries];
@@ -376,7 +408,7 @@ export function AdminProductForm() {
             className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
           >
             {imageUploading
-              ? "SUBIENDO IMÁGENES…"
+              ? "SUBIENDO ARCHIVOS…"
               : createProduct.isPending
                 ? "GUARDANDO…"
                 : "GUARDAR Y PUBLICAR"}
@@ -661,7 +693,7 @@ export function AdminProductForm() {
                 </h2>
               </div>
               <span className="font-inter text-[10px] uppercase tracking-widest text-[#524438]">
-                {images.length}/8 FOTOS CARGADAS
+                {images.length}/8 ARCHIVOS CARGADOS
               </span>
             </div>
 
@@ -671,7 +703,7 @@ export function AdminProductForm() {
               type="file"
               multiple
               suppressHydrationWarning
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) handleFilesSelect(e.target.files);
@@ -697,17 +729,16 @@ export function AdminProductForm() {
             >
               <div className="w-12 h-12 bg-[#eee8d9] group-hover:bg-[#ffdcc0] flex items-center justify-center mb-4 transition-colors">
                 <span className="material-symbols-outlined text-[26px] text-[#673900]">
-                  add_photo_alternate
+                  perm_media
                 </span>
               </div>
               <p className="font-headline text-[20px] uppercase text-[#1e1c13] tracking-wider">
                 {images.length >= 8
-                  ? "Límite máximo de 8 fotos alcanzado"
-                  : "Arrastra fotografías editoriales o busca archivos"}
+                  ? "Límite máximo de 8 archivos alcanzado"
+                  : "Arrastra fotografías o videos editoriales"}
               </p>
               <p className="font-inter text-[12px] text-[#524438] mt-1">
-                Formatos JPG, PNG, WebP en alta resolución (proporción sugerida 3:4 vertical
-                atelier, máx. 12MB cada una)
+                Imágenes JPG, PNG, WebP máx. 15 MB · Videos MP4, WebM máx. 50 MB
               </p>
               {images.length < 8 && (
                 <span className="mt-4 px-4 py-1.5 bg-white font-inter text-[10px] uppercase tracking-widest text-[#1e1c13] shadow-sm">
@@ -731,7 +762,7 @@ export function AdminProductForm() {
                   <span>
                     Mantené presionado el ícono{" "}
                     <span className="font-mono font-bold text-[#1e1c13]">:::</span> para arrastrar
-                    la foto y cambiarla de lugar. La primera (#1) será la portada.
+                    el archivo y cambiarla de lugar. La primera imagen (#1) será la portada.
                   </span>
                 </div>
 
@@ -787,22 +818,39 @@ export function AdminProductForm() {
                         }`}
                       >
                         <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb]">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={img.previewUrl}
-                            alt={img.name}
-                            className="w-full h-full object-cover pointer-events-none"
-                          />
+                          {img.type === "video" ? (
+                            <video
+                              src={img.previewUrl}
+                              className="w-full h-full object-cover pointer-events-none"
+                              muted
+                              loop
+                              autoPlay
+                              playsInline
+                            />
+                          ) : (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={img.previewUrl}
+                              alt={img.name}
+                              className="w-full h-full object-cover pointer-events-none"
+                            />
+                          )}
 
-                          {/* Badge de posición / portada */}
+                          {/* Badge de posición / portada / video */}
                           <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
                             <span className="bg-[#1e1c13]/85 text-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider">
                               #{index + 1}
                             </span>
-                            {img.isFeatured && (
-                              <span className="bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
-                                PORTADA
+                            {img.type === "video" ? (
+                              <span className="bg-[#673900] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
+                                VIDEO
                               </span>
+                            ) : (
+                              img.isFeatured && (
+                                <span className="bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
+                                  PORTADA
+                                </span>
+                              )
                             )}
                           </div>
 
@@ -1143,7 +1191,7 @@ export function AdminProductForm() {
             className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
           >
             {imageUploading
-              ? "SUBIENDO IMÁGENES…"
+              ? "SUBIENDO ARCHIVOS…"
               : createProduct.isPending
                 ? "PUBLICANDO…"
                 : "PUBLICAR PRODUCTO"}
