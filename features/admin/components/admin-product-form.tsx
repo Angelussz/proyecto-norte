@@ -547,9 +547,16 @@ export function AdminProductForm() {
                   >
                     SKU Base
                   </label>
-                  <span className="font-mono text-[10px] text-[#857466] uppercase">
-                    {!isSkuEditable ? "🔒 Protegido" : "✏️ Editable"}
-                  </span>
+                  <div className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[13px] text-[#857466]">
+                      {!isSkuEditable ? "lock" : "edit"}
+                    </span>
+                    <span
+                      className={!isSkuEditable ? "text-[#857466]" : "text-[#c77d2e] font-semibold"}
+                    >
+                      {!isSkuEditable ? "Auto-generado" : "Edición manual"}
+                    </span>
+                  </div>
                 </div>
                 <div className="relative flex items-center">
                   <input
@@ -565,57 +572,66 @@ export function AdminProductForm() {
                       setSkuManuallyEdited(true);
                     }}
                     placeholder="NRT-CAM0001"
-                    className={`w-full pl-4 pr-20 py-3 font-mono text-[16px] uppercase tracking-wider transition-colors ${
+                    className={`w-full pl-4 pr-24 py-3 font-mono text-[16px] uppercase tracking-wider transition-colors ${
                       !isSkuEditable
                         ? "bg-[#ede6d6] text-[#524438] cursor-not-allowed select-all focus:outline-none"
                         : "bg-[#faf3e4] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                     }`}
                   />
                   <div className="absolute right-2 flex items-center gap-1">
-                    {skuManuallyEdited && (
+                    {!isSkuEditable ? (
                       <button
                         type="button"
-                        title="Restaurar SKU automático"
+                        title="Habilitar edición manual de SKU"
                         onClick={() => {
-                          setSkuManuallyEdited(false);
-                          setIsSkuEditable(false);
-                        }}
-                        className="p-1 text-[#857466] hover:text-[#673900] transition-colors cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">refresh</span>
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      title={isSkuEditable ? "Bloquear SKU" : "Habilitar edición manual de SKU"}
-                      onClick={() => {
-                        if (!isSkuEditable) {
                           setIsSkuEditable(true);
                           setTimeout(() => skuInputRef.current?.focus(), 50);
-                        } else {
-                          setIsSkuEditable(false);
-                        }
-                      }}
-                      className="px-2 py-1 bg-white/70 hover:bg-white text-[15px] transition-colors cursor-pointer rounded shadow-xs flex items-center justify-center border border-[#d8d0c0]"
-                    >
-                      {isSkuEditable ? "🔒" : "✏️"}
-                    </button>
+                        }}
+                        className="w-8 h-8 flex items-center justify-center bg-[#eee8d9] hover:bg-[#e4ddcc] text-[#524438] hover:text-[#1e1c13] transition-colors cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[17px]">edit</span>
+                      </button>
+                    ) : (
+                      <>
+                        {skuManuallyEdited && (
+                          <button
+                            type="button"
+                            title="Restaurar SKU automático"
+                            onClick={() => {
+                              setSkuManuallyEdited(false);
+                              setIsSkuEditable(false);
+                            }}
+                            className="w-8 h-8 flex items-center justify-center bg-[#eee8d9] hover:bg-[#e4ddcc] text-[#524438] hover:text-[#673900] transition-colors cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[17px]">refresh</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          title="Fijar y bloquear SKU"
+                          onClick={() => setIsSkuEditable(false)}
+                          className="w-8 h-8 flex items-center justify-center bg-[#673900] hover:bg-[#894d00] text-white transition-colors cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[17px]">check</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
                 <span className="font-inter text-[11px] text-[#524438]">
                   {!isSkuEditable ? (
                     brandId || categoryId ? (
                       <span className="text-[#33402f]">
-                        SKU generado automáticamente. Bloqueado por seguridad. Hacé clic en ✏️ para
-                        editarlo.
+                        SKU generado automáticamente y protegido. Pulsá el botón de edición para
+                        personalizarlo.
                       </span>
                     ) : (
-                      "Se generará al seleccionar marca o categoría. Hacé clic en ✏️ para ingresar uno manual."
+                      "Se generará al seleccionar marca o categoría. Podés pulsar el botón de edición para ingresar uno manual."
                     )
                   ) : (
                     <span className="text-[#c77d2e]">
-                      Modo edición manual activo. Pulsá ↺ para restaurar el automático o 🔒 para
-                      bloquear.
+                      Modo edición manual activo. Pulsá ↺ para restaurar el auto-generado o ✓ para
+                      fijar y bloquear.
                     </span>
                   )}
                 </span>
