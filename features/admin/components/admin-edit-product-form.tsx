@@ -682,13 +682,13 @@ export function AdminEditProductForm() {
                         setSkuManuallyEdited(true);
                       }}
                       placeholder="NRT-CAM0001"
-                      className={`w-full pl-4 pr-24 py-3 font-mono text-[16px] uppercase tracking-wider transition-colors ${
+                      className={`w-full pl-4 pr-16 py-3 font-mono text-[14px] leading-[20px] uppercase tracking-wider transition-colors ${
                         !isSkuEditable
                           ? "bg-[#ede6d6] text-[#524438] cursor-not-allowed select-all focus:outline-none"
                           : "bg-[#faf3e4] text-[#1e1c13] focus:outline-none focus:bg-[#fff9ed] focus:ring-1 focus:ring-[#673900]"
                       }`}
                     />
-                    <div className="absolute right-2 flex items-center gap-1">
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       {!isSkuEditable ? (
                         <button
                           type="button"
@@ -697,9 +697,9 @@ export function AdminEditProductForm() {
                             setIsSkuEditable(true);
                             setTimeout(() => skuInputRef.current?.focus(), 50);
                           }}
-                          className="w-8 h-8 flex items-center justify-center bg-[#eee8d9] hover:bg-[#e4ddcc] text-[#524438] hover:text-[#1e1c13] transition-colors cursor-pointer"
+                          className="w-6 h-6 flex items-center justify-center bg-[#eee8d9] hover:bg-[#e4ddcc] text-[#524438] hover:text-[#1e1c13] transition-colors cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-[17px]">edit</span>
+                          <span className="material-symbols-outlined text-[13px]">edit</span>
                         </button>
                       ) : (
                         <>
@@ -711,18 +711,18 @@ export function AdminEditProductForm() {
                                 setSkuManuallyEdited(false);
                                 setIsSkuEditable(false);
                               }}
-                              className="w-8 h-8 flex items-center justify-center bg-[#eee8d9] hover:bg-[#e4ddcc] text-[#524438] hover:text-[#673900] transition-colors cursor-pointer"
+                              className="w-6 h-6 flex items-center justify-center bg-[#eee8d9] hover:bg-[#e4ddcc] text-[#524438] hover:text-[#673900] transition-colors cursor-pointer"
                             >
-                              <span className="material-symbols-outlined text-[17px]">refresh</span>
+                              <span className="material-symbols-outlined text-[13px]">refresh</span>
                             </button>
                           )}
                           <button
                             type="button"
                             title="Confirmar SKU"
                             onClick={() => setIsSkuEditable(false)}
-                            className="w-8 h-8 flex items-center justify-center bg-[#673900] hover:bg-[#894d00] text-white transition-colors cursor-pointer"
+                            className="w-6 h-6 flex items-center justify-center bg-[#673900] hover:bg-[#894d00] text-white transition-colors cursor-pointer"
                           >
-                            <span className="material-symbols-outlined text-[17px]">check</span>
+                            <span className="material-symbols-outlined text-[13px]">check</span>
                           </button>
                         </>
                       )}
