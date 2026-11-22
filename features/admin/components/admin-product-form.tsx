@@ -22,6 +22,15 @@ function slugify(name: string): string {
 
 type Notification = { type: "success" | "error"; message: string } | null;
 
+export interface ProductFormImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  name: string;
+  sizeFormatted: string;
+  isFeatured: boolean;
+}
+
 export function AdminProductForm() {
   const router = useRouter();
 
@@ -82,11 +91,17 @@ export function AdminProductForm() {
   }, [brandId, categoryId, brands, categories, skuManuallyEdited, allProducts]);
 
   // ── Imágenes ──────────────────────────────────────────────────────────────
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [images, setImages] = useState<ProductFormImage[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Limpieza de URLs temporales al desmontar el componente
+  useEffect(() => {
+    return () => {
+      images.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+    };
+  }, [images]);
 
   // ── Guardar ───────────────────────────────────────────────────────────────
   async function handleSave(forceActive?: boolean) {
@@ -109,24 +124,41 @@ export function AdminProductForm() {
 
     const effectiveActive = forceActive !== undefined ? forceActive : active;
 
-    // Subir imagen al servidor si hay una seleccionada
+    // Subir imágenes al servidor si hay imágenes seleccionadas
     let uploadedImageUrl: string | null = null;
-    if (selectedFile) {
+    if (images.length > 0) {
       setImageUploading(true);
       try {
+        const featured = images.find((img) => img.isFeatured) ?? images[0];
+
+        // 1. Subir la imagen de portada
         const imgForm = new FormData();
-        imgForm.set("image", selectedFile);
+        imgForm.set("image", featured.file);
         const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: imgForm });
         const uploadData = (await uploadRes.json()) as { url?: string; error?: string };
         if (!uploadRes.ok || !uploadData.url) {
-          throw new Error(uploadData.error ?? "Error al subir la imagen");
+          throw new Error(uploadData.error ?? "Error al subir la imagen de portada");
         }
         uploadedImageUrl = uploadData.url;
+
+        // 2. Subir las imágenes adicionales para persistirlas en el servidor
+        const additionalImages = images.filter((img) => img.id !== featured.id);
+        if (additionalImages.length > 0) {
+          await Promise.all(
+            additionalImages.map(async (other) => {
+              const otherForm = new FormData();
+              otherForm.set("image", other.file);
+              await fetch("/api/admin/upload", { method: "POST", body: otherForm }).catch(
+                () => null,
+              );
+            }),
+          );
+        }
       } catch (err) {
         setImageUploading(false);
         setNotification({
           type: "error",
-          message: err instanceof Error ? err.message : "Error al subir imagen",
+          message: err instanceof Error ? err.message : "Error al subir imágenes",
         });
         return;
       }
@@ -214,12 +246,77 @@ export function AdminProductForm() {
     router.back();
   }
 
-  function handleFileSelect(file: File) {
-    if (!file) return;
-    setSelectedFile(file);
+  function handleFilesSelect(files: FileList | File[]) {
+    const filesArray = Array.from(files);
+    if (!filesArray.length) return;
     setImageUploadError(null);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+
+    const allowedMimes = ["image/jpeg", "image/png", "image/webp"];
+    const maxBytes = 12 * 1024 * 1024; // 12 MB
+
+    const validFiles: File[] = [];
+    for (const file of filesArray) {
+      if (!allowedMimes.includes(file.type)) {
+        setImageUploadError("Solo se admiten formatos JPG, PNG y WebP.");
+        continue;
+      }
+      if (file.size > maxBytes) {
+        setImageUploadError(`La imagen "${file.name}" supera el límite de 12 MB.`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (!validFiles.length) return;
+
+    setImages((prev) => {
+      const availableSlots = 8 - prev.length;
+      if (availableSlots <= 0) {
+        setImageUploadError("Has alcanzado el límite máximo de 8 fotos.");
+        return prev;
+      }
+
+      const filesToProcess = validFiles.slice(0, availableSlots);
+      if (validFiles.length > availableSlots) {
+        setImageUploadError(
+          `Solo se pueden cargar hasta 8 fotos en total (se agregaron ${availableSlots}).`,
+        );
+      }
+
+      const newEntries: ProductFormImage[] = filesToProcess.map((file, idx) => ({
+        id: `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        name: file.name,
+        sizeFormatted: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        isFeatured: prev.length === 0 && idx === 0,
+      }));
+
+      return [...prev, ...newEntries];
+    });
+  }
+
+  function handleRemoveImage(id: string) {
+    setImages((prev) => {
+      const target = prev.find((img) => img.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      const remaining = prev.filter((img) => img.id !== id);
+      if (target?.isFeatured && remaining.length > 0) {
+        remaining[0].isFeatured = true;
+      }
+      return remaining;
+    });
+  }
+
+  function handleSetFeatured(id: string) {
+    setImages((prev) =>
+      prev.map((img) => ({
+        ...img,
+        isFeatured: img.id === id,
+      })),
+    );
   }
 
   return (
@@ -271,7 +368,7 @@ export function AdminProductForm() {
             className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
           >
             {imageUploading
-              ? "SUBIENDO IMAGEN…"
+              ? "SUBIENDO IMÁGENES…"
               : createProduct.isPending
                 ? "GUARDANDO…"
                 : "GUARDAR Y PUBLICAR"}
@@ -556,33 +653,38 @@ export function AdminProductForm() {
                 </h2>
               </div>
               <span className="font-inter text-[10px] uppercase tracking-widest text-[#524438]">
-                {previewUrl ? "1/8 FOTOS CARGADAS" : "0/8 FOTOS CARGADAS"}
+                {images.length}/8 FOTOS CARGADAS
               </span>
             </div>
 
-            {/* Input oculto */}
+            {/* Input oculto (soporta múltiples imágenes) */}
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               suppressHydrationWarning
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileSelect(file);
+                if (e.target.files) handleFilesSelect(e.target.files);
                 e.target.value = "";
               }}
             />
 
             {/* Dropzone */}
             <div
-              className="w-full p-8 bg-[#faf3e4] hover:bg-[#f4eddf] transition-colors flex flex-col items-center justify-center text-center cursor-pointer group"
-              onClick={() => fileInputRef.current?.click()}
+              className={`w-full p-8 bg-[#faf3e4] hover:bg-[#f4eddf] transition-colors flex flex-col items-center justify-center text-center group ${
+                images.length >= 8 ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+              }`}
+              onClick={() => {
+                if (images.length < 8) fileInputRef.current?.click();
+              }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleFileSelect(file);
+                if (images.length < 8 && e.dataTransfer.files) {
+                  handleFilesSelect(e.dataTransfer.files);
+                }
               }}
             >
               <div className="w-12 h-12 bg-[#eee8d9] group-hover:bg-[#ffdcc0] flex items-center justify-center mb-4 transition-colors">
@@ -591,15 +693,19 @@ export function AdminProductForm() {
                 </span>
               </div>
               <p className="font-headline text-[20px] uppercase text-[#1e1c13] tracking-wider">
-                Arrastra fotografías editoriales o busca archivos
+                {images.length >= 8
+                  ? "Límite máximo de 8 fotos alcanzado"
+                  : "Arrastra fotografías editoriales o busca archivos"}
               </p>
               <p className="font-inter text-[12px] text-[#524438] mt-1">
                 Formatos JPG, PNG, WebP en alta resolución (proporción sugerida 3:4 vertical
-                atelier, máx. 12MB)
+                atelier, máx. 12MB cada una)
               </p>
-              <span className="mt-4 px-4 py-1.5 bg-white font-inter text-[10px] uppercase tracking-widest text-[#1e1c13] shadow-sm">
-                SELECCIONAR DESDE DISPOSITIVO
-              </span>
+              {images.length < 8 && (
+                <span className="mt-4 px-4 py-1.5 bg-white font-inter text-[10px] uppercase tracking-widest text-[#1e1c13] shadow-sm">
+                  SELECCIONAR DESDE DISPOSITIVO
+                </span>
+              )}
             </div>
 
             {/* Error de upload */}
@@ -607,45 +713,90 @@ export function AdminProductForm() {
               <p className="font-inter text-[13px] text-red-600">{imageUploadError}</p>
             )}
 
-            {/* Preview de imagen seleccionada */}
-            {previewUrl && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-                <div className="relative group bg-[#f4eddf] flex flex-col">
-                  <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={previewUrl}
-                      alt="Portada editorial"
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute top-2 left-2 bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold">
-                      PORTADA EDITORIAL
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFile(null);
-                        setPreviewUrl(null);
-                      }}
-                      className="absolute top-2 right-2 w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
-                    </button>
+            {/* Galería de imágenes cargadas */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-1">
+                {images.map((img) => (
+                  <div
+                    key={img.id}
+                    className={`relative group bg-[#f4eddf] flex flex-col border transition-all ${
+                      img.isFeatured ? "border-[#c77d2e] shadow-sm" : "border-[#e0dacb]"
+                    }`}
+                  >
+                    <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.previewUrl}
+                        alt={img.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {img.isFeatured ? (
+                        <span className="absolute top-2 left-2 bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
+                          PORTADA EDITORIAL
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetFeatured(img.id);
+                          }}
+                          title="Hacer portada editorial"
+                          className="absolute top-2 left-2 bg-black/70 hover:bg-[#33402f] text-white px-2 py-0.5 font-inter text-[9px] uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        >
+                          Hacer portada
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveImage(img.id);
+                        }}
+                        title="Eliminar imagen"
+                        className="absolute top-2 right-2 w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
+                    <div className="p-3 bg-[#faf3e4] flex items-center justify-between gap-2">
+                      <div className="flex flex-col min-w-0">
+                        <span
+                          className="font-inter text-[11px] text-[#1e1c13] truncate font-medium"
+                          title={img.name}
+                        >
+                          {img.name}
+                        </span>
+                        <span className="font-inter text-[10px] text-[#524438]">
+                          {img.sizeFormatted}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSetFeatured(img.id);
+                        }}
+                        title={
+                          img.isFeatured
+                            ? "Portada editorial principal"
+                            : "Marcar como portada editorial"
+                        }
+                        className="shrink-0 cursor-pointer"
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[20px] transition-colors ${
+                            img.isFeatured
+                              ? "text-[#c77d2e]"
+                              : "text-[#857466] hover:text-[#c77d2e]"
+                          }`}
+                        >
+                          {img.isFeatured ? "star" : "star_border"}
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="p-3 bg-[#faf3e4] flex items-center justify-between">
-                    <span className="font-inter text-[12px] text-[#524438] truncate">
-                      {selectedFile?.name ?? "portada.jpg"} &bull;{" "}
-                      {selectedFile ? (selectedFile.size / 1024 / 1024).toFixed(1) + " MB" : ""}
-                    </span>
-                    <span
-                      className="material-symbols-outlined text-[18px] text-[#c77d2e]"
-                      title="Imagen destacada"
-                    >
-                      star
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
 
@@ -908,7 +1059,7 @@ export function AdminProductForm() {
           <span className="w-2.5 h-2.5 rounded-full bg-[#c77d2e] animate-pulse" />
           <span className="font-inter text-[12px] text-[#e0dacb]">
             {imageUploading
-              ? "Subiendo imagen…"
+              ? "Subiendo imágenes…"
               : createProduct.isPending
                 ? "Guardando producto…"
                 : "Cambios sin guardar • Borrador nuevo"}
@@ -937,7 +1088,7 @@ export function AdminProductForm() {
             className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-60 text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
           >
             {imageUploading
-              ? "SUBIENDO IMAGEN…"
+              ? "SUBIENDO IMÁGENES…"
               : createProduct.isPending
                 ? "PUBLICANDO…"
                 : "PUBLICAR PRODUCTO"}
