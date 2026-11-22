@@ -79,9 +79,14 @@ model Users {
   email_verified    Boolean   @default(false)
   email_verified_at DateTime?
   created_at        DateTime  @default(now())
-
+  suspended_until   DateTime?
+  deleted_at        DateTime?
   addresses Address[]
   orders    Orders[]
+
+  suspensionsReceived    UserSuspension[] @relation("SuspensionTarget")
+  suspensionsCreated     UserSuspension[] @relation("SuspensionAdmin")
+  suspensionsReactivated UserSuspension[] @relation("SuspensionReactivatedBy")
 }
 
 model Address {
@@ -245,4 +250,23 @@ model StoreSettings {
   tax_rate               Decimal  @default(0.18) @db.Decimal(5, 4)
   created_at             DateTime @default(now())
   updated_at             DateTime @updatedAt
+}
+
+model UserSuspension {
+  id             String    @id @default(uuid())
+  user_id        String
+  admin_id       String
+  reason         String    @db.Text
+  created_at     DateTime  @default(now())
+  suspended_until DateTime
+  reactivated_at DateTime?
+  reactivated_by String?
+
+  user Users @relation("SuspensionTarget", fields: [user_id], references: [id], onDelete: Restrict)
+  admin Users @relation("SuspensionAdmin", fields: [admin_id], references: [id], onDelete: Restrict)
+  reactivatedBy Users? @relation("SuspensionReactivatedBy", fields: [reactivated_by], references: [id], onDelete: SetNull)
+
+  @@index([user_id, created_at])
+  @@index([admin_id, created_at])
+  @@index([suspended_until])
 }

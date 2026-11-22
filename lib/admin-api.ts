@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@/generated/prisma/client";
 import { AdminAuthError } from "@/lib/admin-auth";
 import { PRODUCT_ADMIN_STATUS, ProductAdminError } from "@/services/product-admin.service";
 import { ORDER_ADMIN_STATUS, OrderAdminError } from "@/services/order-admin.service";
 import { PAYMENT_ADMIN_STATUS, PaymentAdminError } from "@/services/payment-admin.service";
 import { SETTINGS_ADMIN_STATUS, SettingsAdminError } from "@/services/settings-admin.service";
+import { USER_ADMIN_STATUS, UserAdminError } from "@/services/user-admin.service";
 
 export function handleAdminError(error: unknown, scope: string) {
   if (error instanceof AdminAuthError) {
     console.warn(scope, error.message);
     return NextResponse.json({ error: "UNAUTHORIZED", message: error.message }, { status: 401 });
   }
-
   if (error instanceof ProductAdminError) {
     return NextResponse.json(
       { error: error.code, message: error.message },
@@ -36,6 +37,24 @@ export function handleAdminError(error: unknown, scope: string) {
     return NextResponse.json(
       { error: error.code, message: error.message },
       { status: SETTINGS_ADMIN_STATUS[error.code] },
+    );
+  }
+
+  if (error instanceof UserAdminError) {
+    console.warn(scope, error.message);
+    return NextResponse.json(
+      { error: error.code, message: error.message },
+      { status: USER_ADMIN_STATUS[error.code] },
+    );
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+    return NextResponse.json(
+      {
+        error: "CONFLICT",
+        message: "La operación entró en conflicto con otro cambio. Intentá nuevamente.",
+      },
+      { status: 409 },
     );
   }
 

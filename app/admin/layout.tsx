@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   CreditCard,
   Settings,
+  Users,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -75,6 +76,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               NORTE
             </Link>
+
             <div className="flex items-center gap-1.5 border border-border bg-card px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               <span>OPS / ADMIN</span>
@@ -94,6 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <LayoutDashboard className="size-4" />
               <span>Dashboard</span>
             </Link>
+
             <Link
               href="/admin/orders"
               className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
@@ -105,6 +108,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <PackageCheck className="size-4" />
               <span>Gestión de Órdenes</span>
             </Link>
+
             <Link
               href="/admin/payments"
               className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
@@ -116,6 +120,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <CreditCard className="size-4" />
               <span>Pagos</span>
             </Link>
+
+            <Link
+              href="/admin/users"
+              className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                pathname.startsWith("/admin/users")
+                  ? "text-primary border-b-2 border-primary py-5 -mb-px"
+                  : "text-muted-foreground hover:text-foreground py-5"
+              }`}
+            >
+              <Users className="size-4" />
+              <span>Usuarios</span>
+            </Link>
+
             <Link
               href="/admin/settings"
               className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
@@ -127,6 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Settings className="size-4" />
               <span>Configuración</span>
             </Link>
+
             <Link
               href="/"
               target="_blank"
@@ -146,6 +164,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {user?.email}
               </p>
             </div>
+
             <button
               type="button"
               onClick={handleLogout}
