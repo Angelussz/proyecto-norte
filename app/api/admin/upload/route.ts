@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
+import { v2 as cloudinary } from "cloudinary";
+import { env } from "@/lib/env";
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // 15 MB
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -14,6 +16,20 @@ const EXT_MAP: Record<string, string> = {
   "video/mp4": ".mp4",
   "video/webm": ".webm",
 };
+
+function isCloudinaryConfigured(): boolean {
+  return Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET);
+}
+
+function getCloudinaryClient() {
+  cloudinary.config({
+    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+    api_key: env.CLOUDINARY_API_KEY,
+    api_secret: env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+  return cloudinary;
+}
 
 function detectMime(buf: Buffer, declaredType?: string): string | null {
   if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
@@ -63,6 +79,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 1. Si Cloudinary está configurado en .env, subir a Cloudinary (carpeta proyecto-norte/products)
+    if (isCloudinaryConfigured()) {
+      try {
+        const client = getCloudinaryClient();
+        const uploadResult = await new Promise<{ secure_url: string; public_id: string }>(
+          (resolve, reject) => {
+            const stream = client.uploader.upload_stream(
+              {
+                folder: "proyecto-norte/products",
+                resource_type: isVideo ? "video" : "image",
+                timeout: 120_000,
+              },
+              (err, res) => {
+                if (err || !res) return reject(err || new Error("Error en upload de Cloudinary"));
+                resolve({ secure_url: res.secure_url, public_id: res.public_id });
+              },
+            );
+            stream.end(buf);
+          },
+        );
+
+        return NextResponse.json({
+          url: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+          mediaType: isVideo ? "video" : "image",
+          storage: "cloudinary",
+        });
+      } catch (cloudErr) {
+        console.warn(
+          "Fallo upload en Cloudinary, usando almacenamiento local como fallback:",
+          cloudErr,
+        );
+      }
+    }
+
+    // 2. Almacenamiento local (fallback o si no hay credenciales de Cloudinary)
     const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
     await fs.mkdir(uploadDir, { recursive: true });
 
@@ -73,6 +125,7 @@ export async function POST(req: NextRequest) {
       url: `/uploads/products/${filename}`,
       publicId: filename,
       mediaType: isVideo ? "video" : "image",
+      storage: "local",
     });
   } catch {
     return NextResponse.json({ error: "Error interno al subir archivo" }, { status: 500 });

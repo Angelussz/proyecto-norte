@@ -132,6 +132,7 @@ export function AdminProductForm() {
 
     // Subir imágenes y/o video al servidor
     let uploadedImageUrl: string | null = null;
+    let uploadedImageId: string | null = null;
     let uploadedVideoUrl: string | null = null;
 
     if (images.length > 0) {
@@ -147,11 +148,16 @@ export function AdminProductForm() {
           const imgForm = new FormData();
           imgForm.set("image", featured.file);
           const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: imgForm });
-          const uploadData = (await uploadRes.json()) as { url?: string; error?: string };
+          const uploadData = (await uploadRes.json()) as {
+            url?: string;
+            publicId?: string;
+            error?: string;
+          };
           if (!uploadRes.ok || !uploadData.url) {
             throw new Error(uploadData.error ?? "Error al subir la imagen de portada");
           }
           uploadedImageUrl = uploadData.url;
+          uploadedImageId = uploadData.publicId ?? null;
 
           // Subir imágenes adicionales (no portada)
           const additionalImages = onlyImages.filter((img) => img.id !== featured.id);
@@ -200,6 +206,7 @@ export function AdminProductForm() {
     if (slug) form.set("slug", slug);
     form.set("active", String(effectiveActive));
     if (uploadedImageUrl) form.set("image_url", uploadedImageUrl);
+    if (uploadedImageId) form.set("image_url_id", uploadedImageId);
     if (uploadedVideoUrl) form.set("video_url", uploadedVideoUrl);
 
     try {

@@ -423,6 +423,7 @@ export function AdminEditProductForm() {
     try {
       // Subir nuevos archivos multimedia si los hay
       let uploadedImageUrl: string | null = null;
+      let uploadedImageId: string | null = null;
       let uploadedVideoUrl: string | null = null;
 
       if (media.length > 0) {
@@ -436,11 +437,16 @@ export function AdminEditProductForm() {
             const imgForm = new FormData();
             imgForm.set("image", featured.file);
             const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: imgForm });
-            const uploadData = (await uploadRes.json()) as { url?: string; error?: string };
+            const uploadData = (await uploadRes.json()) as {
+              url?: string;
+              publicId?: string;
+              error?: string;
+            };
             if (!uploadRes.ok || !uploadData.url) {
               throw new Error(uploadData.error ?? "Error al subir la imagen de portada");
             }
             uploadedImageUrl = uploadData.url;
+            uploadedImageId = uploadData.publicId ?? null;
 
             const additionalImages = onlyImages.filter((m) => m.id !== featured.id);
             await Promise.all(
@@ -487,6 +493,7 @@ export function AdminEditProductForm() {
         form.set("slug", currentSlug);
         form.set("active", String(active));
         if (uploadedImageUrl) form.set("image_url", uploadedImageUrl);
+        if (uploadedImageId) form.set("image_url_id", uploadedImageId);
         if (uploadedVideoUrl) form.set("video_url", uploadedVideoUrl);
 
         await updateProduct.mutateAsync({ id: dbProduct.id, form });

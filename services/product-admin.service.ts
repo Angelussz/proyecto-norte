@@ -187,6 +187,7 @@ export async function createProduct(form: FormData) {
   // Prioridad: si viene image_url (URL de texto, e.g. upload local previo), úsala directo.
   // Si viene image (File), súbela a Cloudinary (flujo original).
   const directImageUrl = field(form, "image_url");
+  const directImageId = field(form, "image_url_id");
   const directVideoUrl = field(form, "video_url");
   const image = directImageUrl ? null : await imageFromForm(form);
 
@@ -198,7 +199,7 @@ export async function createProduct(form: FormData) {
     base_price: basePrice,
     active,
     image_url: directImageUrl ?? image?.secureUrl ?? null,
-    image_url_id: image?.publicId ?? null,
+    image_url_id: directImageId ?? image?.publicId ?? null,
     video_url: directVideoUrl ?? null,
     category: { connect: { id: categoryId } },
   };
@@ -257,8 +258,10 @@ export async function updateProduct(id: string, form: FormData) {
   }
 
   const directImageUrl = field(form, "image_url");
+  const directImageId = field(form, "image_url_id");
   const directVideoUrl = field(form, "video_url");
   if (directImageUrl !== null) data.image_url = directImageUrl || null;
+  if (directImageId !== null) data.image_url_id = directImageId || null;
   if (directVideoUrl !== null) data.video_url = directVideoUrl || null;
 
   const image = await imageFromForm(form, existing.image_url_id);
