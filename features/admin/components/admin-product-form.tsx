@@ -96,6 +96,7 @@ export function AdminProductForm() {
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dragAllowedIndex, setDragAllowedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Limpieza de URLs temporales al desmontar el componente
@@ -748,8 +749,9 @@ export function AdminProductForm() {
                     drag_indicator
                   </span>
                   <span>
-                    Arrastrá las fotos o usá las flechas para ordenarlas. La primera (#1) será la
-                    portada.
+                    Mantené presionado el ícono{" "}
+                    <span className="font-mono font-bold text-[#1e1c13]">:::</span> en cada tarjeta
+                    para arrastrarla de lugar, o usá las flechas. La primera (#1) será la portada.
                   </span>
                 </div>
 
@@ -761,7 +763,7 @@ export function AdminProductForm() {
                     return (
                       <div
                         key={img.id}
-                        draggable
+                        draggable={dragAllowedIndex === index}
                         onDragStart={(e) => {
                           setDraggedIndex(index);
                           e.dataTransfer.effectAllowed = "move";
@@ -785,14 +787,16 @@ export function AdminProductForm() {
                           if (draggedIndex !== null && draggedIndex !== index) {
                             reorderImages(draggedIndex, index);
                           }
+                          setDragAllowedIndex(null);
                           setDraggedIndex(null);
                           setDragOverIndex(null);
                         }}
                         onDragEnd={() => {
+                          setDragAllowedIndex(null);
                           setDraggedIndex(null);
                           setDragOverIndex(null);
                         }}
-                        className={`relative group bg-[#f4eddf] flex flex-col border transition-all select-none cursor-grab active:cursor-grabbing ${
+                        className={`relative group bg-[#f4eddf] flex flex-col border transition-all select-none ${
                           isDragging
                             ? "opacity-40 scale-95 border-dashed border-[#c77d2e]"
                             : isDragOver
@@ -822,8 +826,23 @@ export function AdminProductForm() {
                             )}
                           </div>
 
-                          {/* Botón eliminar */}
-                          <div className="absolute top-2 right-2 flex items-center gap-1">
+                          {/* Botones superiores: arrastrar y eliminar */}
+                          <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+                            {/* Handle de arrastre */}
+                            <div
+                              onMouseDown={() => setDragAllowedIndex(index)}
+                              onMouseUp={() => setDragAllowedIndex(null)}
+                              onTouchStart={() => setDragAllowedIndex(index)}
+                              onTouchEnd={() => setDragAllowedIndex(null)}
+                              title="Mantené presionado aquí para arrastrar y cambiar de lugar"
+                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-[#673900] active:bg-[#673900] text-white flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing shadow-sm"
+                            >
+                              <span className="material-symbols-outlined text-[18px] pointer-events-none select-none">
+                                drag_indicator
+                              </span>
+                            </div>
+
+                            {/* Eliminar */}
                             <button
                               type="button"
                               onClick={(e) => {
@@ -831,7 +850,7 @@ export function AdminProductForm() {
                                 handleRemoveImage(img.id);
                               }}
                               title="Eliminar imagen"
-                              className="w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm"
                             >
                               <span className="material-symbols-outlined text-[16px]">delete</span>
                             </button>
