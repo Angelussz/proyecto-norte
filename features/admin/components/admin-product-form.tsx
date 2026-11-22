@@ -327,26 +327,6 @@ export function AdminProductForm() {
     });
   }
 
-  function moveImage(fromIndex: number, direction: -1 | 1) {
-    const toIndex = fromIndex + direction;
-    if (toIndex < 0 || toIndex >= images.length) return;
-    reorderImages(fromIndex, toIndex);
-  }
-
-  function handleSetFeatured(id: string) {
-    setImages((prev) => {
-      const index = prev.findIndex((img) => img.id === id);
-      if (index === -1) return prev;
-      const target = prev[index];
-      const rest = prev.filter((img) => img.id !== id);
-      const reordered = [target, ...rest];
-      return reordered.map((img, idx) => ({
-        ...img,
-        isFeatured: idx === 0,
-      }));
-    });
-  }
-
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8">
       {/* ── Notificación ── */}
@@ -750,8 +730,8 @@ export function AdminProductForm() {
                   </span>
                   <span>
                     Mantené presionado el ícono{" "}
-                    <span className="font-mono font-bold text-[#1e1c13]">:::</span> en cada tarjeta
-                    para arrastrarla de lugar, o usá las flechas. La primera (#1) será la portada.
+                    <span className="font-mono font-bold text-[#1e1c13]">:::</span> para arrastrar
+                    la foto y cambiarla de lugar. La primera (#1) será la portada.
                   </span>
                 </div>
 
@@ -826,85 +806,21 @@ export function AdminProductForm() {
                             )}
                           </div>
 
-                          {/* Botones superiores: arrastrar y eliminar */}
-                          <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-                            {/* Handle de arrastre */}
-                            <div
-                              onMouseDown={() => setDragAllowedIndex(index)}
-                              onMouseUp={() => setDragAllowedIndex(null)}
-                              onTouchStart={() => setDragAllowedIndex(index)}
-                              onTouchEnd={() => setDragAllowedIndex(null)}
-                              title="Mantené presionado aquí para arrastrar y cambiar de lugar"
-                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-[#673900] active:bg-[#673900] text-white flex items-center justify-center transition-colors cursor-grab active:cursor-grabbing shadow-sm"
-                            >
-                              <span className="material-symbols-outlined text-[18px] pointer-events-none select-none">
-                                drag_indicator
-                              </span>
-                            </div>
-
-                            {/* Eliminar */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveImage(img.id);
-                              }}
-                              title="Eliminar imagen"
-                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                            </button>
-                          </div>
-
-                          {/* Controles para reordenar (flechas izquierda / derecha) */}
-                          <div className="absolute inset-x-2 bottom-2 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              disabled={index === 0}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveImage(index, -1);
-                              }}
-                              title="Mover hacia la izquierda"
-                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-[#673900] disabled:opacity-30 disabled:pointer-events-none text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                arrow_back
-                              </span>
-                            </button>
-
-                            {!img.isFeatured && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSetFeatured(img.id);
-                                }}
-                                title="Mover a portada principal"
-                                className="bg-[#33402f]/90 hover:bg-[#33402f] text-[#fff9ed] px-2 py-1 font-inter text-[9px] uppercase tracking-wider font-semibold cursor-pointer shadow-sm"
-                              >
-                                Hacer Portada
-                              </button>
-                            )}
-
-                            <button
-                              type="button"
-                              disabled={index === images.length - 1}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveImage(index, 1);
-                              }}
-                              title="Mover hacia la derecha"
-                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-[#673900] disabled:opacity-30 disabled:pointer-events-none text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                arrow_forward
-                              </span>
-                            </button>
-                          </div>
+                          {/* Botón eliminar */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveImage(img.id);
+                            }}
+                            title="Eliminar imagen"
+                            className="absolute top-2 right-2 w-7 h-7 bg-[#1e1c13]/85 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm z-10"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
                         </div>
 
-                        {/* Pie de tarjeta con info y estrella */}
+                        {/* Pie de tarjeta con info y símbolo de arrastre */}
                         <div className="p-3 bg-[#faf3e4] flex items-center justify-between gap-2">
                           <div className="flex flex-col min-w-0">
                             <span
@@ -917,29 +833,20 @@ export function AdminProductForm() {
                               {img.sizeFormatted}
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSetFeatured(img.id);
-                            }}
-                            title={
-                              img.isFeatured
-                                ? "Portada editorial principal"
-                                : "Marcar como portada editorial"
-                            }
-                            className="shrink-0 cursor-pointer"
+
+                          {/* Símbolo drag_indicator exclusivo para mover */}
+                          <div
+                            onMouseDown={() => setDragAllowedIndex(index)}
+                            onMouseUp={() => setDragAllowedIndex(null)}
+                            onTouchStart={() => setDragAllowedIndex(index)}
+                            onTouchEnd={() => setDragAllowedIndex(null)}
+                            title="Mantené presionado aquí para arrastrar y cambiar de lugar"
+                            className="p-1 text-[#857466] hover:text-[#673900] active:text-[#673900] hover:bg-[#eee8d9] transition-colors cursor-grab active:cursor-grabbing shrink-0"
                           >
-                            <span
-                              className={`material-symbols-outlined text-[20px] transition-colors ${
-                                img.isFeatured
-                                  ? "text-[#c77d2e]"
-                                  : "text-[#857466] hover:text-[#c77d2e]"
-                              }`}
-                            >
-                              {img.isFeatured ? "star" : "star_border"}
+                            <span className="material-symbols-outlined text-[20px] pointer-events-none select-none">
+                              drag_indicator
                             </span>
-                          </button>
+                          </div>
                         </div>
                       </div>
                     );
