@@ -94,6 +94,8 @@ export function AdminProductForm() {
   const [images, setImages] = useState<ProductFormImage[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Limpieza de URLs temporales al desmontar el componente
@@ -310,13 +312,38 @@ export function AdminProductForm() {
     });
   }
 
-  function handleSetFeatured(id: string) {
-    setImages((prev) =>
-      prev.map((img) => ({
+  function reorderImages(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      // La primera imagen siempre es la portada editorial
+      return next.map((img, idx) => ({
         ...img,
-        isFeatured: img.id === id,
-      })),
-    );
+        isFeatured: idx === 0,
+      }));
+    });
+  }
+
+  function moveImage(fromIndex: number, direction: -1 | 1) {
+    const toIndex = fromIndex + direction;
+    if (toIndex < 0 || toIndex >= images.length) return;
+    reorderImages(fromIndex, toIndex);
+  }
+
+  function handleSetFeatured(id: string) {
+    setImages((prev) => {
+      const index = prev.findIndex((img) => img.id === id);
+      if (index === -1) return prev;
+      const target = prev[index];
+      const rest = prev.filter((img) => img.id !== id);
+      const reordered = [target, ...rest];
+      return reordered.map((img, idx) => ({
+        ...img,
+        isFeatured: idx === 0,
+      }));
+    });
   }
 
   return (
@@ -715,88 +742,190 @@ export function AdminProductForm() {
 
             {/* Galería de imágenes cargadas */}
             {images.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-1">
-                {images.map((img) => (
-                  <div
-                    key={img.id}
-                    className={`relative group bg-[#f4eddf] flex flex-col border transition-all ${
-                      img.isFeatured ? "border-[#c77d2e] shadow-sm" : "border-[#e0dacb]"
-                    }`}
-                  >
-                    <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img.previewUrl}
-                        alt={img.name}
-                        className="w-full h-full object-cover"
-                      />
-                      {img.isFeatured ? (
-                        <span className="absolute top-2 left-2 bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
-                          PORTADA EDITORIAL
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetFeatured(img.id);
-                          }}
-                          title="Hacer portada editorial"
-                          className="absolute top-2 left-2 bg-black/70 hover:bg-[#33402f] text-white px-2 py-0.5 font-inter text-[9px] uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        >
-                          Hacer portada
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveImage(img.id);
+              <div className="flex flex-col gap-2 pt-1">
+                <div className="flex items-center gap-1.5 text-[#524438] text-[12px] font-inter">
+                  <span className="material-symbols-outlined text-[16px] text-[#c77d2e]">
+                    drag_indicator
+                  </span>
+                  <span>
+                    Arrastrá las fotos o usá las flechas para ordenarlas. La primera (#1) será la
+                    portada.
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {images.map((img, index) => {
+                    const isDragging = draggedIndex === index;
+                    const isDragOver = dragOverIndex === index;
+
+                    return (
+                      <div
+                        key={img.id}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedIndex(index);
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", String(index));
                         }}
-                        title="Eliminar imagen"
-                        className="absolute top-2 right-2 w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          if (dragOverIndex !== index) {
+                            setDragOverIndex(index);
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverIndex === index) {
+                            setDragOverIndex(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (draggedIndex !== null && draggedIndex !== index) {
+                            reorderImages(draggedIndex, index);
+                          }
+                          setDraggedIndex(null);
+                          setDragOverIndex(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedIndex(null);
+                          setDragOverIndex(null);
+                        }}
+                        className={`relative group bg-[#f4eddf] flex flex-col border transition-all select-none cursor-grab active:cursor-grabbing ${
+                          isDragging
+                            ? "opacity-40 scale-95 border-dashed border-[#c77d2e]"
+                            : isDragOver
+                              ? "ring-2 ring-[#673900] scale-[1.02] border-[#673900]"
+                              : img.isFeatured
+                                ? "border-[#c77d2e] shadow-md"
+                                : "border-[#e0dacb] hover:border-[#857466]"
+                        }`}
                       >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
-                    </div>
-                    <div className="p-3 bg-[#faf3e4] flex items-center justify-between gap-2">
-                      <div className="flex flex-col min-w-0">
-                        <span
-                          className="font-inter text-[11px] text-[#1e1c13] truncate font-medium"
-                          title={img.name}
-                        >
-                          {img.name}
-                        </span>
-                        <span className="font-inter text-[10px] text-[#524438]">
-                          {img.sizeFormatted}
-                        </span>
+                        <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#e0dacb]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img.previewUrl}
+                            alt={img.name}
+                            className="w-full h-full object-cover pointer-events-none"
+                          />
+
+                          {/* Badge de posición / portada */}
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
+                            <span className="bg-[#1e1c13]/85 text-white px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider">
+                              #{index + 1}
+                            </span>
+                            {img.isFeatured && (
+                              <span className="bg-[#33402f] text-[#fff9ed] px-2 py-0.5 font-inter text-[10px] uppercase tracking-wider font-semibold shadow-sm">
+                                PORTADA
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Botón eliminar */}
+                          <div className="absolute top-2 right-2 flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveImage(img.id);
+                              }}
+                              title="Eliminar imagen"
+                              className="w-7 h-7 bg-[#1e1c13]/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </div>
+
+                          {/* Controles para reordenar (flechas izquierda / derecha) */}
+                          <div className="absolute inset-x-2 bottom-2 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveImage(index, -1);
+                              }}
+                              title="Mover hacia la izquierda"
+                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-[#673900] disabled:opacity-30 disabled:pointer-events-none text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                arrow_back
+                              </span>
+                            </button>
+
+                            {!img.isFeatured && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSetFeatured(img.id);
+                                }}
+                                title="Mover a portada principal"
+                                className="bg-[#33402f]/90 hover:bg-[#33402f] text-[#fff9ed] px-2 py-1 font-inter text-[9px] uppercase tracking-wider font-semibold cursor-pointer shadow-sm"
+                              >
+                                Hacer Portada
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={index === images.length - 1}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveImage(index, 1);
+                              }}
+                              title="Mover hacia la derecha"
+                              className="w-7 h-7 bg-[#1e1c13]/85 hover:bg-[#673900] disabled:opacity-30 disabled:pointer-events-none text-white flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                arrow_forward
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Pie de tarjeta con info y estrella */}
+                        <div className="p-3 bg-[#faf3e4] flex items-center justify-between gap-2">
+                          <div className="flex flex-col min-w-0">
+                            <span
+                              className="font-inter text-[11px] text-[#1e1c13] truncate font-medium"
+                              title={img.name}
+                            >
+                              {img.name}
+                            </span>
+                            <span className="font-inter text-[10px] text-[#524438]">
+                              {img.sizeFormatted}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetFeatured(img.id);
+                            }}
+                            title={
+                              img.isFeatured
+                                ? "Portada editorial principal"
+                                : "Marcar como portada editorial"
+                            }
+                            className="shrink-0 cursor-pointer"
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[20px] transition-colors ${
+                                img.isFeatured
+                                  ? "text-[#c77d2e]"
+                                  : "text-[#857466] hover:text-[#c77d2e]"
+                              }`}
+                            >
+                              {img.isFeatured ? "star" : "star_border"}
+                            </span>
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSetFeatured(img.id);
-                        }}
-                        title={
-                          img.isFeatured
-                            ? "Portada editorial principal"
-                            : "Marcar como portada editorial"
-                        }
-                        className="shrink-0 cursor-pointer"
-                      >
-                        <span
-                          className={`material-symbols-outlined text-[20px] transition-colors ${
-                            img.isFeatured
-                              ? "text-[#c77d2e]"
-                              : "text-[#857466] hover:text-[#c77d2e]"
-                          }`}
-                        >
-                          {img.isFeatured ? "star" : "star_border"}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
             )}
 
