@@ -26,9 +26,11 @@ function mapColor(c: {
 
 export async function getAllColors(): Promise<ColorDto[]> {
   const colors = await prisma.color.findMany({
-    orderBy: { sort_order: "asc" },
+    orderBy: { name: "asc" },
   });
-  return colors.map(mapColor);
+  return colors
+    .map(mapColor)
+    .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
 }
 
 export async function getColorById(id: string): Promise<ColorDto | null> {

@@ -113,13 +113,20 @@ export function AdminColorsBrandsView() {
 
   useEffect(() => {
     if (!colorsLoading && savedColorsSnapshot === null) {
-      const mapped = colorsData.map(dtoToColorLocal);
+      const mapped = colorsData
+        .map(dtoToColorLocal)
+        .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
       setColors(mapped);
       setSavedColorsSnapshot(structuredClone(mapped));
     }
   }, [colorsData, colorsLoading, savedColorsSnapshot]);
 
   const totalGarments = productsLoading ? "…" : productsData.length;
+
+  // ── Colores ordenados alfabéticamente para la cuadrícula ──────────────────
+  const sortedColors = useMemo(() => {
+    return [...colors].sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+  }, [colors]);
 
   // ── Detección de cambios sin guardar ──────────────────────────────────────
   const hasUnsavedChanges = useMemo(() => {
@@ -406,7 +413,9 @@ export function AdminColorsBrandsView() {
         setSavedBrandsSnapshot(structuredClone(brands));
       }
       if (freshColors.data) {
-        const mapped = freshColors.data.map(dtoToColorLocal);
+        const mapped = freshColors.data
+          .map(dtoToColorLocal)
+          .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
         setColors(mapped);
         setSavedColorsSnapshot(structuredClone(mapped));
       } else {
@@ -868,7 +877,7 @@ export function AdminColorsBrandsView() {
               </p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {colors.map((color) => (
+                {sortedColors.map((color) => (
                   <div
                     key={color.id}
                     className="bg-surface-container-lowest border border-outline-variant/30 group hover:border-primary transition-colors overflow-hidden"
