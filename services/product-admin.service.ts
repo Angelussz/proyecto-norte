@@ -479,7 +479,7 @@ export async function createProductVariant(productId: string, body: CreateVarian
     };
   } catch (error) {
     if (prismaErrorCode(error) === "P2002") {
-      // Si ya existía por SKU único, la reactivamos y actualizamos su stock
+      // Si ya existía por SKU único, la reactivamos y actualizamos su stock si es del mismo producto
       const existing = await prisma.productVariants.findUnique({
         where: { sku },
       });
@@ -502,6 +502,27 @@ export async function createProductVariant(productId: string, body: CreateVarian
           unitCost: Number(updated.unit_cost),
           stock: updated.stock,
           active: updated.active,
+        };
+      }
+      if (existing && existing.product_id !== productId) {
+        // Si el SKU ya pertenecía a otro producto, generamos un SKU único para este producto
+        const uniqueSuffix = productId.slice(0, 4).toUpperCase();
+        const fallbackSku = `${sku}-${uniqueSuffix}`;
+        const fallbackVariant = await prisma.productVariants.create({
+          data: {
+            ...data,
+            sku: fallbackSku,
+          },
+        });
+        return {
+          id: fallbackVariant.id,
+          sku: fallbackVariant.sku,
+          size: fallbackVariant.size,
+          color: fallbackVariant.color,
+          price: Number(fallbackVariant.price),
+          unitCost: Number(fallbackVariant.unit_cost),
+          stock: fallbackVariant.stock,
+          active: fallbackVariant.active,
         };
       }
       throw new ProductAdminError("SLUG_NOT_UNIQUE", `El SKU "${sku}" ya está en uso`);

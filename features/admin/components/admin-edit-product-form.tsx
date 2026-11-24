@@ -90,9 +90,8 @@ export function AdminEditProductForm() {
   // 4. Datos del producto resueltos
   const p = useMemo(() => {
     if (dbProduct) {
-      const firstSku =
-        getBaseSkuFromVariant(dbProduct.variants?.[0]?.sku) ||
-        `NRT-${dbProduct.name.slice(0, 3).toUpperCase()}-0001`;
+      const existingDbSku = dbProduct.variants?.find((v) => v.sku)?.sku;
+      const firstSku = existingDbSku ? getBaseSkuFromVariant(existingDbSku) : "";
       return {
         id: dbProduct.id,
         name: dbProduct.name,
@@ -380,17 +379,43 @@ export function AdminEditProductForm() {
           .toUpperCase() || "???"
       : "???";
 
-    // Preservar el número del producto actual (ej. 0001, 0002...)
-    const matchNum = p.sku.match(/\d{3,4}/);
+    // Si el producto ya tiene un SKU base por variantes en la BD, preservamos su número
+    const existingDbSku = dbProduct?.variants?.find((v) => v.sku)?.sku;
+    const existingBaseSku = existingDbSku ? getBaseSkuFromVariant(existingDbSku) : "";
+    const matchNum = existingBaseSku.match(/\d{3,4}/);
     let numStr = matchNum ? matchNum[0].padStart(4, "0") : "";
     if (!numStr) {
-      const idx = allProducts.findIndex((item) => item.id === p.id);
-      numStr = idx !== -1 ? String(idx + 1).padStart(4, "0") : "0001";
+      // Buscar el número más alto existente en todos los productos para evitar colisiones de SKU
+      let maxNum = 0;
+      for (const prod of allProducts) {
+        if (prod.id === p.id) continue;
+        if (prod.skus && Array.isArray(prod.skus)) {
+          for (const s of prod.skus) {
+            const m = s.match(/-[A-Z0-9]{3,4}(\d{3,4})-/i) || s.match(/(\d{3,4})/);
+            if (m) {
+              const parsed = parseInt(m[1] || m[0], 10);
+              if (!isNaN(parsed) && parsed > maxNum) maxNum = parsed;
+            }
+          }
+        }
+      }
+      const nextNum = Math.max(maxNum + 1, allProducts.length);
+      numStr = String(nextNum).padStart(4, "0");
     }
 
     const autoSku = `${brandPrefix}-${catCode}${numStr}`;
     setSku(autoSku);
-  }, [brandId, categoryId, brands, categories, skuManuallyEdited, allProducts, p.sku, p.id]);
+  }, [
+    brandId,
+    categoryId,
+    brands,
+    categories,
+    skuManuallyEdited,
+    allProducts,
+    p.sku,
+    p.id,
+    dbProduct?.variants,
+  ]);
 
   // Derivados de precio
   const basePriceNum = parseFloat(basePrice) || 0;
@@ -515,11 +540,15 @@ export function AdminEditProductForm() {
           return !stillPresent;
         });
         await Promise.all(
-          toDelete.map((dbVar) =>
-            fetch(`/api/admin/products/${dbProduct.id}/variants/${dbVar.id}`, {
+          toDelete.map(async (dbVar) => {
+            const res = await fetch(`/api/admin/products/${dbProduct.id}/variants/${dbVar.id}`, {
               method: "DELETE",
-            }),
-          ),
+            });
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.message || "Error al eliminar variante obsoleta.");
+            }
+          }),
         );
 
         // 2. PATCH variantes existentes / POST variantes nuevas (incluso con stock >= 0)
@@ -535,15 +564,24 @@ export function AdminEditProductForm() {
             const safeStock = Math.max(0, Number(v.stock) || 0);
 
             if (existingVar) {
-              await fetch(`/api/admin/products/${dbProduct.id}/variants/${existingVar.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  stock: safeStock,
-                  price: basePriceNum,
-                  unitCost: unitCostNum,
-                }),
-              });
+              const res = await fetch(
+                `/api/admin/products/${dbProduct.id}/variants/${existingVar.id}`,
+                {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    stock: safeStock,
+                    price: basePriceNum,
+                    unitCost: unitCostNum,
+                  }),
+                },
+              );
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(
+                  errData.message || `Error al actualizar variante ${v.colorName} (${v.size})`,
+                );
+              }
             } else {
               const colorCode =
                 globalColors.find(
@@ -563,7 +601,7 @@ export function AdminEditProductForm() {
                   .trim() || "U";
               const variantSku = sku.trim() ? `${sku.trim()}-${colorCode}-${cleanSize}` : undefined;
 
-              await fetch(`/api/admin/products/${dbProduct.id}/variants`, {
+              const res = await fetch(`/api/admin/products/${dbProduct.id}/variants`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -576,6 +614,14 @@ export function AdminEditProductForm() {
                   unitCost: unitCostNum,
                 }),
               });
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(
+                  errData.message ||
+                    errData.error ||
+                    `Error al crear variante ${v.colorName} (${v.size})`,
+                );
+              }
             }
           }),
         );
@@ -612,9 +658,10 @@ export function AdminEditProductForm() {
         type: "success",
         message: "¡Cambios guardados correctamente! Redirigiendo a productos…",
       });
-      // Invalidar caché de React Query para que la lista y el detalle reflejen
+      // Invalidar caché de React Query para que la lista, el inventario y el detalle reflejen
       // los cambios de variantes guardados vía fetch directo (sin pasar por el mutation)
       await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-inventory"] });
       if (dbProduct) {
         await queryClient.invalidateQueries({ queryKey: ["admin-product", dbProduct.id] });
       }
