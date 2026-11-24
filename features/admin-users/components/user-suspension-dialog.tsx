@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { SuspendAdminUserDto } from "@/features/admin-users/types/admin-user.interface";
 import { Button } from "@/components/ui/button";
+import type { SuspendAdminUserDto } from "@/features/admin-users/types/admin-user.interface";
 
 interface UserSuspensionDialogProps {
   userName: string;
@@ -107,38 +107,43 @@ function UserSuspensionDialogContent({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="suspension-dialog-title"
-        className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl"
+        className="w-full max-w-lg border border-border bg-card text-foreground shadow-2xl"
       >
-        <div className="mb-5">
-          <h2 id="suspension-dialog-title" className="text-lg font-semibold text-gray-900">
+        <header className="border-b border-border px-5 py-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+            Administración de usuarios
+          </p>
+
+          <h2 id="suspension-dialog-title" className="mt-1 text-base font-bold text-foreground">
             Suspender usuario
           </h2>
 
-          <p className="mt-1 text-sm text-gray-600">
-            Vas a suspender la cuenta de <strong>{userName}</strong>.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Vas a suspender la cuenta de <strong className="text-foreground">{userName}</strong>.
           </p>
-        </div>
+        </header>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5 p-5">
           <div>
-            <p className="mb-2 text-sm font-medium text-gray-700">Duración de la suspensión</p>
+            <p className="mb-2 text-xs font-semibold text-foreground">Duración de la suspensión</p>
 
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                disabled={isPending}
                 onClick={() => {
                   setMode("duration");
                   setValidationError(null);
                 }}
-                className={`rounded-lg border px-3 py-2 text-sm ${
+                className={`border px-3 py-2 text-sm transition-colors disabled:opacity-50 ${
                   mode === "duration"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-gray-300 text-gray-700"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border text-foreground hover:bg-muted/40"
                 }`}
               >
                 Por duración
@@ -146,14 +151,15 @@ function UserSuspensionDialogContent({
 
               <button
                 type="button"
+                disabled={isPending}
                 onClick={() => {
                   setMode("custom");
                   setValidationError(null);
                 }}
-                className={`rounded-lg border px-3 py-2 text-sm ${
+                className={`border px-3 py-2 text-sm transition-colors disabled:opacity-50 ${
                   mode === "custom"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-gray-300 text-gray-700"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border text-foreground hover:bg-muted/40"
                 }`}
               >
                 Fecha personalizada
@@ -165,7 +171,7 @@ function UserSuspensionDialogContent({
             <div>
               <label
                 htmlFor="suspension-duration"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-xs font-semibold text-foreground"
               >
                 Seleccionar duración
               </label>
@@ -173,8 +179,9 @@ function UserSuspensionDialogContent({
               <select
                 id="suspension-duration"
                 value={duration}
+                disabled={isPending}
                 onChange={(event) => setDuration(Number(event.target.value) as 1 | 7 | 15 | 30)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
               >
                 {durationOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -187,7 +194,7 @@ function UserSuspensionDialogContent({
             <div>
               <label
                 htmlFor="suspension-date"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-xs font-semibold text-foreground"
               >
                 Fecha y hora de finalización
               </label>
@@ -196,9 +203,10 @@ function UserSuspensionDialogContent({
                 id="suspension-date"
                 type="datetime-local"
                 value={customDate}
+                disabled={isPending}
                 onChange={(event) => setCustomDate(event.target.value)}
                 min={minimumDate}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary disabled:opacity-50"
               />
             </div>
           )}
@@ -206,7 +214,7 @@ function UserSuspensionDialogContent({
           <div>
             <label
               htmlFor="suspension-reason"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-xs font-semibold text-foreground"
             >
               Motivo de la suspensión
             </label>
@@ -214,23 +222,29 @@ function UserSuspensionDialogContent({
             <textarea
               id="suspension-reason"
               value={reason}
+              disabled={isPending}
               onChange={(event) => setReason(event.target.value)}
               rows={4}
               maxLength={2000}
               placeholder="Explicá el motivo de la suspensión..."
-              className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              className="w-full resize-y border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary disabled:opacity-50"
             />
 
-            <p className="mt-1 text-right text-xs text-gray-500">{reason.length}/2000 caracteres</p>
+            <p className="mt-1 text-right text-xs text-muted-foreground">
+              {reason.length}/2000 caracteres
+            </p>
           </div>
 
           {(validationError || error) && (
-            <p role="alert" className="text-sm text-red-600">
+            <div
+              role="alert"
+              className="border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive"
+            >
               {validationError || error}
-            </p>
+            </div>
           )}
 
-          <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+          <footer className="flex flex-col-reverse gap-2 border-t border-border bg-muted/20 pt-4 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
               Cancelar
             </Button>
@@ -238,9 +252,9 @@ function UserSuspensionDialogContent({
             <Button type="submit" disabled={isPending}>
               {isPending ? "Procesando..." : "Confirmar suspensión"}
             </Button>
-          </div>
+          </footer>
         </form>
-      </div>
+      </section>
     </div>
   );
 }

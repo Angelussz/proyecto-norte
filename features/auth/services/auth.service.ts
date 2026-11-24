@@ -45,12 +45,22 @@ export async function verifyCredentials(email: string, password: string): Promis
       picture_url: true, // avatar guardado desde Google OAuth
       role: true,
       email_verified: true,
+      suspended_until: true,
+      deleted_at: true,
     },
   });
 
   // 2. Si no existe → mismo mensaje genérico que "contraseña incorrecta"
   //    (no revelamos si el email está o no registrado)
   if (!user) {
+    throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
+  }
+
+  // Bloquear usuarios eliminados o con suspensión vigente.
+  const isDeleted = user.deleted_at !== null;
+  const isSuspended = user.suspended_until !== null && user.suspended_until > new Date();
+
+  if (isDeleted || isSuspended) {
     throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
   }
 
