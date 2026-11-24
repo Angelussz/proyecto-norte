@@ -73,14 +73,24 @@ async function main() {
   }
 
   // 3. Usuarios
+  // Hash de la contraseña "admin" (bcrypt, 10 rondas) — usada solo por
+  // los usuarios que pueden iniciar sesión con email + contraseña.
+  const ADMIN_PASSWORD_HASH = "$2b$10$w8RaRMP8qWos4cjPN8pVmeFfMFl8TvDVQ4PHIw/gn6Y2u47jNSW12";
+
+  // Correos que SOLO pueden iniciar sesión con Google.
+  // Su password_hash se deja vacío para que el login con contraseña falle
+  // con 401 en lugar de lanzar una excepción de bcrypt.
+  const GOOGLE_ONLY_EMAILS = ["briansegovia2022@gmail.com", "angelodelperez@gmail.com"];
+
   for (const u of USERS_MOCK) {
+    const passwordHash = GOOGLE_ONLY_EMAILS.includes(u.email) ? "" : ADMIN_PASSWORD_HASH;
     await prisma.users.upsert({
       where: { email: u.email },
       update: {
         name: u.name,
         last_name: u.last_name,
         phone: u.phone,
-        password_hash: "$2b$10$w8RaRMP8qWos4cjPN8pVmeFfMFl8TvDVQ4PHIw/gn6Y2u47jNSW12",
+        password_hash: passwordHash,
         role: u.role,
         // En dev los marcamos como verificados para no necesitar el flujo de email.
         email_verified: true,
@@ -91,7 +101,7 @@ async function main() {
         last_name: u.last_name,
         email: u.email,
         phone: u.phone,
-        password_hash: "$2b$10$w8RaRMP8qWos4cjPN8pVmeFfMFl8TvDVQ4PHIw/gn6Y2u47jNSW12",
+        password_hash: passwordHash,
         role: u.role,
         email_verified: true,
         email_verified_at: new Date(),

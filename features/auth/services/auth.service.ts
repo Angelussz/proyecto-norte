@@ -42,8 +42,9 @@ export async function verifyCredentials(email: string, password: string): Promis
       email: true,
       name: true,
       password_hash: true,
+      picture_url: true, // avatar guardado desde Google OAuth
       role: true,
-      email_verified: true, // necesario para el TODO de bloqueo por verificación
+      email_verified: true,
     },
   });
 
@@ -58,8 +59,20 @@ export async function verifyCredentials(email: string, password: string): Promis
   //       Responder 403 con código "EMAIL_NOT_VERIFIED" para que el cliente
   //       pueda mostrar un mensaje específico y un botón "Reenviar correo".
 
-  // 3. Comparar la contraseña enviada con el hash almacenado
-  const passwordMatches = await compare(password, user.password_hash);
+  // 3. Comparar la contraseña enviada con el hash almacenado.
+  //    Si password_hash está vacío, el usuario es exclusivamente de Google
+  //    y no puede iniciar sesión con contraseña.
+  if (!user.password_hash) {
+    throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
+  }
+
+  let passwordMatches = false;
+  try {
+    passwordMatches = await compare(password, user.password_hash);
+  } catch {
+    // Hash inválido (no es bcrypt) → tratar como credenciales incorrectas
+    passwordMatches = false;
+  }
   if (!passwordMatches) {
     throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
   }
@@ -69,6 +82,7 @@ export async function verifyCredentials(email: string, password: string): Promis
     sub: user.id,
     email: user.email,
     name: user.name,
+    picture: user.picture_url ?? undefined, // foto de Google si ya inició sesión con OAuth
     role: user.role,
   };
 }
