@@ -64,3 +64,6 @@ opencode.json
 # uploads (imágenes locales dev)
 public/uploads/products/*
 !public/uploads/products/.gitkeep
+
+public/uploads/avatars/*
+!public/uploads/avatars/.gitkeep

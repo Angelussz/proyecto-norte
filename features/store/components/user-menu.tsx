@@ -54,6 +54,7 @@ function Avatar({ name, picture }: { name?: string | null; picture?: string }) {
         alt={name ?? ""}
         width={36}
         height={36}
+        unoptimized={picture.startsWith("/uploads/")}
         className="size-9 rounded-full object-cover ring-2 ring-primary/30 transition-all group-hover:ring-primary"
         referrerPolicy="no-referrer"
       />

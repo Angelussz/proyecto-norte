@@ -5,6 +5,7 @@
  */
 import type {
   AccountSecurityResponse,
+  AvatarUpdateResponse,
   DeleteAccountBody,
   ProfileResponse,
   RevokeOtherSessionsResponse,
@@ -18,12 +19,14 @@ async function accountRequest<T>(
   init: RequestInit,
   fallbackError: string,
 ): Promise<T> {
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
+
   const res = await fetch(url, {
     ...init,
     credentials: "same-origin",
     headers: {
       Accept: "application/json",
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...init.headers,
     },
   });
@@ -56,6 +59,32 @@ export async function updateProfileApi(dto: UpdateProfileBody): Promise<UserProf
     "/api/account/profile",
     { method: "PATCH", body: JSON.stringify(dto) },
     "Error al actualizar el perfil.",
+  );
+  return data.user;
+}
+
+/**
+ * Cliente HTTP para subir o reemplazar la fotografía de perfil.
+ */
+export async function uploadAvatarApi(file: File): Promise<AvatarUpdateResponse> {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  return accountRequest<AvatarUpdateResponse>(
+    "/api/account/avatar",
+    { method: "POST", body: formData },
+    "Error al guardar la fotografía.",
+  );
+}
+
+/**
+ * Cliente HTTP para eliminar la fotografía de perfil actual.
+ */
+export async function deleteAvatarApi(): Promise<UserProfile> {
+  const data = await accountRequest<ProfileResponse>(
+    "/api/account/avatar",
+    { method: "DELETE" },
+    "Error al eliminar la fotografía.",
   );
   return data.user;
 }

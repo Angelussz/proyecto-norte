@@ -70,6 +70,8 @@ enum ActivityEventType {
   LOGIN_GOOGLE
   REGISTER
   PROFILE_UPDATED
+  AVATAR_UPDATED
+  AVATAR_REMOVED
   PASSWORD_CHANGED
   SESSION_REVOKED
   SESSIONS_REVOKED_ALL
@@ -84,7 +86,8 @@ model Users {
   password_hash       String
   phone               String
   role                Role      @default(CUSTOMER)
-  picture_url         String?   // Avatar de Google (o null si no usó OAuth)
+  picture_url         String?   // Avatar de Google, Cloudinary o local dev
+  picture_id          String?   // public_id de Cloudinary para reemplazo/eliminación
   // Verificación de correo — implementar el flujo de email en producción.
   // En dev todos los usuarios del seed se crean con email_verified = true.
   // TODO: bloquear login si !email_verified cuando se implemente el envío real.

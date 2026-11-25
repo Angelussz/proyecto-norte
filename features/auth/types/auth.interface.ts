@@ -77,10 +77,17 @@ export type AccountActivityEventType =
   | "LOGIN_GOOGLE"
   | "REGISTER"
   | "PROFILE_UPDATED"
+  | "AVATAR_UPDATED"
+  | "AVATAR_REMOVED"
   | "PASSWORD_CHANGED"
   | "SESSION_REVOKED"
   | "SESSIONS_REVOKED_ALL"
   | "ACCOUNT_CLOSED";
+
+export interface AvatarUpdateResponse {
+  user: UserProfile;
+  storage: "cloudinary" | "local";
+}
 
 export interface ActiveSessionItem {
   id: string;

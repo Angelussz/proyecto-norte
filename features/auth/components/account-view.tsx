@@ -4,6 +4,8 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import {
   updateProfileApi,
   deleteAccountApi,
+  uploadAvatarApi,
+  deleteAvatarApi,
   revokeSessionApi,
   revokeOtherSessionsApi,
 } from "@/features/auth/services/account-client.service";
@@ -173,7 +175,6 @@ function SectionPerfil({
   const [isPending, startTransition] = useTransition();
   const [toastVisible, setToastVisible] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-  const initials = getInitials(user.name);
   const queryClient = useQueryClient();
   function handleCancel() {
     setFirstName(user.name ?? "");
@@ -220,44 +221,22 @@ function SectionPerfil({
       <Toast msg="Cambios de perfil guardados con éxito" visible={toastVisible} />
       <div className="flex flex-col w-full">
         <div className="relative w-full pb-8 mb-8 border-b border-[var(--color-outline-variant)]/30">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 mb-2">
-                <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
-                <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)]">
-                  Configuración de Cuenta
-                </span>
-              </div>
-              <h2
-                className="text-5xl md:text-6xl tracking-wide uppercase text-[var(--color-on-surface)] leading-none"
-                style={{ fontFamily: "var(--font-bebas), sans-serif" }}
-              >
-                PERFIL PÚBLICO
-              </h2>
-              <p className="mt-2 text-sm text-[var(--color-on-surface-variant)] max-w-xl">
-                Añade y gestiona tu información personal en el ecosistema NORTE.
-              </p>
+          <div>
+            <div className="inline-flex items-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
+              <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)]">
+                Configuración de Cuenta
+              </span>
             </div>
-            <div className="flex items-center gap-4 p-3 bg-[var(--color-surface-container-low)] shadow-sm">
-              <div
-                className="relative w-14 h-14 rounded-full bg-[var(--color-secondary)] text-[var(--color-on-secondary)] flex items-center justify-center text-2xl shadow-inner ring-2 ring-[var(--color-primary)]/20"
-                style={{ fontFamily: "var(--font-bebas), sans-serif" }}
-              >
-                {initials}
-                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[var(--color-primary)] rounded-full ring-2 ring-[var(--color-surface)]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-semibold text-sm text-[var(--color-on-surface)]">
-                  {user.name}
-                </span>
-                <span className="text-xs text-[var(--color-on-surface-variant)]">
-                  Miembro NORTE · Activo
-                </span>
-                <span className="text-[10px] uppercase font-label tracking-wider text-[var(--color-primary)] mt-0.5">
-                  Perfil activo
-                </span>
-              </div>
-            </div>
+            <h2
+              className="text-5xl md:text-6xl tracking-wide uppercase text-[var(--color-on-surface)] leading-none"
+              style={{ fontFamily: "var(--font-bebas), sans-serif" }}
+            >
+              PERFIL PÚBLICO
+            </h2>
+            <p className="mt-2 text-sm text-[var(--color-on-surface-variant)] max-w-xl">
+              Gestiona tus datos personales para tus compras y envíos en NORTE.
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -364,16 +343,16 @@ function SectionPerfil({
           <div className="lg:col-span-4 flex flex-col space-y-6">
             <div className="bg-[var(--color-surface-container-low)] p-5 shadow-sm space-y-3">
               <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)] block">
-                Nota editorial
+                Datos de tu cuenta
               </span>
               <p className="text-xs text-[var(--color-on-surface-variant)] leading-relaxed">
-                Tu nombre y título son visibles en publicaciones, créditos y correspondencia con la
-                firma NORTE.
+                Tu nombre, apellido y teléfono se utilizan exclusivamente para gestionar tus
+                compras, coordinación de envíos y atención al cliente en la tienda NORTE.
               </p>
               <div className="flex items-center gap-2 pt-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]" />
                 <span className="text-[11px] font-label uppercase tracking-widest text-[var(--color-secondary)]">
-                  Visible en tu perfil público
+                  Uso exclusivo para pedidos y envíos
                 </span>
               </div>
             </div>
@@ -385,12 +364,20 @@ function SectionPerfil({
 }
 
 function SectionFotografia({ user }: { user: { name: string; picture?: string } }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(user.picture ?? null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("Examinar en tu equipo");
   const [fileStatus, setFileStatus] = useState("Ningún archivo seleccionado");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+
+  const previewUrl = selectedFile ? localPreview : (user.picture ?? null);
+
   function showToast(msg: string) {
     setToastMsg(msg);
     setToastVisible(true);
@@ -399,30 +386,88 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFeedback(null);
+    setConfirmDelete(false);
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setFeedback({ type: "error", msg: "Formato no soportado. Usa JPG, PNG o WebP." });
+      e.target.value = "";
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo supera el límite de 5 MB.");
+      setFeedback({ type: "error", msg: "El archivo supera el límite de 5 MB." });
       e.target.value = "";
       return;
     }
     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    setSelectedFile(file);
     setFileName(file.name);
     setFileStatus(`${sizeMB} MB • Listo para guardar`);
     const reader = new FileReader();
     reader.onload = (evt) => {
-      if (evt.target?.result) setPreviewUrl(evt.target.result as string);
+      if (evt.target?.result) setLocalPreview(evt.target.result as string);
     };
     reader.readAsDataURL(file);
   }
   function handleSave() {
-    showToast("Fotografía guardada con éxito en tu ficha editorial.");
+    if (!selectedFile) {
+      setFeedback({ type: "error", msg: "Selecciona primero una nueva imagen para guardar." });
+      return;
+    }
+    setFeedback(null);
+    setConfirmDelete(false);
+    startTransition(async () => {
+      try {
+        await uploadAvatarApi(selectedFile);
+        setSelectedFile(null);
+        setLocalPreview(null);
+        setFileName("Examinar en tu equipo");
+        setFileStatus("Ningún archivo seleccionado");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+        setFeedback({ type: "success", msg: "Fotografía actualizada correctamente." });
+        showToast("Fotografía guardada con éxito en tu cuenta.");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al guardar la fotografía.";
+        setFeedback({ type: "error", msg });
+      }
+    });
   }
   function handleDelete() {
-    if (!confirm("¿Deseas retirar tu fotografía de perfil actual?")) return;
-    setPreviewUrl(null);
-    setFileName("Examinar en tu equipo");
-    setFileStatus("Ningún archivo seleccionado");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    showToast("Fotografía retirada. Se restauró la imagen de archivo.");
+    if (!user.picture && !selectedFile) return;
+    if (!user.picture && selectedFile) {
+      setSelectedFile(null);
+      setLocalPreview(null);
+      setFileName("Examinar en tu equipo");
+      setFileStatus("Ningún archivo seleccionado");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setFeedback(null);
+      return;
+    }
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setFeedback(null);
+      return;
+    }
+    setConfirmDelete(false);
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        await deleteAvatarApi();
+        setSelectedFile(null);
+        setLocalPreview(null);
+        setFileName("Examinar en tu equipo");
+        setFileStatus("Ningún archivo seleccionado");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+        setFeedback({ type: "success", msg: "Fotografía eliminada correctamente." });
+        showToast("Fotografía retirada. Se restauró tu avatar con iniciales.");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al eliminar la fotografía.";
+        setFeedback({ type: "error", msg });
+      }
+    });
   }
   const initials = getInitials(user.name);
   return (
@@ -437,7 +482,7 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
           </div>
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-[var(--color-surface-container-high)] text-[11px] font-label tracking-widest uppercase text-[var(--color-secondary)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]" />
-            <span>Perfil Público Verificado</span>
+            <span>Cuenta Verificada</span>
           </div>
         </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10">
@@ -452,20 +497,8 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
               FOTOGRAFÍA
             </h2>
             <p className="text-sm text-[var(--color-on-surface-variant)] mt-3 max-w-xl">
-              Añade o actualiza la fotografía de tu perfil personal. Tu retrato será visible en
-              publicaciones y créditos editoriales de la firma.
+              Añade o actualiza la foto de perfil asociada a tu cuenta en la tienda NORTE.
             </p>
-          </div>
-          <div className="hidden lg:block text-right">
-            <span className="text-[11px] font-label tracking-[0.2em] uppercase text-[var(--color-outline)] block">
-              Referencia de Archivo
-            </span>
-            <span
-              className="text-2xl tracking-wider text-[var(--color-on-surface)]"
-              style={{ fontFamily: "var(--font-bebas), sans-serif" }}
-            >
-              NRT-PORTRAIT-2025
-            </span>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -485,6 +518,9 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                         src={previewUrl}
                         alt={user.name}
                         fill
+                        unoptimized={
+                          previewUrl.startsWith("data:") || previewUrl.startsWith("/uploads/")
+                        }
                         className="object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -497,7 +533,7 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                           {initials}
                         </span>
                         <span className="text-[11px] font-label uppercase tracking-widest text-[var(--color-on-surface-variant)] mt-2">
-                          Retrato Actual
+                          Sin fotografía
                         </span>
                       </div>
                     )}
@@ -525,13 +561,12 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   AÑADIR O CAMBIAR IMAGEN
                 </h3>
                 <p className="text-xs text-[var(--color-on-surface-variant)] mt-2 leading-relaxed">
-                  Selecciona un archivo fotográfico reciente desde tu estación de trabajo o
-                  dispositivo móvil.
+                  Selecciona una imagen desde tu computadora o dispositivo móvil para tu perfil.
                 </p>
               </div>
               <div
                 className="bg-[var(--color-surface-container)] p-6 text-center cursor-pointer hover:bg-[var(--color-surface-container-high)] transition-colors group"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => !isPending && fileInputRef.current?.click()}
               >
                 <input
                   ref={fileInputRef}
@@ -539,13 +574,14 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   accept="image/png, image/jpeg, image/webp"
                   className="hidden"
                   onChange={handleFileChange}
+                  disabled={isPending}
                 />
                 <div className="flex flex-col items-center justify-center py-4">
                   <div className="w-12 h-12 bg-[var(--color-surface-container-highest)] text-[var(--color-primary)] flex items-center justify-center rounded-full mb-3 group-hover:scale-110 transition-transform">
                     <Upload className="size-6" strokeWidth={1.8} />
                   </div>
                   <p
-                    className="text-xl uppercase tracking-wider text-[var(--color-on-surface)]"
+                    className="text-xl uppercase tracking-wider text-[var(--color-on-surface)] truncate max-w-full"
                     style={{ fontFamily: "var(--font-bebas), sans-serif" }}
                   >
                     {fileName}
@@ -562,13 +598,13 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   {
                     icon: Shield,
                     label: "Formatos:",
-                    desc: "JPG, PNG o WebP de alta fidelidad tonal.",
+                    desc: "JPG, PNG o WebP optimizados para web.",
                   },
                   { icon: BadgeCheck, label: "Tamaño máximo:", desc: "5 MB por archivo." },
                   {
                     icon: Camera,
-                    label: "Recorte:",
-                    desc: "Se guarda un respaldo sin comprimir para publicaciones físicas.",
+                    label: "Almacenamiento:",
+                    desc: "Alojada de forma segura en la nube para carga rápida en tu cuenta.",
                   },
                 ].map(({ icon: Ic, label, desc }) => (
                   <div key={label} className="flex items-start gap-3">
@@ -585,23 +621,52 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   </div>
                 ))}
               </div>
+              {feedback && (
+                <div className="mt-4">
+                  <FeedbackMsg type={feedback.type} msg={feedback.msg} />
+                </div>
+              )}
               <div className="mt-8 pt-6 flex flex-col gap-3">
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="w-full py-4 px-6 bg-[var(--color-primary)] text-[var(--color-on-primary)] font-label text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[var(--color-primary-container)] transition-colors shadow-sm flex items-center justify-center gap-2"
+                  disabled={isPending || !selectedFile}
+                  className="w-full py-4 px-6 bg-[var(--color-primary)] text-[var(--color-on-primary)] font-label text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[var(--color-primary-container)] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  <CheckCircle2 className="size-4" strokeWidth={2} />
+                  {isPending && selectedFile ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="size-4" strokeWidth={2} />
+                  )}
                   <span>GUARDAR FOTOGRAFÍA</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="w-full py-3 px-6 text-[var(--color-on-surface-variant)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-container)]/40 text-xs font-label uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="size-4" strokeWidth={1.8} />
-                  <span>ELIMINAR FOTO ACTUAL</span>
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isPending || (!user.picture && !selectedFile)}
+                    className="w-full py-3 px-6 text-[var(--color-on-surface-variant)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-container)]/40 text-xs font-label uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isPending && !selectedFile ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="size-4" strokeWidth={1.8} />
+                    )}
+                    <span>
+                      {confirmDelete ? "CONFIRMAR ELIMINACIÓN DE FOTO" : "ELIMINAR FOTO ACTUAL"}
+                    </span>
+                  </button>
+                  {confirmDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      disabled={isPending}
+                      className="w-full py-2 text-[11px] font-label uppercase tracking-widest text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] transition-colors cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

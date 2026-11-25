@@ -246,6 +246,7 @@ export async function closeUserAccount(userId: string, data: DeleteAccountBody):
         phone: "",
         password_hash: "",
         picture_url: null,
+        picture_id: null,
         email_verified: false,
         email_verified_at: null,
       },
