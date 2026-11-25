@@ -11,7 +11,16 @@ import {
   updateUserProfile,
   AccountError,
 } from "@/features/auth/services/account.service";
-import type { UpdateProfileBody } from "@/features/auth/types/auth.interface";
+import type { JwtPayload, UpdateProfileBody } from "@/features/auth/types/auth.interface";
+
+const NO_STORE = { "Cache-Control": "no-store" } as const;
+
+const ACCOUNT_ERROR_STATUS: Record<AccountError["code"], number> = {
+  VALIDATION: 400,
+  UNAUTHORIZED: 401,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+};
 
 const updateProfileSchema = z
   .object({
@@ -22,43 +31,60 @@ const updateProfileSchema = z
   .strict();
 
 /**
- * GET /api/account/profile
- * Devuelve el perfil completo del usuario autenticado directamente desde PostgreSQL.
+ * Lee y verifica el JWT de la cookie de sesión.
+ * Devuelve el payload o una respuesta 401 si falta o es inválido/expirado.
  */
-export async function GET(req: NextRequest) {
+async function requireSession(
+  req: NextRequest,
+): Promise<{ payload: JwtPayload } | { errorResponse: NextResponse }> {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-
   if (!token) {
-    return NextResponse.json(
-      { error: "No autenticado" },
-      { status: 401, headers: { "Cache-Control": "no-store" } },
-    );
+    return {
+      errorResponse: NextResponse.json(
+        { error: "No autenticado" },
+        { status: 401, headers: NO_STORE },
+      ),
+    };
   }
 
   try {
     const payload = await verifyToken(token);
-    const user = await getUserProfile(payload.sub);
+    return { payload };
+  } catch {
+    return {
+      errorResponse: NextResponse.json(
+        { error: "Sesión inválida o expirada" },
+        { status: 401, headers: NO_STORE },
+      ),
+    };
+  }
+}
 
-    return NextResponse.json({ user }, { status: 200, headers: { "Cache-Control": "no-store" } });
-  } catch (error) {
-    if (error instanceof AccountError) {
-      const statusMap = {
-        VALIDATION: 400,
-        UNAUTHORIZED: 401,
-        NOT_FOUND: 404,
-        CONFLICT: 409,
-      };
-      return NextResponse.json(
-        { error: error.message },
-        { status: statusMap[error.code] || 500, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    console.error("[GET /api/account/profile]", error);
+function handleRouteError(error: unknown, label: string, fallbackMessage: string): NextResponse {
+  if (error instanceof AccountError) {
     return NextResponse.json(
-      { error: "Error interno del servidor" },
-      { status: 500, headers: { "Cache-Control": "no-store" } },
+      { error: error.message },
+      { status: ACCOUNT_ERROR_STATUS[error.code] || 500, headers: NO_STORE },
     );
+  }
+
+  console.error(label, error);
+  return NextResponse.json({ error: fallbackMessage }, { status: 500, headers: NO_STORE });
+}
+
+/**
+ * GET /api/account/profile
+ * Devuelve el perfil completo del usuario autenticado directamente desde PostgreSQL.
+ */
+export async function GET(req: NextRequest) {
+  const auth = await requireSession(req);
+  if ("errorResponse" in auth) return auth.errorResponse;
+
+  try {
+    const user = await getUserProfile(auth.payload.sub);
+    return NextResponse.json({ user }, { status: 200, headers: NO_STORE });
+  } catch (error) {
+    return handleRouteError(error, "[GET /api/account/profile]", "Error interno del servidor");
   }
 }
 
@@ -68,51 +94,35 @@ export async function GET(req: NextRequest) {
  * Actualiza también la cookie de sesión para reflejar el nuevo nombre sin forzar re-login.
  */
 export async function PATCH(req: NextRequest) {
-  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const auth = await requireSession(req);
+  if ("errorResponse" in auth) return auth.errorResponse;
 
-  if (!token) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
     return NextResponse.json(
-      { error: "No autenticado" },
-      { status: 401, headers: { "Cache-Control": "no-store" } },
+      { error: "Formato de cuerpo JSON inválido" },
+      { status: 400, headers: NO_STORE },
     );
   }
 
+  const parseResult = updateProfileSchema.safeParse(body);
+  if (!parseResult.success) {
+    const firstError = parseResult.error.issues[0]?.message ?? "Datos inválidos";
+    return NextResponse.json({ error: firstError }, { status: 400, headers: NO_STORE });
+  }
+
   try {
-    const payload = await verifyToken(token);
-
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { error: "Formato de cuerpo JSON inválido" },
-        { status: 400, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    const parseResult = updateProfileSchema.safeParse(body);
-    if (!parseResult.success) {
-      const firstError = parseResult.error.issues[0]?.message ?? "Datos inválidos";
-      return NextResponse.json(
-        { error: firstError },
-        { status: 400, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
     const { user, updatedPayload } = await updateUserProfile(
-      payload.sub,
+      auth.payload.sub,
       parseResult.data as UpdateProfileBody,
     );
 
-    // Firmar nuevo JWT con el nombre actualizado y adjuntarlo en la cookie
     const newToken = await signToken(updatedPayload);
     const cookieOpts = getSessionCookieOptions();
 
-    const response = NextResponse.json(
-      { user },
-      { status: 200, headers: { "Cache-Control": "no-store" } },
-    );
-
+    const response = NextResponse.json({ user }, { status: 200, headers: NO_STORE });
     response.cookies.set({
       name: cookieOpts.name,
       value: newToken,
@@ -125,23 +135,10 @@ export async function PATCH(req: NextRequest) {
 
     return response;
   } catch (error) {
-    if (error instanceof AccountError) {
-      const statusMap = {
-        VALIDATION: 400,
-        UNAUTHORIZED: 401,
-        NOT_FOUND: 404,
-        CONFLICT: 409,
-      };
-      return NextResponse.json(
-        { error: error.message },
-        { status: statusMap[error.code] || 500, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    console.error("[PATCH /api/account/profile]", error);
-    return NextResponse.json(
-      { error: "Error interno al actualizar el perfil" },
-      { status: 500, headers: { "Cache-Control": "no-store" } },
+    return handleRouteError(
+      error,
+      "[PATCH /api/account/profile]",
+      "Error interno al actualizar el perfil",
     );
   }
 }

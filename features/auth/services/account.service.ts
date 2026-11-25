@@ -127,7 +127,7 @@ export async function updateUserProfile(
   const updatedPayload: JwtPayload = {
     sub: updated.id,
     email: updated.email,
-    name: `${updated.name} ${updated.last_name}`.trim(),
+    name: updated.name,
     picture: updated.picture_url ?? undefined,
     role: updated.role,
   };

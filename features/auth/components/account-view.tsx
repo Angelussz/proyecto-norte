@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect, useCallback } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { updateProfileApi } from "@/features/auth/services/account-client.service";
 import Image from "next/image";
 import {
@@ -135,14 +135,30 @@ function SectionPerfil({
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const initials = getInitials(user.name);
   const queryClient = useQueryClient();
+  function handleCancel() {
+    setFirstName(user.name ?? "");
+    setLastName(user.last_name ?? "");
+    setPhone(user.phone ?? "");
+    setFeedback(null);
+  }
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) return;
+    const trimmedName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    if (trimmedName.length < 2) {
+      setFeedback({ type: "error", msg: "El nombre debe tener al menos 2 caracteres." });
+      return;
+    }
+    if (trimmedLastName.length < 2) {
+      setFeedback({ type: "error", msg: "El apellido debe tener al menos 2 caracteres." });
+      return;
+    }
+    setFeedback(null);
     startTransition(async () => {
       try {
         await updateProfileApi({
-          name: firstName.trim(),
-          lastName: lastName.trim(),
+          name: trimmedName,
+          lastName: trimmedLastName,
           phone: phone.trim(),
         });
         await queryClient.invalidateQueries({ queryKey: ["session"] });
@@ -281,7 +297,9 @@ function SectionPerfil({
                 <div className="pt-8 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)]/30 mt-8">
                   <button
                     type="button"
-                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors"
+                    onClick={handleCancel}
+                    disabled={isPending}
+                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors disabled:opacity-50"
                   >
                     CANCELAR
                   </button>
