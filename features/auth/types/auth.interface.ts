@@ -71,6 +71,16 @@ export interface DeleteAccountBody {
   feedback?: string;
 }
 
+export interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  ok: true;
+  revokedOtherSessions: number;
+}
+
 // ─── Seguridad de cuenta: Sesiones Activas y Registro de Actividad ────────────
 export type AccountActivityEventType =
   | "LOGIN_SUCCESS"

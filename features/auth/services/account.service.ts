@@ -1,11 +1,13 @@
-import { compare } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type {
+  ChangePasswordBody,
   DeleteAccountBody,
   JwtPayload,
   UpdateProfileBody,
   UserProfile,
 } from "@/features/auth/types/auth.interface";
+import { revokeAllOtherSessions } from "@/features/auth/services/security.service";
 
 const DELETED_EMAIL_SUFFIX = "@norte.invalid";
 
@@ -252,4 +254,114 @@ export async function closeUserAccount(userId: string, data: DeleteAccountBody):
       },
     }),
   ]);
+}
+
+// ---------------------------------------------------------------------------
+// Cambiar contraseña
+// ---------------------------------------------------------------------------
+
+/**
+ * Actualiza la contraseña del usuario autenticado.
+ * - Verifica que la cuenta no esté cerrada.
+ * - Verifica que la cuenta tenga contraseña (no sea Google-only).
+ * - Valida la contraseña actual con bcryptjs.
+ * - Hashea la nueva contraseña y la guarda en DB.
+ * - Registra el evento PASSWORD_CHANGED en AccountActivityLog.
+ * - Revoca todas las demás sesiones activas para forzar nuevo login en otros dispositivos.
+ * - Retorna el payload JWT actualizado para renovar la cookie en el endpoint.
+ */
+export async function changeUserPassword(
+  userId: string,
+  data: ChangePasswordBody,
+  context?: { jti?: string; ipAddress?: string; deviceLabel?: string },
+): Promise<{ updatedPayload: JwtPayload; revokedOtherSessions: number }> {
+  if (!userId?.trim()) {
+    throw new AccountError("UNAUTHORIZED", "Sesión inválida.");
+  }
+
+  if (!data.currentPassword) {
+    throw new AccountError("VALIDATION", "La contraseña actual es requerida.");
+  }
+
+  const user = await prisma.users.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      picture_url: true,
+      role: true,
+      password_hash: true,
+    },
+  });
+
+  if (!user || isDeletedEmail(user.email)) {
+    throw new AccountError("NOT_FOUND", "Usuario no encontrado.");
+  }
+
+  if (!user.password_hash) {
+    throw new AccountError(
+      "UNAUTHORIZED",
+      "Esta cuenta usa Google para iniciar sesión. No tiene contraseña configurada.",
+    );
+  }
+
+  let currentMatches = false;
+  try {
+    currentMatches = await compare(data.currentPassword, user.password_hash);
+  } catch {
+    currentMatches = false;
+  }
+
+  if (!currentMatches) {
+    throw new AccountError("UNAUTHORIZED", "La contraseña actual es incorrecta.");
+  }
+
+  if (!data.newPassword || data.newPassword.length < 8) {
+    throw new AccountError("VALIDATION", "La nueva contraseña debe tener al menos 8 caracteres.");
+  }
+
+  if (data.newPassword.length > 128) {
+    throw new AccountError(
+      "VALIDATION",
+      "La nueva contraseña no puede superar los 128 caracteres.",
+    );
+  }
+
+  const isSamePassword = await compare(data.newPassword, user.password_hash).catch(() => false);
+  if (isSamePassword) {
+    throw new AccountError("VALIDATION", "La nueva contraseña debe ser diferente a la actual.");
+  }
+
+  const newHash = await hash(data.newPassword, 10);
+
+  await prisma.$transaction([
+    prisma.users.update({
+      where: { id: userId },
+      data: { password_hash: newHash },
+    }),
+    prisma.accountActivityLog.create({
+      data: {
+        user_id: userId,
+        event_type: "PASSWORD_CHANGED",
+        title: "Contraseña actualizada",
+        metadata: context?.deviceLabel ?? "Portal Web",
+        ip_address: context?.ipAddress ?? null,
+      },
+    }),
+  ]);
+
+  // Revocar todas las demás sesiones activas (excepto la actual)
+  const { revokedCount } = await revokeAllOtherSessions(userId, context?.jti, context?.ipAddress);
+
+  const updatedPayload: JwtPayload = {
+    sub: user.id,
+    ...(context?.jti ? { jti: context.jti } : {}),
+    email: user.email,
+    name: user.name,
+    picture: user.picture_url ?? undefined,
+    role: user.role,
+  };
+
+  return { updatedPayload, revokedOtherSessions: revokedCount };
 }

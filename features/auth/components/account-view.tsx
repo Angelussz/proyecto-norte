@@ -8,6 +8,7 @@ import {
   deleteAvatarApi,
   revokeSessionApi,
   revokeOtherSessionsApi,
+  changePasswordApi,
 } from "@/features/auth/services/account-client.service";
 import {
   useAccountSecurity,
@@ -827,8 +828,10 @@ function EmailChangeModal({
 
 function SectionSeguridad({ user }: { user: { email: string } }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -886,21 +889,55 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
   }
   function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
+    setFeedback(null);
+
+    if (!currentPassword) {
+      setFeedback({ type: "error", msg: "Debes introducir tu contraseña actual." });
+      return;
+    }
     if (newPassword.length < 8) {
-      setFeedback({ type: "error", msg: "La contraseña debe tener al menos 8 caracteres." });
+      setFeedback({ type: "error", msg: "La nueva contraseña debe tener al menos 8 caracteres." });
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setFeedback({
+        type: "error",
+        msg: "La nueva contraseña debe ser diferente a la actual.",
+      });
       return;
     }
     if (newPassword !== confirmPassword) {
       setFeedback({ type: "error", msg: "Las contraseñas no coinciden." });
       return;
     }
+
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 800));
-      setFeedback({ type: "success", msg: "Contraseña actualizada correctamente." });
-      setNewPassword("");
-      setConfirmPassword("");
-      showToast("Tu contraseña ha sido actualizada con éxito.");
-      setTimeout(() => setFeedback(null), 3500);
+      try {
+        const res = await changePasswordApi({ currentPassword, newPassword });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+
+        const successMsg =
+          res.revokedOtherSessions > 0
+            ? `Contraseña actualizada y ${res.revokedOtherSessions} ${
+                res.revokedOtherSessions === 1
+                  ? "sesión remota cerrada"
+                  : "sesiones remotas cerradas"
+              }.`
+            : "Contraseña actualizada correctamente.";
+
+        setFeedback({ type: "success", msg: successMsg });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowCurrent(false);
+        setShowNew(false);
+        setShowConfirm(false);
+        showToast("Tu contraseña ha sido actualizada con éxito.");
+        setTimeout(() => setFeedback(null), 4000);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al cambiar la contraseña.";
+        setFeedback({ type: "error", msg });
+      }
     });
   }
   return (
@@ -994,6 +1031,36 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                 <div className="space-y-1.5">
                   <label
                     className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
+                    htmlFor="currentPassword"
+                  >
+                    Contraseña Actual
+                  </label>
+                  <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
+                    <input
+                      className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
+                      id="currentPassword"
+                      name="currentPassword"
+                      autoComplete="current-password"
+                      placeholder="Introducir contraseña actual"
+                      type={showCurrent ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      disabled={isPending}
+                      required
+                    />
+                    <button
+                      aria-label="Mostrar u ocultar contraseña actual"
+                      className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                      onClick={() => setShowCurrent((v) => !v)}
+                      type="button"
+                    >
+                      {showCurrent ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label
+                    className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
                     htmlFor="newPassword"
                   >
                     Nueva Contraseña
@@ -1003,6 +1070,7 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                       className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
                       id="newPassword"
                       name="newPassword"
+                      autoComplete="new-password"
                       placeholder="Introducir nueva contraseña"
                       type={showNew ? "text" : "password"}
                       value={newPassword}
@@ -1032,6 +1100,7 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                       className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
                       id="confirmPassword"
                       name="confirmPassword"
+                      autoComplete="new-password"
                       placeholder="Introducir nueva contraseña de nuevo"
                       type={showConfirm ? "text" : "password"}
                       value={confirmPassword}
@@ -1086,9 +1155,9 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                 {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
                 <div className="pt-2">
                   <button
-                    className="px-8 py-3.5 bg-primary hover:bg-primary-container text-on-primary font-headline tracking-[0.12em] text-lg uppercase transition-all shadow-sm active:translate-y-px disabled:opacity-50 flex items-center gap-2"
+                    className="px-8 py-3.5 bg-primary hover:bg-primary-container text-on-primary font-headline tracking-[0.12em] text-lg uppercase transition-all shadow-sm active:translate-y-px disabled:opacity-50 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                     type="submit"
-                    disabled={isPending || !newPassword || !confirmPassword}
+                    disabled={isPending || !currentPassword || !newPassword || !confirmPassword}
                   >
                     {isPending && <Loader2 className="size-5 animate-spin" />}
                     Cambiar la Contraseña

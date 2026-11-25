@@ -6,6 +6,8 @@
 import type {
   AccountSecurityResponse,
   AvatarUpdateResponse,
+  ChangePasswordBody,
+  ChangePasswordResponse,
   DeleteAccountBody,
   ProfileResponse,
   RevokeOtherSessionsResponse,
@@ -131,5 +133,17 @@ export async function revokeOtherSessionsApi(): Promise<RevokeOtherSessionsRespo
     "/api/account/sessions",
     { method: "DELETE" },
     "No se pudieron cerrar las demás sesiones.",
+  );
+}
+
+/**
+ * Cliente HTTP para cambiar la contraseña del usuario autenticado.
+ * El servidor valida la contraseña actual, actualiza el hash y renueva la cookie de sesión.
+ */
+export async function changePasswordApi(dto: ChangePasswordBody): Promise<ChangePasswordResponse> {
+  return accountRequest<ChangePasswordResponse>(
+    "/api/account/password",
+    { method: "PATCH", body: JSON.stringify(dto) },
+    "Error al cambiar la contraseña.",
   );
 }
