@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { updateProfileApi } from "@/features/auth/services/account-client.service";
+import {
+  updateProfileApi,
+  deleteAccountApi,
+} from "@/features/auth/services/account-client.service";
 import Image from "next/image";
 import {
   User,
@@ -1132,30 +1135,44 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
   const [pwdError, setPwdError] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const queryClient = useQueryClient();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!password.trim()) {
+    if (!password) {
       setPwdError(true);
-      setTimeout(() => setPwdError(false), 1200);
       return;
     }
     if (!consentChecked) {
       setConsentError(true);
-      setTimeout(() => setConsentError(false), 1200);
       return;
     }
+    setPwdError(false);
+    setConsentError(false);
+    setDeleteError(null);
     setShowModal(true);
   }
 
   function handleFinalDelete() {
+    setDeleteError(null);
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 1400));
-      queryClient.invalidateQueries({ queryKey: ["session"] });
-      router.push("/");
+      try {
+        await deleteAccountApi({
+          password,
+          reason,
+          feedback: extraFeedback.trim() || undefined,
+        });
+        queryClient.setQueryData(["session"], null);
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        router.refresh();
+        router.push("/");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al cerrar la cuenta.";
+        setDeleteError(msg);
+      }
     });
   }
 
@@ -1178,6 +1195,11 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
               Estás a punto de borrar definitivamente tu identidad en NORTE. No habrá vuelta atrás
               ni posibilidad de restaurar tus colecciones guardadas. ¿Deseas proceder?
             </p>
+            {deleteError && (
+              <div className="mb-4">
+                <FeedbackMsg type="error" msg={deleteError} />
+              </div>
+            )}
             <div className="flex flex-col gap-3">
               <button
                 id="final-delete-btn"
@@ -1194,7 +1216,10 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
               <button
                 id="cancel-dialog-btn"
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setDeleteError(null);
+                }}
                 disabled={isPending}
                 className="w-full py-3 bg-surface-container hover:bg-surface-container-high text-on-surface font-label uppercase text-xs tracking-widest font-semibold transition-colors cursor-pointer"
               >
@@ -1447,7 +1472,10 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                       id="current-password"
                       type={showPwd ? "text" : "password"}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (pwdError) setPwdError(false);
+                      }}
                       required
                       placeholder="Introduce tu contraseña"
                       className={`w-full bg-surface text-on-surface px-4 py-3.5 pr-11 text-sm font-body tracking-wider focus:outline-none focus:bg-surface-container-lowest transition-all ${
@@ -1482,7 +1510,10 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                     id="consent-check"
                     type="checkbox"
                     checked={consentChecked}
-                    onChange={(e) => setConsentChecked(e.target.checked)}
+                    onChange={(e) => {
+                      setConsentChecked(e.target.checked);
+                      if (consentError) setConsentError(false);
+                    }}
                     className="mt-0.5 w-4 h-4 accent-error text-error"
                   />
                   <span className="text-xs font-body text-on-surface-variant leading-relaxed">
@@ -1491,6 +1522,14 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                     no despachadas.
                   </span>
                 </label>
+                {consentError && (
+                  <div className="mt-2">
+                    <FeedbackMsg
+                      type="error"
+                      msg="Debes aceptar la confirmación de cierre para continuar."
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Step 4: Action Buttons Area */}

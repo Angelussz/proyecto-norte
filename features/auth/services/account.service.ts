@@ -1,13 +1,21 @@
+import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type {
+  DeleteAccountBody,
   JwtPayload,
   UpdateProfileBody,
   UserProfile,
 } from "@/features/auth/types/auth.interface";
 
+const DELETED_EMAIL_SUFFIX = "@norte.invalid";
+
+function isDeletedEmail(email: string): boolean {
+  return email.endsWith(DELETED_EMAIL_SUFFIX);
+}
+
 export class AccountError extends Error {
   constructor(
-    public readonly code: "VALIDATION" | "UNAUTHORIZED" | "NOT_FOUND" | "CONFLICT",
+    public readonly code: "VALIDATION" | "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT",
     message: string,
   ) {
     super(message);
@@ -18,7 +26,7 @@ export class AccountError extends Error {
 // ─── Funciones del servidor (acceso a DB y lógica de negocio) ──────────────────
 
 /**
- * Obtiene el perfil completo de un usuario por su ID.
+ * Obtiene el perfil completo de un usuario activo por su ID.
  */
 export async function getUserProfile(userId: string): Promise<UserProfile> {
   if (!userId?.trim()) {
@@ -40,7 +48,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
     },
   });
 
-  if (!user) {
+  if (!user || isDeletedEmail(user.email)) {
     throw new AccountError("NOT_FOUND", "Usuario no encontrado.");
   }
 
@@ -85,10 +93,11 @@ export async function updateUserProfile(
     where: { id: userId },
     select: {
       id: true,
+      email: true,
     },
   });
 
-  if (!existing) {
+  if (!existing || isDeletedEmail(existing.email)) {
     throw new AccountError("NOT_FOUND", "Usuario no encontrado.");
   }
 
@@ -136,4 +145,82 @@ export async function updateUserProfile(
     user: userProfile,
     updatedPayload,
   };
+}
+
+/**
+ * Anonimiza la cuenta de un usuario CUSTOMER tras verificar su contraseña.
+ *
+ * Se anonimiza en lugar de borrar físicamente porque `Orders.user_id` usa
+ * `onDelete: Restrict`, preservando la integridad referencial de pedidos
+ * históricos mientras se eliminan datos personales identificables (RGPD)
+ * y direcciones guardadas sin pedidos asociados.
+ *
+ * Nota: `reason` y `feedback` no se persisten en DB porque el schema actual
+ * no define tabla de bajas ni columnas de auditoría en `Users`.
+ */
+export async function closeUserAccount(userId: string, data: DeleteAccountBody): Promise<void> {
+  if (!userId?.trim()) {
+    throw new AccountError("UNAUTHORIZED", "Sesión inválida.");
+  }
+
+  const user = await prisma.users.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      password_hash: true,
+    },
+  });
+
+  if (!user || isDeletedEmail(user.email)) {
+    throw new AccountError("NOT_FOUND", "Usuario no encontrado.");
+  }
+
+  if (user.role === "ADMIN") {
+    throw new AccountError(
+      "FORBIDDEN",
+      "Las cuentas de administrador no pueden eliminarse desde este panel.",
+    );
+  }
+
+  if (!user.password_hash) {
+    throw new AccountError(
+      "UNAUTHORIZED",
+      "Esta cuenta usa Google para iniciar sesión. No tiene contraseña configurada.",
+    );
+  }
+
+  let passwordMatches = false;
+  try {
+    passwordMatches = await compare(data.password, user.password_hash);
+  } catch {
+    passwordMatches = false;
+  }
+
+  if (!passwordMatches) {
+    throw new AccountError("UNAUTHORIZED", "La contraseña introducida es incorrecta.");
+  }
+
+  await prisma.$transaction([
+    prisma.address.deleteMany({
+      where: {
+        user_id: userId,
+        orders: { none: {} },
+      },
+    }),
+    prisma.users.update({
+      where: { id: userId },
+      data: {
+        name: "Usuario",
+        last_name: "Eliminado",
+        email: `deleted_${userId}${DELETED_EMAIL_SUFFIX}`,
+        phone: "",
+        password_hash: "",
+        picture_url: null,
+        email_verified: false,
+        email_verified_at: null,
+      },
+    }),
+  ]);
 }

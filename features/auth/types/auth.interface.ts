@@ -63,6 +63,13 @@ export interface ProfileResponse {
   user: UserProfile;
 }
 
+// ─── Body esperado en DELETE /api/account ─────────────────────────────────────
+export interface DeleteAccountBody {
+  password: string;
+  reason?: string;
+  feedback?: string;
+}
+
 // ─── Body esperado en el endpoint ────────────────────────────────────────────
 export interface LoginBody {
   email: string;
