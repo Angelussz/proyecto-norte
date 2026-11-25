@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useMutation } from "@tanstack/react-query";
-import { Lock } from "lucide-react";
+import { CheckCircle2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/hooks";
 import {
@@ -172,12 +172,34 @@ export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
 
   if (status === "succeeded") {
     return (
-      <p
+      <section
         role="status"
-        className="py-4 text-center text-sm font-semibold uppercase tracking-widest text-foreground"
+        aria-live="polite"
+        className="w-full border border-border bg-card px-6 py-10 text-center shadow-sm"
       >
-        ¡Pago exitoso! Gracias por tu compra.
-      </p>
+        <div className="mx-auto mb-6 flex size-16 items-center justify-center border border-primary/20 bg-primary/5 text-primary">
+          <CheckCircle2 className="size-9" aria-hidden="true" />
+        </div>
+
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+          Compra confirmada
+        </p>
+
+        <h2 className="mb-4 text-2xl font-semibold uppercase tracking-wide text-foreground">
+          ¡Gracias por tu compra!
+        </h2>
+
+        <p className="mx-auto max-w-md text-sm leading-7 text-muted-foreground">
+          Tu pago fue aprobado y recibimos correctamente tu pedido. Estamos preparando todo para que
+          puedas disfrutar tu compra.
+        </p>
+
+        <div className="mx-auto mt-8 max-w-sm border-t border-border pt-5">
+          <p className="text-xs font-medium uppercase tracking-widest text-foreground">
+            Gracias por elegir NORTE
+          </p>
+        </div>
+      </section>
     );
   }
 
