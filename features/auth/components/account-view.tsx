@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition, useRef, useEffect, useCallback } from "react";
+import { updateProfileApi } from "@/features/auth/services/account-client.service";
 import Image from "next/image";
 import {
   User,
@@ -124,26 +125,37 @@ function SidebarItem({
 function SectionPerfil({
   user,
 }: {
-  user: { name: string; email: string; picture?: string; phone?: string };
+  user: { name: string; last_name?: string; email: string; picture?: string; phone?: string };
 }) {
-  const [firstName, setFirstName] = useState(user.name.split(" ")[0] ?? "");
-  const [lastName, setLastName] = useState(user.name.split(" ").slice(1).join(" ") ?? "");
+  const [firstName, setFirstName] = useState(user.name ?? "");
+  const [lastName, setLastName] = useState(user.last_name ?? "");
   const [phone, setPhone] = useState(user.phone ?? "");
   const [isPending, startTransition] = useTransition();
   const [toastVisible, setToastVisible] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const initials = getInitials(user.name);
+  const queryClient = useQueryClient();
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!firstName.trim()) return;
+    if (!firstName.trim() || !lastName.trim()) return;
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 700));
-      setFeedback({ type: "success", msg: "Perfil actualizado correctamente." });
-      setToastVisible(true);
-      setTimeout(() => {
-        setToastVisible(false);
-        setFeedback(null);
-      }, 3200);
+      try {
+        await updateProfileApi({
+          name: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: phone.trim(),
+        });
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        setFeedback({ type: "success", msg: "Perfil actualizado correctamente." });
+        setToastVisible(true);
+        setTimeout(() => {
+          setToastVisible(false);
+          setFeedback(null);
+        }, 3200);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al actualizar el perfil.";
+        setFeedback({ type: "error", msg });
+      }
     });
   }
   return (

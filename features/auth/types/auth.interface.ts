@@ -31,8 +31,36 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
+  last_name?: string;
+  phone?: string;
   picture?: string;
   role: "ADMIN" | "CUSTOMER";
+  email_verified?: boolean;
+  created_at?: string;
+}
+
+// ─── Body esperado para actualizar perfil ─────────────────────────────────────
+export interface UpdateProfileBody {
+  name: string;
+  lastName: string;
+  phone?: string;
+}
+
+// ─── Perfil completo del usuario (GET / PATCH /api/account/profile) ───────────
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  last_name: string;
+  phone: string;
+  picture?: string;
+  role: "ADMIN" | "CUSTOMER";
+  email_verified: boolean;
+  created_at: string;
+}
+
+export interface ProfileResponse {
+  user: UserProfile;
 }
 
 // ─── Body esperado en el endpoint ────────────────────────────────────────────
