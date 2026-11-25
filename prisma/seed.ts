@@ -240,6 +240,270 @@ async function main() {
     });
   }
 
+  // 7. Sistemas de Talles (SizeGroup + SizeSystem)
+  const SIZE_GROUPS_SEED = [
+    {
+      title: "1. Ropa General (Poleras, Camisetas, Chaquetas, Ropa Deportiva)",
+      description:
+        "Prendas de parte superior, prendas de punto y sobrecamisas con patronaje unisex y calce desestructurado.",
+      systems: [
+        {
+          label: "Sistema Alfa Estándar",
+          badge: "RECOMENDADO",
+          badge_variant: "recommended",
+          description:
+            "Ideal para todo tipo de prendas superiores con calce regular, holgado o relajado.",
+          sizes: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "2. Prendas y Accesorios de Talle Único o Adaptable",
+      description:
+        "Para cualquier prenda o accesorio que maneje un talle único o sea adaptable (sweaters oversize, ponchos, gorras, faldas wrap, bufandas).",
+      systems: [
+        {
+          label: "Talles Únicos",
+          badge: "ACTIVO",
+          badge_variant: "active",
+          description: "Prendas de patronaje flexible o adaptabilidad mediante cierres mecánicos.",
+          sizes: ["Talle Único", "Talle Ajustable"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "3. Pantalones, Jeans y Ropa Formal",
+      description:
+        "Sastrería artesanal, pantalones de vestir con pinzas, denim estructurado y bermudas.",
+      systems: [
+        {
+          label: "Numérico Tipo US / México — Masculino",
+          badge: "Hombres",
+          badge_variant: "gender",
+          description:
+            "Tallas clásicas americanas de tiro y calce masculino para denim y pantalones.",
+          sizes: ["28", "30", "32", "34", "36", "38", "40"],
+          active: true,
+        },
+        {
+          label: "Numérico Tipo US / México — Femenino",
+          badge: "Mujeres",
+          badge_variant: "gender",
+          description:
+            "Numeración estándar americana femenina para vaqueros y pantalones de sastrería.",
+          sizes: ["0", "2", "4", "6", "8", "10", "12", "14", "16", "18"],
+          active: true,
+        },
+        {
+          label: "Numérico Tipo EU / Cono Sur",
+          badge: "Sastrería Taller",
+          badge_variant: "workshop",
+          description: "Patronaje europeo oficial y sastrería de taller.",
+          sizes: ["34", "36", "38", "40", "42", "44", "46", "48"],
+          active: true,
+        },
+        {
+          label: "Medidas en Pulgadas / Cintura",
+          badge: "Denim & Waist",
+          badge_variant: "workshop",
+          description: "Ajuste exacto por contorno de cintura.",
+          sizes: ["30W", "32W", "34W", "36W", "38W"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "4. Calzado (Zapatos, Zapatillas, Sandalias)",
+      description: "Taxonomía y numeración estándar para calzado de confección artesanal.",
+      systems: [
+        {
+          label: "Calzado Adulto",
+          badge: "EU ADULTO",
+          badge_variant: "workshop",
+          description: "Escala unificada de hormas estándar para calzado adulto de atelier.",
+          sizes: ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "5. Accesorios y Complementos",
+      description: "Sombreros, marroquinería, joyería y accesorios de atelier.",
+      systems: [
+        {
+          label: "1. Sombreros, Gorras y Boinas",
+          badge: "ACTIVO",
+          badge_variant: "active",
+          description:
+            "Perímetro craneal en centímetros para sombrerería de fieltro, lino y boinas artesanales.",
+          sizes: [
+            "54 cm",
+            "55 cm",
+            "56 cm",
+            "57 cm",
+            "58 cm",
+            "59 cm",
+            "60 cm",
+            "Talle Único Ajustable",
+          ],
+          active: true,
+        },
+        {
+          label: "2. Cinturones y Marroquinería",
+          badge: "ACTIVO",
+          badge_variant: "active",
+          description:
+            "Longitud en centímetros desde hebilla al agujero central para correas y cinturones de piel artesanal.",
+          sizes: ["80 cm", "85 cm", "90 cm", "95 cm", "100 cm", "105 cm", "110 cm"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "6. Para Pijamas, Ropa Interior, Sweaters Holgados, Sombreros",
+      description:
+        "Opciones de patronaje técnico bajo pedido, ajustes especiales y confección a medida artesanal.",
+      systems: [
+        {
+          label: "Talles Dobles",
+          badge: null,
+          badge_variant: null,
+          description:
+            "Ideal para siluetas fluidas, prendas holgadas o hombros caídos con patronaje versátil.",
+          sizes: ["XS/S", "S/M", "M/L", "L/XL"],
+          active: true,
+        },
+      ],
+    },
+    {
+      title: "7. Joyería y Accesorios de Metales (Anillos, Cadenas, Pulseras)",
+      description:
+        "Parametrización y normativas de tallaje para orfebrería, sortijas, gargantillas y brazaletes de atelier.",
+      systems: [
+        {
+          label: "A. Anillos y Sortijas",
+          badge: "US / EU RING SIZE",
+          badge_variant: "workshop",
+          description: "Escala milimétrica de diámetro interior para sortijas en metales nobles.",
+          sizes: ["5 US", "6 US", "7 US", "8 US", "9 US", "10 US"],
+          active: true,
+        },
+        {
+          label: "B. Cadenas y Collares",
+          badge: "LONGITUD DE CAÍDA",
+          badge_variant: "workshop",
+          description: "Largos estandarizados para cadenas de plata 925, gargantillas y colgantes.",
+          sizes: ["40 cm (Gargantilla)", "45 cm (Princesa)", "50 cm (Matinée)"],
+          active: true,
+        },
+        {
+          label: "C. Pulseras y Brazaletes",
+          badge: "CONTORNO MUÑECA",
+          badge_variant: "workshop",
+          description: "Perímetro circular de ajuste con cierre de caja o mosquetón de orfebrería.",
+          sizes: ["16 cm (S)", "18 cm (M)", "20 cm (L)"],
+          active: true,
+        },
+      ],
+    },
+  ];
+
+  for (const group of SIZE_GROUPS_SEED) {
+    const existing = await prisma.sizeGroup.findFirst({ where: { title: group.title } });
+    if (!existing) {
+      await prisma.sizeGroup.create({
+        data: {
+          title: group.title,
+          description: group.description,
+          systems: {
+            create: group.systems.map((s) => ({
+              label: s.label,
+              badge: s.badge,
+              badge_variant: s.badge_variant,
+              description: s.description,
+              sizes: s.sizes,
+              active: s.active,
+            })),
+          },
+        },
+      });
+    }
+  }
+
+  // 8. Marcas (Firmas de Atelier)
+  const BRANDS_SEED = [
+    {
+      name: "NORTE ATELIER",
+      sku_prefix: "NRT",
+      description: "Línea sede confeccionada en Madrid. Patronaje clásico atemporal.",
+      icon_color: "primary",
+      locked: true,
+      active: true,
+      sort_order: 0,
+    },
+    {
+      name: "ALBA STUDIO",
+      sku_prefix: "ALB",
+      description:
+        "Básicos perennes confeccionados en pequeñas tiradas limitadas. Línea esencial de patrones minimalistas y fibras orgánicas.",
+      icon_color: "secondary",
+      locked: false,
+      active: true,
+      sort_order: 1,
+    },
+    {
+      name: "CÁPSULA JORGE JUAN",
+      sku_prefix: "CJJ",
+      description: "Cápsula exclusiva de sastrería desestructurada para la temporada 2025.",
+      icon_color: "mustard",
+      locked: false,
+      active: true,
+      sort_order: 2,
+    },
+    {
+      name: "TALLER MADRID",
+      sku_prefix: "TMD",
+      description:
+        "Línea contemporánea de accesorios y sastrería en tejidos nobles de producción local.",
+      icon_color: "secondary",
+      locked: false,
+      active: true,
+      sort_order: 3,
+    },
+  ];
+
+  for (const brand of BRANDS_SEED) {
+    await prisma.brand.upsert({
+      where: { sku_prefix: brand.sku_prefix },
+      update: { name: brand.name, description: brand.description, active: brand.active },
+      create: brand,
+    });
+  }
+
+  // 9. Colores (Paleta de Tinturas Globales)
+  const COLORS_SEED = [
+    { name: "Arena Natural", sku_code: "ARN", hex: "#E4D5B7", active: true, sort_order: 0 },
+    { name: "Verde Oliva", sku_code: "VRD", hex: "#4F583D", active: true, sort_order: 1 },
+    { name: "Terracota", sku_code: "TRC", hex: "#9E472A", active: true, sort_order: 2 },
+    { name: "Negro Carbón", sku_code: "NEG", hex: "#1A1A1A", active: true, sort_order: 3 },
+    { name: "Blanco Puro", sku_code: "BLC", hex: "#FDFBF7", active: true, sort_order: 4 },
+    { name: "Azul Marino", sku_code: "AZM", hex: "#1B2838", active: true, sort_order: 5 },
+    { name: "Gris Melange", sku_code: "GRS", hex: "#8C8F94", active: true, sort_order: 6 },
+    { name: "Marrón Tabaco", sku_code: "MRN", hex: "#5C3A21", active: true, sort_order: 7 },
+    { name: "Burdeos / Borgoña", sku_code: "BRD", hex: "#5A1827", active: true, sort_order: 8 },
+    { name: "Beige Crudo", sku_code: "BEI", hex: "#F5ECE1", active: true, sort_order: 9 },
+  ];
+
+  for (const color of COLORS_SEED) {
+    await prisma.color.upsert({
+      where: { sku_code: color.sku_code },
+      update: { name: color.name, hex: color.hex, active: color.active },
+      create: color,
+    });
+  }
+
   console.log("¡Seed completado exitosamente!");
 }
 

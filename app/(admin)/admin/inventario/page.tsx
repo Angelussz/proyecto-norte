@@ -1,5 +1,5 @@
-import { AdminInventoryView } from "@/features/admin/components/admin-inventory-view";
+import { AdminInventoryViewClient } from "@/features/admin/components/admin-inventory-view-client";
 
 export default function AdminInventarioPage() {
-  return <AdminInventoryView />;
+  return <AdminInventoryViewClient />;
 }

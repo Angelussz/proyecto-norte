@@ -98,6 +98,7 @@ function toDto(product: any) {
     active: product.active,
     image_url: product.image_url,
     image_url_id: product.image_url_id,
+    video_url: product.video_url,
     created_at:
       product.created_at instanceof Date ? product.created_at.toISOString() : product.created_at,
   };
@@ -168,7 +169,7 @@ async function assertCategory(categoryId: string) {
     throw new ProductAdminError("CATEGORY_NOT_FOUND", `No existe la categoría ${categoryId}`);
 }
 
-/** Crea un producto. Campos de FormData: name*, category_id*, material*, base_price*, slug?, description?, active?, image? (File) */
+/** Crea un producto. Campos de FormData: name*, category_id*, material*, base_price*, slug?, description?, active?, image? (File), image_url? (URL texto directo) */
 export async function createProduct(form: FormData) {
   const name = field(form, "name");
   const categoryId = field(form, "category_id");
@@ -182,7 +183,14 @@ export async function createProduct(form: FormData) {
   const basePrice = parsePrice(rawPrice);
   const active = parseActive(field(form, "active"));
   await assertCategory(categoryId);
-  const image = await imageFromForm(form);
+
+  // Prioridad: si viene image_url (URL de texto, e.g. upload local previo), úsala directo.
+  // Si viene image (File), súbela a Cloudinary (flujo original).
+  const directImageUrl = field(form, "image_url");
+  const directImageId = field(form, "image_url_id");
+  const directVideoUrl = field(form, "video_url");
+  const image = directImageUrl ? null : await imageFromForm(form);
+
   const data: Prisma.ProductsCreateInput = {
     name,
     slug: field(form, "slug") ?? slugify(name),
@@ -190,8 +198,9 @@ export async function createProduct(form: FormData) {
     material,
     base_price: basePrice,
     active,
-    image_url: image?.secureUrl ?? null,
-    image_url_id: image?.publicId ?? null,
+    image_url: directImageUrl ?? image?.secureUrl ?? null,
+    image_url_id: directImageId ?? image?.publicId ?? null,
+    video_url: directVideoUrl ?? null,
     category: { connect: { id: categoryId } },
   };
 
@@ -247,6 +256,13 @@ export async function updateProduct(id: string, form: FormData) {
     await assertCategory(categoryId);
     data.category = { connect: { id: categoryId } };
   }
+
+  const directImageUrl = field(form, "image_url");
+  const directImageId = field(form, "image_url_id");
+  const directVideoUrl = field(form, "video_url");
+  if (directImageUrl !== null) data.image_url = directImageUrl || null;
+  if (directImageId !== null) data.image_url_id = directImageId || null;
+  if (directVideoUrl !== null) data.video_url = directVideoUrl || null;
 
   const image = await imageFromForm(form, existing.image_url_id);
   if (image) {
@@ -331,4 +347,186 @@ export async function deleteProduct(id: string) {
     await purgeImage(existing.image_url_id, "No se pudo purgar la imagen huérfana");
   }
   return { deleted: true };
+}
+
+import type { ProductListItem } from "@/features/admin/types/product.interface";
+
+// ─── Tipos de variante ────────────────────────────────────────────────────────
+
+export interface CreateVariantBody {
+  sku?: string;
+  size: string;
+  /** Nombre del color (se guarda en la columna `color`) */
+  color: string;
+  /** Hex del color (ej: "#4F583D") — se guarda en un campo de nombre `color` del seed original  */
+  colorHex: string;
+  price?: number;
+  unitCost?: number;
+  stock: number;
+}
+
+/** Lista todos los productos con nombre de categoría y conteos de variantes */
+export async function listProducts(): Promise<ProductListItem[]> {
+  const products = await prisma.products.findMany({
+    orderBy: { created_at: "desc" },
+    include: {
+      category: { select: { name: true } },
+      variants: {
+        where: { active: true },
+        select: { stock: true, sku: true },
+      },
+    },
+  });
+  return products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    basePrice: Number(p.base_price),
+    active: p.active,
+    imageUrl: p.image_url,
+    videoUrl: p.video_url,
+    categoryId: p.category_id,
+    categoryName: p.category.name,
+    variantCount: p.variants.length,
+    totalStock: p.variants.reduce((acc, v) => acc + v.stock, 0),
+    skus: p.variants.map((v) => v.sku),
+  }));
+}
+
+/** Devuelve un producto completo con variantes y nombre de categoría */
+export async function getProductById(id: string) {
+  const p = await prisma.products.findUnique({
+    where: { id },
+    include: {
+      category: { select: { name: true } },
+      variants: {
+        where: { active: true },
+      },
+    },
+  });
+  if (!p) throw new ProductAdminError("NOT_FOUND", `No existe el producto ${id}`);
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    description: p.description,
+    material: p.material,
+    basePrice: Number(p.base_price),
+    active: p.active,
+    imageUrl: p.image_url,
+    videoUrl: p.video_url,
+    categoryId: p.category_id,
+    categoryName: p.category.name,
+    createdAt: p.created_at.toISOString(),
+    variants: p.variants.map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      size: v.size,
+      color: v.color,
+      colorHex: v.color, // el campo color en DB ya es el hex
+      price: Number(v.price),
+      unitCost: Number(v.unit_cost),
+      stock: v.stock,
+      active: v.active,
+      imageUrl: v.image_url,
+    })),
+  };
+}
+
+/**
+ * Crea una variante para el producto `productId`.
+ *
+ * La columna `color` almacena el HEX (convención del seed existente).
+ * El campo `sku` es UNIQUE: si no se envía se genera uno automático.
+ * Los campos `price` y `unit_cost` son NOT NULL en el schema; se usa 0 por defecto.
+ */
+export async function createProductVariant(productId: string, body: CreateVariantBody) {
+  // Verificar que el producto existe
+  const product = await prisma.products.findUnique({
+    where: { id: productId },
+    select: { id: true, base_price: true },
+  });
+  if (!product) {
+    throw new ProductAdminError("NOT_FOUND", `No existe el producto ${productId}`);
+  }
+
+  // Generar un SKU único si no se proporciona
+  const sku =
+    body.sku?.trim() || `${productId.slice(0, 8)}-${body.size}-${Date.now()}`.toUpperCase();
+
+  // La columna `color` guarda el hex (convención del seed)
+  const data = {
+    product_id: productId,
+    sku,
+    size: body.size,
+    color: body.colorHex, // columna "color" = hex
+    price: body.price ?? Number(product.base_price),
+    unit_cost: body.unitCost ?? 0,
+    stock: body.stock,
+  };
+
+  try {
+    const variant = await prisma.productVariants.create({ data });
+    return {
+      id: variant.id,
+      sku: variant.sku,
+      size: variant.size,
+      color: variant.color,
+      price: Number(variant.price),
+      unitCost: Number(variant.unit_cost),
+      stock: variant.stock,
+      active: variant.active,
+    };
+  } catch (error) {
+    if (prismaErrorCode(error) === "P2002") {
+      // Si ya existía por SKU único, la reactivamos y actualizamos su stock si es del mismo producto
+      const existing = await prisma.productVariants.findUnique({
+        where: { sku },
+      });
+      if (existing && existing.product_id === productId) {
+        const updated = await prisma.productVariants.update({
+          where: { id: existing.id },
+          data: {
+            stock: body.stock ?? 0,
+            price: data.price,
+            unit_cost: data.unit_cost,
+            active: true,
+          },
+        });
+        return {
+          id: updated.id,
+          sku: updated.sku,
+          size: updated.size,
+          color: updated.color,
+          price: Number(updated.price),
+          unitCost: Number(updated.unit_cost),
+          stock: updated.stock,
+          active: updated.active,
+        };
+      }
+      if (existing && existing.product_id !== productId) {
+        // Si el SKU ya pertenecía a otro producto, generamos un SKU único para este producto
+        const uniqueSuffix = productId.slice(0, 4).toUpperCase();
+        const fallbackSku = `${sku}-${uniqueSuffix}`;
+        const fallbackVariant = await prisma.productVariants.create({
+          data: {
+            ...data,
+            sku: fallbackSku,
+          },
+        });
+        return {
+          id: fallbackVariant.id,
+          sku: fallbackVariant.sku,
+          size: fallbackVariant.size,
+          color: fallbackVariant.color,
+          price: Number(fallbackVariant.price),
+          unitCost: Number(fallbackVariant.unit_cost),
+          stock: fallbackVariant.stock,
+          active: fallbackVariant.active,
+        };
+      }
+      throw new ProductAdminError("SLUG_NOT_UNIQUE", `El SKU "${sku}" ya está en uso`);
+    }
+    throw error;
+  }
 }

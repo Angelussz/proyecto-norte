@@ -100,13 +100,16 @@ model Address {
 }
 
 model Categories {
-  id                 String  @id @default(uuid())
+  id                 String   @id @default(uuid())
   parent_category_id String?
   name               String
-  slug               String  @unique
+  slug               String   @unique
   description        String?
   image_url          String?
   image_url_id       String?
+  sku                String?
+  active             Boolean  @default(true)
+  size_system_ids    String[] @default([])
 
   parent   Categories?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [id], onDelete: SetNull)
   children Categories[] @relation("CategoryHierarchy")
@@ -124,6 +127,7 @@ model Products {
   active       Boolean  @default(true)
   image_url    String?
   image_url_id String?
+  video_url    String?
   created_at   DateTime @default(now())
 
   category Categories       @relation(fields: [category_id], references: [id], onDelete: Restrict)
@@ -239,11 +243,68 @@ model FiscalVouchers {
 }
 
 model StoreSettings {
-  id                     String   @id @default("default")
-  shipping_cost          Decimal  @default(9.9) @db.Decimal(10, 2)
-  shipping_label         String   @default("Tarifa plana")
+  id                      String   @id @default("default")
+  shipping_cost           Decimal  @default(9.9) @db.Decimal(10, 2)
+  shipping_label          String   @default("Tarifa plana")
   free_shipping_threshold Decimal? @db.Decimal(10, 2)
-  tax_rate               Decimal  @default(0.18) @db.Decimal(5, 4)
-  created_at             DateTime @default(now())
-  updated_at             DateTime @updatedAt
+  tax_rate                Decimal  @default(0.18) @db.Decimal(5, 4)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+}
+
+// ── Sistema de Talles ─────────────────────────────────────────────────────────
+// Un SizeGroup representa un "uso" (ej: "Ropa General", "Calzado").
+// Cada SizeGroup puede tener varios SizeSystem (ej: "Sistema Alfa Estándar").
+
+model SizeGroup {
+  id          String   @id @default(uuid())
+  title       String                        // Título del grupo (ej: "1. Ropa General")
+  description String?  @db.Text             // Descripción del tipo de prenda
+  sort_order  Int      @default(0)          // Orden de aparición en la lista
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  systems SizeSystem[]
+}
+
+model SizeSystem {
+  id           String   @id @default(uuid())
+  group_id     String
+  label        String                        // Nombre del sistema (ej: "Sistema Alfa Estándar")
+  description  String?  @db.Text
+  badge        String?                       // Texto del badge (ej: "RECOMENDADO")
+  badge_variant String? // "recommended" | "active" | "gender" | "workshop"
+  sizes        String[]                      // Array de talles (ej: ["XS","S","M","L"])
+  active       Boolean  @default(true)
+  sort_order   Int      @default(0)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  group SizeGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
+}
+
+// ── Marcas (Firmas de Atelier) ────────────────────────────────────────────────
+model Brand {
+  id          String   @id @default(uuid())
+  name        String
+  sku_prefix  String   @unique @db.VarChar(3)
+  description String?  @db.Text
+  icon_color  String   @default("secondary") // "primary" | "secondary" | "mustard"
+  locked      Boolean  @default(false)        // si true: no se puede eliminar
+  active      Boolean  @default(true)
+  sort_order  Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+// ── Colores (Paleta de Tinturas) ──────────────────────────────────────────────
+model Color {
+  id         String   @id @default(uuid())
+  name       String
+  sku_code   String   @unique @db.VarChar(3)
+  hex        String   @db.VarChar(7)
+  active     Boolean  @default(true)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }

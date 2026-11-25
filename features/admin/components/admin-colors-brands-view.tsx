@@ -1,79 +1,160 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  AdminAddBrandModal,
+  type BrandFormData,
+} from "@/features/admin/components/admin-add-brand-modal";
+import {
+  AdminAddColorModal,
+  type ColorFormData,
+} from "@/features/admin/components/admin-add-color-modal";
+import {
+  useBrands,
+  useCreateBrand,
+  useUpdateBrand,
+  useDeleteBrand,
+} from "@/features/admin/hooks/useBrands";
+import {
+  useColors,
+  useCreateColor,
+  useUpdateColor,
+  useDeleteColor,
+} from "@/features/admin/hooks/useColors";
+import { useProducts } from "@/features/admin/hooks/useProducts";
+import type { BrandDto, ColorDto } from "@/features/admin/types/brand-color.interface";
 
-interface OfficialColor {
+// ── Tipos locales para el modal (view-layer) ──────────────────────────────────
+
+type AtelierBrandLocal = {
   id: string;
   name: string;
-  hex: string;
-}
-
-interface AtelierBrand {
-  id: string;
-  name: string;
+  skuPrefix?: string;
   description: string;
   assignedItems: number;
   iconColor: "primary" | "secondary" | "mustard";
   locked?: boolean;
+  active?: boolean;
+};
+
+type OfficialColorLocal = {
+  id: string;
+  name: string;
+  hex: string;
+  skuCode?: string;
+  assignedItems?: number;
+  active?: boolean;
+};
+
+function dtoToBrandLocal(b: BrandDto): AtelierBrandLocal {
+  return {
+    id: b.id,
+    name: b.name,
+    skuPrefix: b.skuPrefix,
+    description: b.description ?? "",
+    assignedItems: b.assignedItems,
+    iconColor: (b.iconColor as "primary" | "secondary" | "mustard") ?? "secondary",
+    locked: b.locked,
+    active: b.active,
+  };
 }
 
-const INITIAL_COLORS: OfficialColor[] = [
-  { id: "c1", name: "Arena Natural", hex: "#e4d5b7" },
-  { id: "c2", name: "Verde Oliva", hex: "#4f583d" },
-  { id: "c3", name: "Terracota", hex: "#9e472a" },
-  { id: "c4", name: "Negro Carbón", hex: "#1a1a1a" },
-  { id: "c5", name: "Blanco Puro", hex: "#fdfbf7" },
-  { id: "c6", name: "Azul Marino", hex: "#1B2838" },
-  { id: "c7", name: "Gris Melange", hex: "#8C8F94" },
-  { id: "c8", name: "Marrón Tabaco", hex: "#5C3A21" },
-  { id: "c9", name: "Burdeos / Borgoña", hex: "#5A1827" },
-  { id: "c10", name: "Beige Crudo", hex: "#F5ECE1" },
-];
-
-const INITIAL_BRANDS: AtelierBrand[] = [
-  {
-    id: "b1",
-    name: "NORTE ATELIER",
-    description: "Línea sede confeccionada en Madrid. Patronaje clásico atemporal.",
-    assignedItems: 28,
-    iconColor: "primary",
-    locked: true,
-  },
-  {
-    id: "b2",
-    name: "NORTE ESSENTIALS",
-    description: "Básicos perennes confeccionados en pequeñas tiradas limitadas.",
-    assignedItems: 8,
-    iconColor: "secondary",
-  },
-  {
-    id: "b3",
-    name: "COLABORACIÓN JORGE JUAN",
-    description: "Cápsula exclusiva de sastrería desestructurada para la temporada 2025.",
-    assignedItems: 2,
-    iconColor: "mustard",
-  },
-];
+function dtoToColorLocal(c: ColorDto): OfficialColorLocal {
+  return {
+    id: c.id,
+    name: c.name,
+    hex: c.hex,
+    skuCode: c.skuCode,
+    assignedItems: c.assignedItems,
+    active: c.active,
+  };
+}
 
 export function AdminColorsBrandsView() {
-  const [colors, setColors] = useState<OfficialColor[]>(INITIAL_COLORS);
-  const [brands, setBrands] = useState<AtelierBrand[]>(INITIAL_BRANDS);
+  // ── React Query ───────────────────────────────────────────────────────────
+  const {
+    data: brandsData = [],
+    isLoading: brandsLoading,
+    isError: brandsError,
+    refetch: refetchBrands,
+  } = useBrands();
+  const {
+    data: colorsData = [],
+    isLoading: colorsLoading,
+    isError: colorsError,
+    refetch: refetchColors,
+  } = useColors();
+  const { data: productsData = [], isLoading: productsLoading } = useProducts();
 
-  // Form states - Color
+  const createBrand = useCreateBrand();
+  const updateBrand = useUpdateBrand();
+  const deleteBrand = useDeleteBrand();
+
+  const createColor = useCreateColor();
+  const updateColor = useUpdateColor();
+  const deleteColor = useDeleteColor();
+
+  // ── Estado local de marcas y colores (staging) ────────────────────────────
+  const [brands, setBrands] = useState<AtelierBrandLocal[]>([]);
+  const [savedBrandsSnapshot, setSavedBrandsSnapshot] = useState<AtelierBrandLocal[] | null>(null);
+
+  const [colors, setColors] = useState<OfficialColorLocal[]>([]);
+  const [savedColorsSnapshot, setSavedColorsSnapshot] = useState<OfficialColorLocal[] | null>(null);
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!brandsLoading && savedBrandsSnapshot === null) {
+      const mapped = brandsData.map(dtoToBrandLocal);
+      setBrands(mapped);
+      setSavedBrandsSnapshot(structuredClone(mapped));
+    }
+  }, [brandsData, brandsLoading, savedBrandsSnapshot]);
+
+  useEffect(() => {
+    if (!colorsLoading && savedColorsSnapshot === null) {
+      const mapped = colorsData
+        .map(dtoToColorLocal)
+        .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+      setColors(mapped);
+      setSavedColorsSnapshot(structuredClone(mapped));
+    }
+  }, [colorsData, colorsLoading, savedColorsSnapshot]);
+
+  const totalGarments = productsLoading ? "…" : productsData.length;
+
+  // ── Colores ordenados alfabéticamente para la cuadrícula ──────────────────
+  const sortedColors = useMemo(() => {
+    return [...colors].sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+  }, [colors]);
+
+  // ── Detección de cambios sin guardar ──────────────────────────────────────
+  const hasUnsavedChanges = useMemo(() => {
+    if (!savedBrandsSnapshot || !savedColorsSnapshot) return false;
+    return (
+      JSON.stringify(brands) !== JSON.stringify(savedBrandsSnapshot) ||
+      JSON.stringify(colors) !== JSON.stringify(savedColorsSnapshot)
+    );
+  }, [brands, colors, savedBrandsSnapshot, savedColorsSnapshot]);
+
+  // ── Form states - Color ───────────────────────────────────────────────────
   const [newColorName, setNewColorName] = useState("");
+  const [newColorSku, setNewColorSku] = useState("");
   const [newColorHex, setNewColorHex] = useState("#2C3E50");
 
-  // Form states - Brand
+  // ── Form states - Brand ───────────────────────────────────────────────────
   const [newBrandName, setNewBrandName] = useState("");
+  const [newBrandSku, setNewBrandSku] = useState("");
   const [newBrandDesc, setNewBrandDesc] = useState("");
 
-  // Edit Brand Modal
-  const [editingBrand, setEditingBrand] = useState<AtelierBrand | null>(null);
+  // ── Modales de Marca y Color ──────────────────────────────────────────────
+  const [isAddBrandModalOpen, setIsAddBrandModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<AtelierBrandLocal | null>(null);
 
-  // Preview Color Modal
-  const [previewColor, setPreviewColor] = useState<OfficialColor | null>(null);
+  const [isAddColorModalOpen, setIsAddColorModalOpen] = useState(false);
+  const [editingColor, setEditingColor] = useState<OfficialColorLocal | null>(null);
 
-  // Feedback Notification
+  // ── Feedback Notification ─────────────────────────────────────────────────
   const [notification, setNotification] = useState<string | null>(null);
 
   function triggerNotice(msg: string) {
@@ -81,25 +162,133 @@ export function AdminColorsBrandsView() {
     setTimeout(() => setNotification(null), 3000);
   }
 
-  // Handlers for Colors
-  function handleAddColor() {
-    if (!newColorName.trim()) {
-      alert("Por favor introduce un nombre para el color.");
-      return;
+  // ── Handlers para Marcas (staging local) ──────────────────────────────────
+  function handleSaveBrand(data: BrandFormData) {
+    if (data.id) {
+      setBrands((prev) =>
+        prev.map((b) =>
+          b.id === data.id
+            ? {
+                ...b,
+                name: data.name,
+                skuPrefix: data.skuPrefix,
+                description: data.description,
+                active: data.active,
+              }
+            : b,
+        ),
+      );
+      triggerNotice(`Marca "${data.name}" modificada (cambios sin guardar).`);
+    } else {
+      const newBrand: AtelierBrandLocal = {
+        id: `temp-brand-${Date.now()}`,
+        name: data.name,
+        skuPrefix: data.skuPrefix || "BRD",
+        description: data.description || "Nueva firma textil registrada en el atelier.",
+        assignedItems: 0,
+        iconColor: "secondary",
+        active: data.active,
+        locked: false,
+      };
+      setBrands((prev) => [...prev, newBrand]);
+      triggerNotice(`Marca "${data.name}" añadida (cambios sin guardar).`);
     }
-    const colorId = `c_${Date.now()}`;
+    setIsAddBrandModalOpen(false);
+    setEditingBrand(null);
+  }
+
+  function handleInlineAddBrand(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newBrandName.trim()) return;
+    const autoSku = newBrandSku.trim()
+      ? newBrandSku.trim().toUpperCase().slice(0, 3)
+      : newBrandName
+          .trim()
+          .replace(/[^A-Za-z]/g, "")
+          .slice(0, 3)
+          .toUpperCase() || "BRD";
+
+    handleSaveBrand({
+      name: newBrandName.trim().toUpperCase(),
+      skuPrefix: autoSku,
+      description: newBrandDesc.trim() || "Nueva firma textil registrada en el atelier.",
+      assignedItems: 0,
+      active: true,
+    });
+    setNewBrandName("");
+    setNewBrandSku("");
+    setNewBrandDesc("");
+  }
+
+  function handleDeleteBrand(id: string) {
+    const toDelete = brands.find((b) => b.id === id);
+    if (!toDelete) return;
+    if (confirm(`¿Eliminar la firma "${toDelete.name}"?`)) {
+      setBrands((prev) => prev.filter((b) => b.id !== id));
+      triggerNotice(`Firma "${toDelete.name}" eliminada (cambios sin guardar).`);
+      setIsAddBrandModalOpen(false);
+      setEditingBrand(null);
+    }
+  }
+
+  // ── Handlers para Colores (staging local) ─────────────────────────────────
+  function handleSaveColor(data: ColorFormData) {
+    if (data.id) {
+      setColors((prev) =>
+        prev.map((c) =>
+          c.id === data.id
+            ? {
+                ...c,
+                name: data.name,
+                hex: data.hex,
+                skuCode: data.skuCode,
+                active: data.active,
+              }
+            : c,
+        ),
+      );
+      triggerNotice(`Tintura "${data.name}" modificada (cambios sin guardar).`);
+    } else {
+      const newColor: OfficialColorLocal = {
+        id: `temp-color-${Date.now()}`,
+        name: data.name,
+        skuCode: data.skuCode || "CLR",
+        hex: data.hex,
+        assignedItems: 0,
+        active: data.active,
+      };
+      setColors((prev) => [...prev, newColor]);
+      triggerNotice(`Tintura "${data.name}" añadida (cambios sin guardar).`);
+    }
+    setIsAddColorModalOpen(false);
+    setEditingColor(null);
+  }
+
+  function handleInlineAddColor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newColorName.trim()) return;
+    const autoSku = newColorSku.trim()
+      ? newColorSku.trim().toUpperCase().slice(0, 3)
+      : newColorName
+          .trim()
+          .replace(/[^A-Za-z]/g, "")
+          .slice(0, 3)
+          .toUpperCase() || "CLR";
+
     const formattedHex = newColorHex.startsWith("#")
       ? newColorHex.toUpperCase()
       : `#${newColorHex.toUpperCase()}`;
-    const newEntry: OfficialColor = {
-      id: colorId,
+
+    handleSaveColor({
       name: newColorName.trim(),
+      skuCode: autoSku,
       hex: formattedHex,
-    };
-    setColors((prev) => [...prev, newEntry]);
+      assignedItems: 0,
+      active: true,
+    });
     setNewColorName("");
+    setNewColorSku("");
     setNewColorHex("#2C3E50");
-    triggerNotice(`Tintura "${newEntry.name}" añadida con éxito.`);
   }
 
   function handleDeleteColor(id: string) {
@@ -107,69 +296,172 @@ export function AdminColorsBrandsView() {
     if (!toDelete) return;
     if (confirm(`¿Eliminar la tintura oficial "${toDelete.name}" (${toDelete.hex})?`)) {
       setColors((prev) => prev.filter((c) => c.id !== id));
-      triggerNotice(`Tintura "${toDelete.name}" eliminada.`);
+      triggerNotice(`Tintura "${toDelete.name}" eliminada (cambios sin guardar).`);
+      setIsAddColorModalOpen(false);
+      setEditingColor(null);
     }
   }
 
-  // Handlers for Brands
-  function handleAddBrand() {
-    if (!newBrandName.trim()) {
-      alert("Por favor introduce el nombre de la firma o línea.");
-      return;
+  // ── Descartar cambios locales ─────────────────────────────────────────────
+  function handleDiscardChanges() {
+    if (savedBrandsSnapshot) setBrands(structuredClone(savedBrandsSnapshot));
+    if (savedColorsSnapshot) setColors(structuredClone(savedColorsSnapshot));
+    triggerNotice("Cambios descartados.");
+  }
+
+  // ── Persistir cambios en backend ──────────────────────────────────────────
+  async function handleSaveChanges() {
+    if (!hasUnsavedChanges || isSaving || !savedBrandsSnapshot || !savedColorsSnapshot) return;
+    setIsSaving(true);
+    try {
+      // 1. Eliminar marcas
+      const currentBrandIds = new Set(brands.map((b) => b.id));
+      const brandsToDelete = savedBrandsSnapshot.filter(
+        (s) => !currentBrandIds.has(s.id) && !s.id.startsWith("temp-"),
+      );
+      for (const b of brandsToDelete) {
+        await deleteBrand.mutateAsync(b.id);
+      }
+
+      // 2. Crear marcas nuevas
+      const brandsToCreate = brands.filter((b) => b.id.startsWith("temp-"));
+      for (const b of brandsToCreate) {
+        await createBrand.mutateAsync({
+          name: b.name,
+          skuPrefix: b.skuPrefix || "BRD",
+          description: b.description || "Nueva firma textil registrada en el atelier.",
+          iconColor: b.iconColor || "secondary",
+          active: b.active ?? true,
+        });
+      }
+
+      // 3. Actualizar marcas existentes modificadas
+      const brandsToUpdate = brands.filter((b) => !b.id.startsWith("temp-"));
+      for (const b of brandsToUpdate) {
+        const original = savedBrandsSnapshot.find((s) => s.id === b.id);
+        if (!original) continue;
+        const changed =
+          b.name !== original.name ||
+          b.skuPrefix !== original.skuPrefix ||
+          b.description !== original.description ||
+          b.active !== original.active ||
+          b.iconColor !== original.iconColor;
+        if (changed) {
+          await updateBrand.mutateAsync({
+            id: b.id,
+            body: {
+              name: b.name,
+              skuPrefix: b.skuPrefix,
+              description: b.description,
+              iconColor: b.iconColor,
+              active: b.active,
+            },
+          });
+        }
+      }
+
+      // 4. Eliminar colores
+      const currentColorIds = new Set(colors.map((c) => c.id));
+      const colorsToDelete = savedColorsSnapshot.filter(
+        (s) => !currentColorIds.has(s.id) && !s.id.startsWith("temp-"),
+      );
+      for (const c of colorsToDelete) {
+        await deleteColor.mutateAsync(c.id);
+      }
+
+      // 5. Crear colores nuevos
+      const colorsToCreate = colors.filter((c) => c.id.startsWith("temp-"));
+      for (const c of colorsToCreate) {
+        await createColor.mutateAsync({
+          name: c.name,
+          skuCode: c.skuCode || "CLR",
+          hex: c.hex,
+          active: c.active ?? true,
+        });
+      }
+
+      // 6. Actualizar colores existentes modificados
+      const colorsToUpdate = colors.filter((c) => !c.id.startsWith("temp-"));
+      for (const c of colorsToUpdate) {
+        const original = savedColorsSnapshot.find((s) => s.id === c.id);
+        if (!original) continue;
+        const changed =
+          c.name !== original.name ||
+          c.hex !== original.hex ||
+          c.skuCode !== original.skuCode ||
+          c.active !== original.active;
+        if (changed) {
+          await updateColor.mutateAsync({
+            id: c.id,
+            body: {
+              name: c.name,
+              hex: c.hex,
+              skuCode: c.skuCode,
+              active: c.active,
+            },
+          });
+        }
+      }
+
+      // 7. Refrescar datos
+      const [freshBrands, freshColors] = await Promise.all([refetchBrands(), refetchColors()]);
+      if (freshBrands.data) {
+        const mapped = freshBrands.data.map(dtoToBrandLocal);
+        setBrands(mapped);
+        setSavedBrandsSnapshot(structuredClone(mapped));
+      } else {
+        setSavedBrandsSnapshot(structuredClone(brands));
+      }
+      if (freshColors.data) {
+        const mapped = freshColors.data
+          .map(dtoToColorLocal)
+          .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+        setColors(mapped);
+        setSavedColorsSnapshot(structuredClone(mapped));
+      } else {
+        setSavedColorsSnapshot(structuredClone(colors));
+      }
+
+      triggerNotice("Cambios guardados correctamente en la base de datos.");
+    } catch (err: unknown) {
+      console.error("[handleSaveChanges]", err);
+      triggerNotice(err instanceof Error ? err.message : "Error al guardar cambios.");
+    } finally {
+      setIsSaving(false);
     }
-    const brandId = `b_${Date.now()}`;
-    const newEntry: AtelierBrand = {
-      id: brandId,
-      name: newBrandName.trim().toUpperCase(),
-      description: newBrandDesc.trim() || "Nueva firma textil registrada en el atelier.",
-      assignedItems: 0,
-      iconColor: "secondary",
-    };
-    setBrands((prev) => [...prev, newEntry]);
-    setNewBrandName("");
-    setNewBrandDesc("");
-    triggerNotice(`Marca "${newEntry.name}" registrada con éxito.`);
   }
-
-  function handleDeleteBrand(id: string) {
-    const toDelete = brands.find((b) => b.id === id);
-    if (!toDelete || toDelete.locked) return;
-    if (confirm(`¿Eliminar la firma "${toDelete.name}"?`)) {
-      setBrands((prev) => prev.filter((b) => b.id !== id));
-      triggerNotice(`Firma "${toDelete.name}" eliminada.`);
-    }
-  }
-
-  function handleSaveEditBrand() {
-    if (!editingBrand) return;
-    setBrands((prev) =>
-      prev.map((b) =>
-        b.id === editingBrand.id
-          ? {
-              ...b,
-              name: editingBrand.name.trim().toUpperCase(),
-              description: editingBrand.description.trim(),
-            }
-          : b,
-      ),
-    );
-    triggerNotice(`Firma "${editingBrand.name}" actualizada.`);
-    setEditingBrand(null);
-  }
-
-  const totalAssignedGarments = brands.reduce((acc, b) => acc + b.assignedItems, 0);
 
   return (
     <main className="w-full bg-surface min-h-[calc(100vh-4rem)]">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-mustard font-inter text-[13px] shadow-lg flex items-center gap-3">
+        <div className="fixed bottom-24 right-6 z-50 bg-[#1e1c13] text-[#fff9ed] px-5 py-3 border-l-4 border-mustard font-inter text-[13px] shadow-lg flex items-center gap-3">
           <span className="material-symbols-outlined text-mustard text-[18px]">info</span>
           <span>{notification}</span>
         </div>
       )}
 
       <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+        {/* ── Encabezado principal ── */}
+        <header className="flex flex-col gap-2">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2">
+            <span className="w-2 h-2 bg-mustard" />
+            <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-[0.25em] font-semibold">
+              PALETAS CROMÁTICAS &amp; FIRMAS REGISTRADAS
+            </span>
+          </div>
+
+          {/* Título y subtítulo */}
+          <h1 className="font-headline text-[42px] uppercase tracking-normal leading-none text-on-surface mt-1">
+            GESTIÓN DE MARCAS Y COLORES
+          </h1>
+          <p className="font-inter text-[13px] text-on-surface-variant leading-relaxed max-w-3xl">
+            Administración de firmas registradas, marcas del atelier y cartas cromáticas oficiales
+            para tinturas de confección textil vinculadas al catálogo general.
+          </p>
+        </header>
+
         {/* ── 1. Top 4 KPI Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* KPI 1: Cartas de Color */}
@@ -182,7 +474,7 @@ export function AdminColorsBrandsView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[36px] text-on-surface tracking-wide block leading-none">
-                {colors.length}
+                {colorsLoading ? "…" : colors.length}
               </span>
               <span className="font-inter text-[12px] text-on-surface-variant uppercase block mt-1 font-medium">
                 Tinturas Oficiales
@@ -211,7 +503,7 @@ export function AdminColorsBrandsView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[36px] text-on-surface tracking-wide block leading-none">
-                {brands.length}
+                {brandsLoading ? "…" : brands.length}
               </span>
               <span className="font-inter text-[12px] text-on-surface-variant uppercase block mt-1 font-medium">
                 Firmas Registradas
@@ -230,11 +522,11 @@ export function AdminColorsBrandsView() {
             </div>
           </div>
 
-          {/* KPI 3: Prendas Asignadas */}
+          {/* KPI 3: Total Prendas */}
           <div className="bg-surface-container-low p-6 flex flex-col justify-between relative overflow-hidden group border border-outline-variant/30 shadow-sm">
             <div className="flex items-start justify-between relative z-10">
               <span className="font-inter text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold">
-                Prendas Asignadas
+                Total Prendas
               </span>
               <span className="material-symbols-outlined text-forest-green text-[20px]">
                 checkroom
@@ -242,13 +534,13 @@ export function AdminColorsBrandsView() {
             </div>
             <div className="mt-4 relative z-10">
               <span className="font-headline text-[36px] text-on-surface tracking-wide block leading-none">
-                {totalAssignedGarments}
+                {totalGarments}
               </span>
               <span className="font-inter text-[12px] text-on-surface-variant uppercase block mt-1 font-medium">
                 Prendas Totales
               </span>
               <p className="font-inter text-[12px] text-secondary mt-1">
-                Vinculadas a marcas del atelier
+                Registradas en el catálogo del atelier
               </p>
             </div>
             <div className="absolute -right-2 -bottom-2 opacity-10 pointer-events-none select-none">
@@ -325,10 +617,7 @@ export function AdminColorsBrandsView() {
             </h3>
             <form
               className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddBrand();
-              }}
+              onSubmit={handleInlineAddBrand}
             >
               <div className="sm:col-span-3 relative flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
@@ -342,7 +631,28 @@ export function AdminColorsBrandsView() {
                   className="w-full bg-surface-container-lowest px-4 py-2 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
-              <div className="sm:col-span-6 relative flex flex-col gap-1">
+              <div className="sm:col-span-2 relative flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  SKU (3 LETRAS)
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    maxLength={3}
+                    value={newBrandSku}
+                    onChange={(e) => setNewBrandSku(e.target.value.toUpperCase())}
+                    placeholder="???-cam0001-"
+                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2 text-on-surface font-mono text-[13px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                  />
+                  <span
+                    className="material-symbols-outlined absolute right-2 text-outline hover:text-primary text-[15px] cursor-help transition-colors select-none"
+                    title="Código de 3 letras que identifica a la marca."
+                  >
+                    info
+                  </span>
+                </div>
+              </div>
+              <div className="sm:col-span-4 relative flex flex-col gap-1">
                 <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
                   Descripción Breve
                 </label>
@@ -350,7 +660,7 @@ export function AdminColorsBrandsView() {
                   type="text"
                   value={newBrandDesc}
                   onChange={(e) => setNewBrandDesc(e.target.value)}
-                  placeholder="Ej: Lugar o tienda de procedencia (ej: Boutique Barrio Salamanca, Taller Bilbao)"
+                  placeholder="Ej: Lugar o tienda de procedencia (ej: Boutique Barrio Salamanca)"
                   className="w-full bg-surface-container-lowest px-4 py-2 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
@@ -360,37 +670,45 @@ export function AdminColorsBrandsView() {
                   className="w-full py-2 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
-                  <span>+ AÑADIR MARCA</span>
+                  <span>AÑADIR MARCA</span>
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Listado Horizontal de Marcas Registradas en 3 columnas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {brands.map((brand) => {
-              const bookmarkColor =
-                brand.iconColor === "primary"
-                  ? "text-primary"
-                  : brand.iconColor === "mustard"
-                    ? "text-mustard"
-                    : "text-secondary";
+          {/* Listado Horizontal de Marcas Registradas */}
+          {brandsError ? (
+            <p className="font-inter text-[13px] text-error">
+              Error al cargar las marcas. Recarga la página.
+            </p>
+          ) : brandsLoading ? (
+            <p className="font-inter text-[13px] text-on-surface-variant animate-pulse">
+              Cargando marcas…
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {brands.map((brand) => {
+                const bookmarkColor =
+                  brand.iconColor === "primary"
+                    ? "text-primary"
+                    : brand.iconColor === "mustard"
+                      ? "text-mustard"
+                      : "text-secondary";
 
-              return (
-                <div
-                  key={brand.id}
-                  className="bg-surface p-4 border border-outline-variant/30 flex flex-col justify-between gap-3 hover:border-primary transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`material-symbols-outlined text-[18px] ${bookmarkColor}`}>
-                        bookmark
-                      </span>
-                      <span className="font-headline text-[18px] uppercase text-on-surface tracking-wider">
-                        {brand.name}
-                      </span>
-                    </div>
-                    {!brand.locked && (
+                return (
+                  <div
+                    key={brand.id}
+                    className="bg-surface p-4 border border-outline-variant/30 flex flex-col justify-between gap-3 hover:border-primary transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`material-symbols-outlined text-[18px] ${bookmarkColor}`}>
+                          bookmark
+                        </span>
+                        <span className="font-headline text-[18px] uppercase text-on-surface tracking-wider">
+                          {brand.name}
+                        </span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleDeleteBrand(brand.id)}
@@ -399,40 +717,31 @@ export function AdminColorsBrandsView() {
                       >
                         <span className="material-symbols-outlined text-[16px]">close</span>
                       </button>
-                    )}
-                  </div>
-                  <p className="font-inter text-[12px] text-on-surface-variant leading-relaxed">
-                    {brand.description}
-                  </p>
-                  <div className="flex items-center justify-between pt-2 border-t border-outline-variant/20">
-                    <span
-                      className={`font-inter text-[11px] uppercase font-semibold ${
-                        brand.locked ? "text-forest-green" : "text-on-surface-variant"
-                      }`}
-                    >
-                      {brand.assignedItems} Prendas Asignadas
-                    </span>
-                    {brand.locked ? (
+                    </div>
+                    <p className="font-inter text-[12px] text-on-surface-variant leading-relaxed">
+                      {brand.description}
+                    </p>
+                    <div className="flex items-center justify-between pt-2 border-t border-outline-variant/20">
                       <span
-                        className="material-symbols-outlined text-[16px] text-on-surface-variant"
-                        title="Línea sede oficial protegida"
+                        className={`font-inter text-[11px] uppercase font-semibold ${
+                          brand.locked ? "text-forest-green" : "text-on-surface-variant"
+                        }`}
                       >
-                        lock
+                        {brand.assignedItems} Prendas Asignadas
                       </span>
-                    ) : (
                       <button
                         type="button"
-                        onClick={() => setEditingBrand({ ...brand })}
+                        onClick={() => setEditingBrand(brand)}
                         className="font-inter text-[11px] text-primary hover:underline uppercase font-medium cursor-pointer"
                       >
                         Editar
                       </button>
-                    )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* ── 3. SECCIÓN 2: Paleta de Colores & Tinturas Globales ── */}
@@ -464,7 +773,7 @@ export function AdminColorsBrandsView() {
               <span className="material-symbols-outlined text-[16px] text-secondary">
                 format_paint
               </span>
-              <span>{colors.length} Tinturas Registradas</span>
+              <span>{colorsLoading ? "…" : colors.length} Tinturas Registradas</span>
             </div>
           </div>
 
@@ -474,49 +783,75 @@ export function AdminColorsBrandsView() {
               REGISTRAR NUEVA TINTURA OFICIAL
             </h3>
             <form
-              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddColor();
-              }}
+              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
+              onSubmit={handleInlineAddColor}
             >
-              <div className="sm:col-span-6 relative">
+              <div className="sm:col-span-4 flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  Nombre del Color / Tintura
+                </label>
                 <input
                   type="text"
                   value={newColorName}
                   onChange={(e) => setNewColorName(e.target.value)}
-                  placeholder="Nombre del color (ej: Añil Natural, Índigo Atelier)"
+                  placeholder="Ej: Añil Natural, Índigo Atelier"
                   className="w-full bg-surface-container-lowest px-4 py-2.5 text-on-surface font-inter text-[14px] placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
                 />
               </div>
-              <div className="sm:col-span-3 flex items-center gap-2 bg-surface-container-lowest px-3 py-2 border border-outline-variant/40">
-                <label
-                  className="w-7 h-7 p-0 border border-outline-variant/60 cursor-pointer rounded-none shrink-0 relative"
-                  style={{ backgroundColor: newColorHex }}
-                  title="Elegir muestra de color"
-                >
-                  <input
-                    type="color"
-                    value={newColorHex}
-                    onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
-                    className="opacity-0 absolute inset-0 cursor-pointer w-full h-full"
-                  />
+              <div className="sm:col-span-2 flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  SKU (3 LETRAS)
                 </label>
-                <input
-                  type="text"
-                  value={newColorHex}
-                  onChange={(e) => setNewColorHex(e.target.value)}
-                  className="w-full font-mono text-[12px] text-on-surface bg-transparent focus:outline-none uppercase"
-                  placeholder="#000000"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    maxLength={3}
+                    value={newColorSku}
+                    onChange={(e) => setNewColorSku(e.target.value.toUpperCase())}
+                    placeholder="-???-xl"
+                    className="w-full bg-surface-container-lowest pl-3 pr-8 py-2.5 text-on-surface font-mono text-[13px] uppercase placeholder:text-outline/70 border border-outline-variant/40 focus:border-primary focus:outline-none rounded-none"
+                  />
+                  <span
+                    className="material-symbols-outlined absolute right-2 text-outline hover:text-primary text-[15px] cursor-help transition-colors select-none"
+                    title="Código de 3 letras que identifica al color."
+                  >
+                    info
+                  </span>
+                </div>
               </div>
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-3 flex flex-col gap-1">
+                <label className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
+                  Color Hex
+                </label>
+                <div className="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 border border-outline-variant/40 h-[42px]">
+                  <label
+                    className="w-7 h-7 p-0 border border-outline-variant/60 cursor-pointer rounded-none shrink-0 relative"
+                    style={{ backgroundColor: newColorHex }}
+                    title="Elegir muestra de color"
+                  >
+                    <input
+                      type="color"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value.toUpperCase())}
+                      className="opacity-0 absolute inset-0 cursor-pointer w-full h-full"
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    value={newColorHex}
+                    onChange={(e) => setNewColorHex(e.target.value)}
+                    className="w-full font-mono text-[12px] text-on-surface bg-transparent focus:outline-none uppercase"
+                    placeholder="#000000"
+                  />
+                </div>
+              </div>
+              <div className="sm:col-span-3 flex flex-col justify-end">
                 <button
                   type="submit"
-                  className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-secondary hover:bg-forest-green text-[#fff9ed] font-headline text-[18px] uppercase tracking-wider transition-colors active:translate-y-px shadow-sm flex items-center justify-center gap-1.5 rounded-none cursor-pointer h-[42px]"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
-                  <span>+ AÑADIR COLOR</span>
+                  <span>AÑADIR COLOR</span>
                 </button>
               </div>
             </form>
@@ -532,149 +867,155 @@ export function AdminColorsBrandsView() {
                 Click en la muestra para previsualizar
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {colors.map((color) => (
-                <div
-                  key={color.id}
-                  className="bg-surface p-3.5 border border-outline-variant/30 flex items-center justify-between group hover:border-primary transition-colors"
-                >
+            {colorsError ? (
+              <p className="font-inter text-[13px] text-error">
+                Error al cargar los colores. Recarga la página.
+              </p>
+            ) : colorsLoading ? (
+              <p className="font-inter text-[13px] text-on-surface-variant animate-pulse">
+                Cargando tinturas…
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {sortedColors.map((color) => (
                   <div
-                    className="flex items-center gap-3 cursor-pointer min-w-0"
-                    onClick={() => setPreviewColor(color)}
-                    title="Click para ver detalle del tono"
+                    key={color.id}
+                    className="bg-surface-container-lowest border border-outline-variant/30 group hover:border-primary transition-colors overflow-hidden"
                   >
-                    <span
-                      className="w-8 h-8 shadow-sm shrink-0 border border-outline-variant/50 rounded-none group-hover:scale-105 transition-transform"
-                      style={{ backgroundColor: color.hex }}
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-inter text-[13px] font-semibold text-on-surface truncate">
-                        {color.name}
+                    {/* Header: SKU badge + acciones */}
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="font-mono text-[11px] font-semibold text-on-surface-variant border border-outline-variant/40 px-2 py-0.5 rounded-sm bg-surface tracking-widest uppercase">
+                        SKU: {color.skuCode ?? "—"}
                       </span>
-                      <span className="font-mono text-[11px] text-on-surface-variant uppercase">
-                        {color.hex}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingColor(color)}
+                          className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                          title={`Editar ${color.name}`}
+                        >
+                          <span className="material-symbols-outlined text-[16px]">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteColor(color.id)}
+                          className="text-on-surface-variant hover:text-error transition-colors cursor-pointer"
+                          title={`Eliminar color ${color.name}`}
+                        >
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Swatch + nombre y hex */}
+                    <div className="flex items-center gap-3 px-3 pb-3">
+                      <div
+                        className="w-14 h-14 shrink-0 rounded-sm cursor-pointer border border-outline-variant/20"
+                        style={{ backgroundColor: color.hex }}
+                        onClick={() => setEditingColor(color)}
+                        title="Click para editar"
+                      />
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="font-inter text-[14px] font-semibold text-on-surface leading-tight truncate">
+                          {color.name}
+                        </span>
+                        <span className="font-mono text-[12px] text-on-surface-variant uppercase">
+                          {color.hex}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteColor(color.id)}
-                    className="text-on-surface-variant hover:text-error transition-colors p-1 shrink-0 ml-1 cursor-pointer"
-                    title={`Eliminar color ${color.name}`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">close</span>
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
-      </div>
 
-      {/* ── Modal: Editar Marca ── */}
-      {editingBrand && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface max-w-lg w-full p-6 border border-outline-variant shadow-xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3">
-              <h3 className="font-headline text-[20px] uppercase tracking-wide text-on-surface">
-                EDITAR MARCA / FIRMA ATELIER
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingBrand(null)}
-                className="text-on-surface-variant hover:text-on-surface cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-            <div className="flex flex-col gap-3">
-              <label className="flex flex-col gap-1">
-                <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
-                  Nombre de la Línea
-                </span>
-                <input
-                  type="text"
-                  value={editingBrand.name}
-                  onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
-                  className="bg-surface-container-lowest border border-outline-variant/40 px-3 py-2 text-on-surface font-inter text-[14px] outline-none focus:border-primary rounded-none"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="font-inter text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold">
-                  Descripción
-                </span>
-                <textarea
-                  rows={3}
-                  value={editingBrand.description}
-                  onChange={(e) =>
-                    setEditingBrand({ ...editingBrand, description: e.target.value })
-                  }
-                  className="bg-surface-container-lowest border border-outline-variant/40 px-3 py-2 text-on-surface font-inter text-[14px] outline-none focus:border-primary rounded-none"
-                />
-              </label>
-            </div>
-            <div className="flex justify-end gap-3 pt-3 border-t border-outline-variant/30">
-              <button
-                type="button"
-                onClick={() => setEditingBrand(null)}
-                className="px-4 py-2 border border-outline-variant/60 font-inter text-[12px] uppercase tracking-wider text-on-surface hover:bg-surface-container rounded-none cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEditBrand}
-                className="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary font-inter text-[12px] uppercase tracking-wider font-semibold rounded-none cursor-pointer"
-              >
-                Guardar Cambios
-              </button>
-            </div>
+        {/* ── STICKY BOTTOM BAR ── */}
+        <div className="sticky bottom-0 z-30 w-full bg-[#333027] text-[#f7f0e2] px-4 lg:px-8 py-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+          <div className="flex items-center gap-3">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                isSaving || hasUnsavedChanges ? "bg-[#c77d2e] animate-pulse" : "bg-[#466635]"
+              }`}
+            />
+            <span className="font-inter text-[12px] text-[#e0dacb]">
+              {isSaving
+                ? "Guardando cambios en la base de datos…"
+                : hasUnsavedChanges
+                  ? "Cambios sin guardar en marcas y colores"
+                  : "Todos los cambios guardados"}
+            </span>
           </div>
-        </div>
-      )}
-
-      {/* ── Modal: Previsualización de Color ── */}
-      {previewColor && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface max-w-sm w-full p-6 border border-outline-variant shadow-xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2">
-              <span className="font-inter text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">
-                MUESTRA DE TINTURA OFICIAL
-              </span>
-              <button
-                type="button"
-                onClick={() => setPreviewColor(null)}
-                className="text-on-surface-variant hover:text-on-surface cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
-            </div>
-            <div
-              className="w-full h-32 border border-outline-variant/50 shadow-inner flex items-end p-3"
-              style={{ backgroundColor: previewColor.hex }}
-            >
-              <span className="font-mono text-[12px] px-2 py-0.5 bg-black/40 text-white backdrop-blur-xs">
-                {previewColor.hex}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <h4 className="font-headline text-[22px] uppercase text-on-surface tracking-wide">
-                {previewColor.name}
-              </h4>
-              <p className="font-inter text-[12px] text-on-surface-variant">
-                Tintura homologada para telas de lino, lana virgen y algodón orgánico del atelier.
-              </p>
-            </div>
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
             <button
               type="button"
-              onClick={() => setPreviewColor(null)}
-              className="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-inter text-[12px] uppercase tracking-wider rounded-none cursor-pointer"
+              onClick={handleDiscardChanges}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="px-4 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed text-[#f7f0e2] font-inter text-[10px] uppercase tracking-widest transition-colors cursor-pointer"
             >
-              Cerrar Muestra
+              DESCARTAR CAMBIOS
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveChanges}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="px-8 py-3 bg-[#673900] hover:bg-[#894d00] disabled:opacity-50 disabled:cursor-not-allowed text-white font-headline text-[20px] uppercase tracking-wider shadow-sm flex items-center gap-2 transition-colors cursor-pointer active:translate-y-px"
+            >
+              {isSaving ? "GUARDANDO…" : "GUARDAR CAMBIOS"}
+              <span className="material-symbols-outlined text-[18px]">
+                {isSaving ? "hourglass_top" : "check"}
+              </span>
             </button>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* ── Modal Añadir / Editar Marca (con fondo sombreado) ── */}
+      <AdminAddBrandModal
+        isOpen={isAddBrandModalOpen || Boolean(editingBrand)}
+        onClose={() => {
+          setIsAddBrandModalOpen(false);
+          setEditingBrand(null);
+        }}
+        onSave={handleSaveBrand}
+        onDelete={editingBrand ? handleDeleteBrand : undefined}
+        initialData={
+          editingBrand
+            ? {
+                id: editingBrand.id,
+                name: editingBrand.name,
+                skuPrefix: editingBrand.skuPrefix || "",
+                description: editingBrand.description,
+                assignedItems: editingBrand.assignedItems,
+                active: editingBrand.active ?? true,
+              }
+            : null
+        }
+      />
+
+      {/* ── Modal Añadir / Editar Color / Tintura (con fondo sombreado) ── */}
+      <AdminAddColorModal
+        isOpen={isAddColorModalOpen || Boolean(editingColor)}
+        onClose={() => {
+          setIsAddColorModalOpen(false);
+          setEditingColor(null);
+        }}
+        onSave={handleSaveColor}
+        onDelete={handleDeleteColor}
+        initialData={
+          editingColor
+            ? {
+                id: editingColor.id,
+                name: editingColor.name,
+                hex: editingColor.hex,
+                skuCode: editingColor.skuCode,
+                assignedItems: editingColor.assignedItems,
+                active: editingColor.active ?? true,
+              }
+            : null
+        }
+      />
     </main>
   );
 }

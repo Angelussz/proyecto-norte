@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   description: "NORTE - Tienda de ropa y accesorios de diseño propio.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${bebasNeue.variable} ${inter.variable} h-full antialiased`}>
       <head>

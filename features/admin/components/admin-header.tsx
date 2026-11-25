@@ -114,6 +114,8 @@ export function AdminHeader() {
           </span>
           <input
             type="text"
+            autoComplete="off"
+            suppressHydrationWarning
             placeholder="Buscar pedidos, productos, clientes..."
             className="w-72 lg:w-96 pl-9 pr-4 py-1.5 bg-surface-container-lowest text-on-surface placeholder:text-outline/70 text-[14px] font-inter outline-none border border-outline-variant/50 focus:border-primary transition-colors rounded-none"
           />

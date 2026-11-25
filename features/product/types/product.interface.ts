@@ -15,6 +15,7 @@ export type ProductDetail = {
   colors: { name: string; hex: string }[];
   variants: ProductVariant[];
   images: string[];
+  video_url?: string | null;
 };
 
 export type Suggestion = {

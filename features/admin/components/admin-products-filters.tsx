@@ -1,97 +1,132 @@
 "use client";
 
-import { useState } from "react";
+import { useCategories } from "@/features/category/hooks/useCategories";
+import { useBrands } from "@/features/admin/hooks/useBrands";
 
-export function AdminProductsFilters() {
-  const [search, setSearch] = useState("");
+interface Props {
+  search: string;
+  onSearchChange: (v: string) => void;
+  filterCat: string;
+  onCatChange: (v: string) => void;
+  filterStatus: string;
+  onStatusChange: (v: string) => void;
+  onClear: () => void;
+}
 
+export function AdminProductsFilters({
+  search,
+  onSearchChange,
+  filterCat,
+  onCatChange,
+  filterStatus,
+  onStatusChange,
+  onClear,
+}: Props) {
+  const { data: categories = [] } = useCategories();
+  const { data: brands = [] } = useBrands();
   return (
-    <section className="w-full px-8 py-4 bg-surface-container-high/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <div className="flex flex-col gap-3 w-full">
-        {/* Filters row */}
-        <div className="flex flex-wrap items-center gap-3 w-full">
-          {/* Search input */}
-          <div className="relative flex items-center min-w-[260px] flex-1 max-w-md">
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px] absolute left-3 pointer-events-none">
-              search
-            </span>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, SKU o etiqueta..."
-              className="w-full pl-9 pr-4 py-2 bg-surface-container-lowest text-on-surface placeholder:text-outline/70 text-[14px] font-inter outline-none rounded-none focus:ring-1 focus:ring-primary transition-all"
-            />
-          </div>
+    <section className="w-full px-8 py-4">
+      <div className="flex flex-col gap-2 w-full">
+        <div className="bg-surface-container-low p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full">
+            {/* Search input */}
+            <div className="relative sm:col-span-2 lg:col-span-1 w-full">
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                search
+              </span>
+              <input
+                type="text"
+                autoComplete="off"
+                suppressHydrationWarning
+                value={search}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Buscar por nombre, SKU"
+                className="w-full pl-9 pr-3 py-2 bg-white text-on-surface placeholder:text-outline/70 font-inter text-[13px] outline-none shadow-sm focus:ring-1 focus:ring-primary"
+              />
+            </div>
 
-          {/* Category filter */}
-          <div className="relative min-w-[170px]">
-            <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
-              <option value="">Categoría: Todas</option>
-              <option value="sobrecamisas">Sobrecamisas</option>
-              <option value="sastreria">Pantalones &amp; Sastrería</option>
-              <option value="calzado">Calzado</option>
-              <option value="accesorios">Accesorios</option>
-              <option value="atelier">Edición Atelier</option>
-            </select>
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-              keyboard_arrow_down
-            </span>
-          </div>
+            {/* Category filter */}
+            <div className="relative w-full">
+              <select
+                value={filterCat}
+                onChange={(e) => onCatChange(e.target.value)}
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
+              >
+                <option value="">Categoría: Todas</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                keyboard_arrow_down
+              </span>
+            </div>
 
-          {/* Status filter */}
-          <div className="relative min-w-[150px]">
-            <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
-              <option value="">Estado: Todos</option>
-              <option value="in_stock">En stock</option>
-              <option value="low_stock">Stock bajo</option>
-              <option value="out_of_stock">Agotado</option>
-            </select>
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-              keyboard_arrow_down
-            </span>
-          </div>
+            {/* Status filter */}
+            <div className="relative w-full">
+              <select
+                value={filterStatus}
+                onChange={(e) => onStatusChange(e.target.value)}
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
+              >
+                <option value="">Estado: Todos</option>
+                <option value="active">Piezas Activas</option>
+                <option value="in_stock">En stock</option>
+                <option value="low_stock">Atención Reposición</option>
+                <option value="out_of_stock">Agotados</option>
+              </select>
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                keyboard_arrow_down
+              </span>
+            </div>
 
-          {/* Brand filter */}
-          <div className="relative min-w-[150px]">
-            <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
-              <option value="">Marca: Todas</option>
-              <option value="atelier">NORTE Atelier</option>
-              <option value="coleccion">NORTE Colección</option>
-              <option value="linea_taller">Línea Taller</option>
-            </select>
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-              keyboard_arrow_down
-            </span>
-          </div>
+            {/* Brand filter */}
+            <div className="relative w-full">
+              <select
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
+                defaultValue=""
+              >
+                <option value="">Marca: Todas</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.name}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                keyboard_arrow_down
+              </span>
+            </div>
 
-          {/* Gender filter */}
-          <div className="relative min-w-[150px]">
-            <select className="w-full appearance-none bg-surface-container-lowest text-on-surface text-[14px] font-inter px-3 py-2 pr-8 rounded-none outline-none focus:ring-1 focus:ring-primary cursor-pointer">
-              <option value="">Sexo: Todos</option>
-              <option value="hombre">Hombre</option>
-              <option value="mujer">Mujer</option>
-              <option value="unisex">Unisex</option>
-            </select>
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-              keyboard_arrow_down
-            </span>
+            {/* Gender filter — decorativo */}
+            <div className="relative w-full">
+              <select
+                className="appearance-none bg-white text-on-surface font-inter text-[13px] pl-3 pr-8 py-2 outline-none shadow-sm cursor-pointer w-full"
+                defaultValue=""
+              >
+                <option value="">Sexo: Todos</option>
+                <option value="hombre">Hombre</option>
+                <option value="mujer">Mujer</option>
+                <option value="unisex">Unisex</option>
+              </select>
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                keyboard_arrow_down
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Count + clear filters */}
-        <div className="flex items-center justify-between border-t border-outline-variant/50 pt-1.5">
-          <span className="text-[11px] font-inter font-medium text-on-surface-variant tracking-wider uppercase">
-            Mostrando <strong className="text-on-surface font-semibold">1-8</strong> de{" "}
-            <strong className="text-on-surface font-semibold">48</strong> productos
-          </span>
+        {/* Limpiar filtros */}
+        <div className="flex items-center justify-end px-1 pt-1">
           <button
             type="button"
-            onClick={() => setSearch("")}
-            className="p-1.5 text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 text-[10px] font-inter font-medium uppercase tracking-wider"
+            onClick={onClear}
+            className="inline-flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-inter text-[11px] uppercase tracking-wider font-semibold"
           >
-            <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
-            <span>Limpiar filtros</span>
+            <span className="material-symbols-outlined text-[15px]">filter_alt_off</span>
+            <span>LIMPIAR FILTROS</span>
           </button>
         </div>
       </div>

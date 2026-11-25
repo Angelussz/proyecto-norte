@@ -2,11 +2,32 @@
 
 import { cn } from "@/lib/utils";
 
-const PAGES = [1, 2, 3];
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  total: number;
+  onPage: (page: number) => void;
+}
 
-export function AdminProductsPagination() {
-  const currentPage = 1;
-  const totalPages = 6;
+export function AdminProductsPagination({ currentPage, totalPages, total, onPage }: Props) {
+  // Build visible page range (show up to 5 pages around current)
+  const getPageNumbers = (): (number | "...")[] => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (currentPage > 3) pages.push("...");
+    for (
+      let i = Math.max(2, currentPage - 1);
+      i <= Math.min(totalPages - 1, currentPage + 1);
+      i++
+    ) {
+      pages.push(i);
+    }
+    if (currentPage < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
 
   return (
     <footer className="w-full px-8 py-6 bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -17,7 +38,7 @@ export function AdminProductsPagination() {
           <strong className="text-on-surface font-semibold">{totalPages}</strong>
         </span>
         <span className="text-outline-variant">|</span>
-        <span>Total 48 registros de confección</span>
+        <span>Total {total} registros de confección</span>
       </div>
 
       {/* Controls */}
@@ -25,37 +46,56 @@ export function AdminProductsPagination() {
         {/* Previous */}
         <button
           type="button"
-          disabled
-          className="px-4 py-2 bg-surface-container text-outline text-[12px] font-inter font-semibold uppercase tracking-wider cursor-not-allowed opacity-60 rounded-none flex items-center gap-1"
+          disabled={currentPage === 1}
+          onClick={() => onPage(Math.max(1, currentPage - 1))}
+          className={cn(
+            "px-4 py-2 text-[12px] font-inter font-semibold uppercase tracking-wider rounded-none flex items-center gap-1 transition-colors",
+            currentPage === 1
+              ? "bg-surface-container text-outline cursor-not-allowed opacity-60"
+              : "bg-surface-container-lowest text-on-surface hover:bg-surface-container cursor-pointer",
+          )}
         >
           <span className="material-symbols-outlined text-[16px]">west</span>
           <span>Anterior</span>
         </button>
 
         {/* Page numbers */}
-        {PAGES.map((page) => (
-          <button
-            key={page}
-            type="button"
-            className={cn(
-              "w-10 h-10 text-[12px] font-inter font-bold uppercase rounded-none transition-colors",
-              page === currentPage
-                ? "bg-primary text-on-primary"
-                : "bg-surface-container-lowest text-on-surface hover:bg-surface-container",
-            )}
-          >
-            {page}
-          </button>
-        ))}
-
-        <span className="w-8 text-center text-on-surface-variant text-[14px] font-inter font-bold select-none">
-          ...
-        </span>
+        {pageNumbers.map((page, idx) =>
+          page === "..." ? (
+            <span
+              key={`ellipsis-${idx}`}
+              className="w-8 text-center text-on-surface-variant text-[14px] font-inter font-bold select-none"
+            >
+              ...
+            </span>
+          ) : (
+            <button
+              key={page}
+              type="button"
+              onClick={() => onPage(page as number)}
+              className={cn(
+                "w-10 h-10 text-[12px] font-inter font-bold uppercase rounded-none transition-colors",
+                page === currentPage
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container-lowest text-on-surface hover:bg-surface-container",
+              )}
+            >
+              {page}
+            </button>
+          ),
+        )}
 
         {/* Next */}
         <button
           type="button"
-          className="px-4 py-2 bg-surface-container-lowest text-on-surface hover:bg-surface-container text-[12px] font-inter font-semibold uppercase tracking-wider rounded-none flex items-center gap-1 transition-colors"
+          disabled={currentPage === totalPages}
+          onClick={() => onPage(Math.min(totalPages, currentPage + 1))}
+          className={cn(
+            "px-4 py-2 text-[12px] font-inter font-semibold uppercase tracking-wider rounded-none flex items-center gap-1 transition-colors",
+            currentPage === totalPages
+              ? "bg-surface-container text-outline cursor-not-allowed opacity-60"
+              : "bg-surface-container-lowest text-on-surface hover:bg-surface-container cursor-pointer",
+          )}
         >
           <span>Siguiente</span>
           <span className="material-symbols-outlined text-[16px]">east</span>

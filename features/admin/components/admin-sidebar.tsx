@@ -8,7 +8,15 @@ type NavItem = {
   label: string;
   icon: string;
   href: string;
-  children?: { label: string; icon: string; href: string }[];
+  disabled?: boolean;
+  disabledTooltip?: string;
+  children?: {
+    label: string;
+    icon: string;
+    href: string;
+    disabled?: boolean;
+    disabledTooltip?: string;
+  }[];
 };
 
 const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
@@ -30,6 +38,8 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
             label: "Editar Producto",
             icon: "edit",
             href: "/admin/productos/editar",
+            disabled: true,
+            disabledTooltip: "Selecciona un producto desde la lista para editarlo",
           },
         ],
       },
@@ -130,12 +140,18 @@ export function AdminSidebar() {
       {/* Logo / Brand */}
       <div className="flex flex-col">
         <div className="px-6 pt-8 pb-6 border-b border-white/10">
-          <span className="block font-headline text-[36px] leading-none tracking-widest text-[#fff9ed]">
-            NORTE
-          </span>
-          <span className="block font-inter text-[10px] text-[#e0dacb] uppercase tracking-widest mt-1">
-            ATELIER ADMIN
-          </span>
+          <Link
+            href="/"
+            className="group block focus:outline-none transition-opacity hover:opacity-90"
+            title="Ir al inicio de la tienda (Home)"
+          >
+            <span className="block font-headline text-[36px] leading-none tracking-widest text-[#fff9ed] transition-colors group-hover:text-white">
+              NORTE
+            </span>
+            <span className="block font-inter text-[10px] text-[#e0dacb] uppercase tracking-widest mt-1 transition-colors group-hover:text-white/90">
+              ATELIER ADMIN
+            </span>
+          </Link>
         </div>
 
         {/* Nav Sections */}
@@ -231,7 +247,32 @@ export function AdminSidebar() {
                           <div className="overflow-hidden">
                             <div className="flex flex-col ml-4 pl-3 border-l border-white/10 py-1 gap-0.5">
                               {item.children!.map((child) => {
-                                const childActive = pathname === child.href;
+                                const isEditingRoute = child.href === "/admin/productos/editar";
+                                const isCurrentlyEditing =
+                                  isEditingRoute && pathname.startsWith("/admin/productos/editar");
+                                const childActive = isEditingRoute
+                                  ? isCurrentlyEditing
+                                  : pathname === child.href;
+                                const isDisabled = child.disabled && !isCurrentlyEditing;
+
+                                if (isDisabled) {
+                                  return (
+                                    <div
+                                      key={child.href}
+                                      title={
+                                        child.disabledTooltip ??
+                                        "Selecciona un producto desde la lista para editarlo"
+                                      }
+                                      className="flex items-center px-2 py-1 font-inter text-[12px] text-[#e0dacb]/30 cursor-not-allowed select-none opacity-40"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px] mr-1.5 opacity-40">
+                                        {child.icon}
+                                      </span>
+                                      <span>{child.label}</span>
+                                    </div>
+                                  );
+                                }
+
                                 return (
                                   <Link
                                     key={child.href}
