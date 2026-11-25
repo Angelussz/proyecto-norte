@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createUser, AuthError } from "@/features/auth/services/auth.service";
-import { signToken, getSessionCookieOptions } from "@/lib/session";
+import { startAuthenticatedSession } from "@/features/auth/services/security.service";
+import { signToken } from "@/lib/session";
+import { setSessionCookie } from "@/lib/account-api";
+import { extractRequestContext } from "@/lib/request-context";
 import type { RegisterBody, RegisterResponse } from "@/features/auth/types/auth.interface";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -91,7 +94,12 @@ export async function POST(req: NextRequest) {
   // ── 4 + 5. Crear usuario y firmar token ──────────────────────────────────────
   try {
     const jwtPayload = await createUser(name, lastName, email, password);
-    const token = await signToken(jwtPayload);
+    const reqCtx = extractRequestContext(req);
+    const sessionId = await startAuthenticatedSession(jwtPayload.sub, reqCtx, {
+      eventType: "REGISTER",
+      title: "Cuenta creada e inicio de sesión",
+    });
+    const token = await signToken({ ...jwtPayload, jti: sessionId });
 
     // ── 6. Respuesta pública ───────────────────────────────────────────────────
     const responseBody: RegisterResponse = {
@@ -105,17 +113,7 @@ export async function POST(req: NextRequest) {
 
     // ── 7. Cookie de sesión (login automático tras el registro) ───────────────
     const res = NextResponse.json(responseBody, { status: 201 });
-    const cookieOpts = getSessionCookieOptions();
-
-    res.cookies.set({
-      name: cookieOpts.name,
-      value: token,
-      maxAge: cookieOpts.maxAge,
-      httpOnly: cookieOpts.httpOnly,
-      secure: cookieOpts.secure,
-      sameSite: cookieOpts.sameSite,
-      path: cookieOpts.path,
-    });
+    setSessionCookie(res, token);
 
     return res;
   } catch (error) {

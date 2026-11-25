@@ -4,8 +4,11 @@
  * Este archivo NO importa Prisma ni módulos de servidor.
  */
 import type {
+  AccountSecurityResponse,
   DeleteAccountBody,
   ProfileResponse,
+  RevokeOtherSessionsResponse,
+  RevokeSessionResponse,
   UpdateProfileBody,
   UserProfile,
 } from "@/features/auth/types/auth.interface";
@@ -66,5 +69,38 @@ export async function deleteAccountApi(dto: DeleteAccountBody): Promise<void> {
     "/api/account",
     { method: "DELETE", body: JSON.stringify(dto) },
     "Error al cerrar la cuenta.",
+  );
+}
+
+/**
+ * Cliente HTTP para consultar sesiones activas y registro de actividad.
+ */
+export async function fetchAccountSecurityApi(): Promise<AccountSecurityResponse> {
+  return accountRequest<AccountSecurityResponse>(
+    "/api/account/security",
+    { method: "GET" },
+    "No se pudo cargar la información de seguridad.",
+  );
+}
+
+/**
+ * Cliente HTTP para revocar una sesión remota puntual.
+ */
+export async function revokeSessionApi(sessionId: string): Promise<RevokeSessionResponse> {
+  return accountRequest<RevokeSessionResponse>(
+    `/api/account/sessions/${encodeURIComponent(sessionId)}`,
+    { method: "DELETE" },
+    "No se pudo cerrar la sesión.",
+  );
+}
+
+/**
+ * Cliente HTTP para revocar todas las demás sesiones activas.
+ */
+export async function revokeOtherSessionsApi(): Promise<RevokeOtherSessionsResponse> {
+  return accountRequest<RevokeOtherSessionsResponse>(
+    "/api/account/sessions",
+    { method: "DELETE" },
+    "No se pudieron cerrar las demás sesiones.",
   );
 }

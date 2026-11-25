@@ -160,6 +160,7 @@ export function UserMenu() {
       const res = await fetch("/api/auth/logout", { method: "POST" });
       if (!res.ok) throw new Error("Logout fallido");
       // Invalidamos la caché de sesión → el header vuelve al estado "sin sesión"
+      queryClient.removeQueries({ queryKey: ["account-security"] });
       queryClient.invalidateQueries({ queryKey: ["session"] });
       router.push("/login");
       router.refresh();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { signToken } from "@/lib/session";
+import { getClientIp } from "@/lib/rate-limit";
 import {
   NO_STORE_HEADERS,
   requireAccountSession,
@@ -41,8 +42,8 @@ export async function GET(req: NextRequest) {
 
 /**
  * PATCH /api/account/profile
- * Actualiza nombre, apellido y teléfono del usuario autenticado.
- * Actualiza también la cookie de sesión para reflejar el nuevo nombre sin forzar re-login.
+ * Actualiza nombre, apellido y teléfono del usuario autenticado,
+ * registra la actividad y renueva la cookie preservando el `jti` de la sesión.
  */
 export async function PATCH(req: NextRequest) {
   const auth = await requireAccountSession(req);
@@ -55,6 +56,10 @@ export async function PATCH(req: NextRequest) {
     const { user, updatedPayload } = await updateUserProfile(
       auth.payload.sub,
       parsed.data as UpdateProfileBody,
+      {
+        jti: auth.payload.jti,
+        ipAddress: getClientIp(req),
+      },
     );
 
     const newToken = await signToken(updatedPayload);

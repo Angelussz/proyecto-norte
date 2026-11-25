@@ -4,7 +4,13 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import {
   updateProfileApi,
   deleteAccountApi,
+  revokeSessionApi,
+  revokeOtherSessionsApi,
 } from "@/features/auth/services/account-client.service";
+import {
+  useAccountSecurity,
+  ACCOUNT_SECURITY_QUERY_KEY,
+} from "@/features/auth/hooks/useAccountSecurity";
 import Image from "next/image";
 import {
   User,
@@ -59,6 +65,37 @@ function getInitials(name: string | null | undefined): string {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+}
+
+function formatRelativeSessionTime(isoDate: string, isCurrent: boolean): string {
+  if (isCurrent) return "Activo ahora mismo";
+  const diffMs = Date.now() - new Date(isoDate).getTime();
+  if (!Number.isFinite(diffMs) || diffMs < 60_000) return "Hace instantes";
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return `Hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} ${days === 1 ? "día" : "días"}`;
+}
+
+function formatActivityTimestamp(isoDate: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  const isSameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  if (isSameDay) {
+    return `Hoy, ${date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+  }
+  return date.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function Toast({ msg, visible }: { msg: string; visible: boolean }) {
@@ -165,6 +202,7 @@ function SectionPerfil({
           phone: phone.trim(),
         });
         await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
         setFeedback({ type: "success", msg: "Perfil actualizado correctamente." });
         setToastVisible(true);
         setTimeout(() => {
@@ -733,10 +771,53 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const [isRevokingAll, setIsRevokingAll] = useState(false);
+  const [securityActionError, setSecurityActionError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const {
+    data: securityData,
+    isLoading: securityLoading,
+    isError: securityError,
+    refetch: refetchSecurity,
+  } = useAccountSecurity();
+
   function showToast(msg: string) {
     setToastMsg(msg);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 3500);
+  }
+  async function handleRevokeSession(sessionId: string) {
+    setSecurityActionError(null);
+    setRevokingSessionId(sessionId);
+    try {
+      await revokeSessionApi(sessionId);
+      await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+      showToast("Sesión remota cerrada correctamente.");
+    } catch (err) {
+      setSecurityActionError(err instanceof Error ? err.message : "No se pudo cerrar la sesión.");
+    } finally {
+      setRevokingSessionId(null);
+    }
+  }
+  async function handleRevokeOtherSessions() {
+    setSecurityActionError(null);
+    setIsRevokingAll(true);
+    try {
+      const { revokedCount } = await revokeOtherSessionsApi();
+      await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+      showToast(
+        revokedCount === 1
+          ? "Se cerró 1 sesión remota."
+          : `Se cerraron ${revokedCount} sesiones remotas.`,
+      );
+    } catch (err) {
+      setSecurityActionError(
+        err instanceof Error ? err.message : "No se pudieron cerrar las demás sesiones.",
+      );
+    } finally {
+      setIsRevokingAll(false);
+    }
   }
   function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -1016,44 +1097,81 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                 </span>
                 <Laptop className="size-4.5 text-on-surface-variant" />
               </div>
-              {/* Session 1: Current */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-on-surface font-body">
-                    MacBook Pro · Chrome
-                  </span>
-                  <span className="text-[10px] font-mono uppercase bg-secondary/15 text-secondary px-2 py-0.5 font-bold">
-                    Esta sesión
-                  </span>
+
+              {securityLoading ? (
+                <div className="flex items-center gap-2 py-4 text-xs font-body text-on-surface-variant">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span>Cargando sesiones...</span>
                 </div>
-                <p className="text-[11px] text-on-surface-variant font-mono">
-                  Santiago, CL · IP: 186.105.***.***
-                </p>
-                <p className="text-[10px] text-outline font-mono">Activo ahora mismo</p>
-              </div>
-              {/* Session 2 */}
-              <div className="pt-3 border-t border-outline-variant/20 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-on-surface font-body">
-                    iPhone 14 · Safari Mobile
-                  </span>
+              ) : securityError ? (
+                <div className="space-y-3 py-2">
+                  <FeedbackMsg type="error" msg="No se pudieron cargar las sesiones activas." />
                   <button
                     type="button"
-                    className="text-[11px] text-error hover:underline uppercase tracking-wide font-mono font-medium"
+                    onClick={() => refetchSecurity()}
+                    className="text-xs font-label uppercase tracking-wider text-primary hover:underline font-semibold"
                   >
-                    Cerrar
+                    Reintentar
                   </button>
                 </div>
-                <p className="text-[11px] text-on-surface-variant font-mono">
-                  Valparaíso, CL · Hace 2 días
+              ) : !securityData || securityData.sessions.length === 0 ? (
+                <p className="text-xs font-body text-on-surface-variant">
+                  No hay sesiones registradas para esta cuenta.
                 </p>
-              </div>
-              <button
-                type="button"
-                className="w-full text-center py-2.5 text-xs font-label uppercase tracking-[0.15em] text-on-surface hover:bg-surface-container-high transition-colors font-medium border border-outline-variant/40"
-              >
-                Cerrar Todas las Demás Sesiones
-              </button>
+              ) : (
+                <>
+                  {securityData.sessions.map((session, idx) => (
+                    <div
+                      key={session.id}
+                      className={
+                        idx === 0
+                          ? "space-y-1"
+                          : "pt-3 border-t border-outline-variant/20 space-y-1"
+                      }
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-on-surface font-body">
+                          {session.deviceLabel}
+                        </span>
+                        {session.isCurrent ? (
+                          <span className="text-[10px] font-mono uppercase bg-secondary/15 text-secondary px-2 py-0.5 font-bold shrink-0">
+                            Esta sesión
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={revokingSessionId === session.id || isRevokingAll}
+                            onClick={() => handleRevokeSession(session.id)}
+                            className="text-[11px] text-error hover:underline uppercase tracking-wide font-mono font-medium disabled:opacity-50 cursor-pointer shrink-0"
+                          >
+                            {revokingSessionId === session.id ? "Cerrando..." : "Cerrar"}
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant font-mono">
+                        IP: {session.ipMasked}
+                      </p>
+                      <p className="text-[10px] text-outline font-mono">
+                        {formatRelativeSessionTime(session.lastActiveAt, session.isCurrent)}
+                      </p>
+                    </div>
+                  ))}
+                  {securityActionError && <FeedbackMsg type="error" msg={securityActionError} />}
+                  <button
+                    type="button"
+                    disabled={
+                      isRevokingAll ||
+                      revokingSessionId !== null ||
+                      securityData.sessions.filter((s) => !s.isCurrent).length === 0
+                    }
+                    onClick={handleRevokeOtherSessions}
+                    className="w-full text-center py-2.5 text-xs font-label uppercase tracking-[0.15em] text-on-surface hover:bg-surface-container-high transition-colors font-medium border border-outline-variant/40 disabled:opacity-45 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isRevokingAll && <Loader2 className="size-3.5 animate-spin" />}
+                    <span>Cerrar Todas las Demás Sesiones</span>
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Security Activity Log Micro-card */}
@@ -1064,41 +1182,38 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                 </span>
                 <span className="text-[10px] font-mono text-outline">HISTÓRICO</span>
               </div>
-              <div className="space-y-3 text-xs font-body">
-                <div className="flex gap-3 items-start">
-                  <span className="w-2 h-2 rounded-full bg-primary mt-1 shrink-0"></span>
-                  <div>
-                    <p className="text-on-surface font-medium">Inicio de sesión exitoso</p>
-                    <p className="text-[11px] font-mono text-on-surface-variant">
-                      Hoy, 10:42 AM · Chrome / macOS
-                    </p>
-                  </div>
+
+              {securityLoading ? (
+                <div className="flex items-center gap-2 py-3 text-xs font-body text-on-surface-variant">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span>Cargando actividad...</span>
                 </div>
-                <div className="flex gap-3 items-start">
-                  <span className="w-2 h-2 rounded-full bg-outline-variant mt-1 shrink-0"></span>
-                  <div>
-                    <p className="text-on-surface font-medium">Contraseña modificada</p>
-                    <p className="text-[11px] font-mono text-on-surface-variant">
-                      14 Enero 2025 · Portal Web
-                    </p>
-                  </div>
+              ) : securityError ? (
+                <FeedbackMsg type="error" msg="No se pudo cargar el registro de actividad." />
+              ) : !securityData || securityData.activities.length === 0 ? (
+                <p className="text-xs font-body text-on-surface-variant">
+                  Aún no hay actividad reciente registrada.
+                </p>
+              ) : (
+                <div className="space-y-3 text-xs font-body">
+                  {securityData.activities.map((item, idx) => (
+                    <div key={item.id} className="flex gap-3 items-start">
+                      <span
+                        className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                          idx === 0 ? "bg-primary" : "bg-outline-variant"
+                        }`}
+                      ></span>
+                      <div>
+                        <p className="text-on-surface font-medium">{item.title}</p>
+                        <p className="text-[11px] font-mono text-on-surface-variant">
+                          {formatActivityTimestamp(item.createdAt)}
+                          {item.metadata ? ` · ${item.metadata}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex gap-3 items-start">
-                  <span className="w-2 h-2 rounded-full bg-outline-variant mt-1 shrink-0"></span>
-                  <div>
-                    <p className="text-on-surface font-medium">Nueva vinculación de correo</p>
-                    <p className="text-[11px] font-mono text-on-surface-variant">
-                      02 Noviembre 2024 · Verificado
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <a
-                className="block text-right text-[11px] font-label uppercase tracking-wider text-primary hover:underline font-semibold"
-                href="#"
-              >
-                Descargar informe de auditoría →
-              </a>
+              )}
             </div>
 
             {/* Support Advisory Notice */}
@@ -1166,6 +1281,7 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
           feedback: extraFeedback.trim() || undefined,
         });
         queryClient.setQueryData(["session"], null);
+        queryClient.removeQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
         await queryClient.invalidateQueries({ queryKey: ["session"] });
         router.refresh();
         router.push("/");

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { z } from "zod";
 import { verifyToken, SESSION_COOKIE_NAME, getSessionCookieOptions } from "@/lib/session";
 import { AccountError } from "@/features/auth/services/account.service";
+import { isSessionActiveAndTouch } from "@/features/auth/services/security.service";
 import type { JwtPayload } from "@/features/auth/types/auth.interface";
 
 export const NO_STORE_HEADERS = { "Cache-Control": "no-store" } as const;
@@ -15,8 +16,9 @@ const ACCOUNT_ERROR_STATUS: Record<AccountError["code"], number> = {
 };
 
 /**
- * Lee y verifica el JWT de la cookie de sesión.
- * Devuelve el payload o una respuesta 401 si falta o es inválido/expirado.
+ * Lee y verifica el JWT de la cookie de sesión y comprueba en DB si la sesión
+ * (`jti`) sigue activa (no revocada ni expirada).
+ * Devuelve el payload o una respuesta 401 si falta, expiró o fue revocada.
  */
 export async function requireAccountSession(
   req: NextRequest,
@@ -33,6 +35,19 @@ export async function requireAccountSession(
 
   try {
     const payload = await verifyToken(token);
+
+    if (payload.jti) {
+      const active = await isSessionActiveAndTouch(payload.sub, payload.jti);
+      if (!active) {
+        const res = NextResponse.json(
+          { error: "Esta sesión fue cerrada. Iniciá sesión nuevamente." },
+          { status: 401, headers: NO_STORE_HEADERS },
+        );
+        clearSessionCookie(res);
+        return { errorResponse: res };
+      }
+    }
+
     return { payload };
   } catch {
     return {

@@ -7,6 +7,7 @@
 // Lo que firmamos al crear el token; también lo que leemos al verificarlo.
 export interface JwtPayload {
   sub: string; // ID del usuario (subject → estándar JWT)
+  jti?: string; // ID único de la sesión en UserSession (opcional para compatibilidad)
   email: string;
   name: string; // nombre para mostrarlo en el header sin ir a la DB
   picture?: string; // URL del avatar (viene de Google; puede no existir)
@@ -68,6 +69,50 @@ export interface DeleteAccountBody {
   password: string;
   reason?: string;
   feedback?: string;
+}
+
+// ─── Seguridad de cuenta: Sesiones Activas y Registro de Actividad ────────────
+export type AccountActivityEventType =
+  | "LOGIN_SUCCESS"
+  | "LOGIN_GOOGLE"
+  | "REGISTER"
+  | "PROFILE_UPDATED"
+  | "PASSWORD_CHANGED"
+  | "SESSION_REVOKED"
+  | "SESSIONS_REVOKED_ALL"
+  | "ACCOUNT_CLOSED";
+
+export interface ActiveSessionItem {
+  id: string;
+  deviceLabel: string;
+  ipMasked: string;
+  lastActiveAt: string;
+  createdAt: string;
+  isCurrent: boolean;
+}
+
+export interface ActivityLogItem {
+  id: string;
+  eventType: AccountActivityEventType;
+  title: string;
+  metadata: string | null;
+  ipMasked: string | null;
+  createdAt: string;
+}
+
+export interface AccountSecurityResponse {
+  sessions: ActiveSessionItem[];
+  activities: ActivityLogItem[];
+}
+
+export interface RevokeSessionResponse {
+  ok: true;
+  revokedId: string;
+}
+
+export interface RevokeOtherSessionsResponse {
+  ok: true;
+  revokedCount: number;
 }
 
 // ─── Body esperado en el endpoint ────────────────────────────────────────────

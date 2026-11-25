@@ -1,26 +1,29 @@
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/session";
+import type { NextRequest } from "next/server";
+import { verifyToken, SESSION_COOKIE_NAME } from "@/lib/session";
+import { clearSessionCookie, NO_STORE_HEADERS } from "@/lib/account-api";
+import { revokeSessionById } from "@/features/auth/services/security.service";
 
 /**
  * POST /api/auth/logout
  *
- * Cierra la sesión del usuario eliminando la cookie HTTP-only.
- * Al borrar la cookie, el JWT deja de enviarse → el middleware rechazará
- * cualquier ruta protegida.
+ * Cierra la sesión del usuario marcando la sesión como revocada en DB (si tiene `jti`)
+ * y eliminando la cookie HTTP-only del navegador.
  */
-export async function POST() {
-  const res = NextResponse.json({ ok: true }, { status: 200 });
+export async function POST(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
 
-  // Sobreescribir la cookie con maxAge = 0 la elimina del browser
-  res.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: "",
-    maxAge: 0,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  });
+  if (token) {
+    try {
+      const payload = await verifyToken(token);
+      await revokeSessionById(payload.sub, payload.jti);
+    } catch {
+      // Si el token ya expiró o es inválido, igual limpiamos la cookie
+    }
+  }
+
+  const res = NextResponse.json({ ok: true }, { status: 200, headers: NO_STORE_HEADERS });
+  clearSessionCookie(res);
 
   return res;
 }

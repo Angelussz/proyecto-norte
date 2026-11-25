@@ -72,6 +72,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 export async function updateUserProfile(
   userId: string,
   data: UpdateProfileBody,
+  context?: { jti?: string; ipAddress?: string },
 ): Promise<{ user: UserProfile; updatedPayload: JwtPayload }> {
   if (!userId?.trim()) {
     throw new AccountError("UNAUTHORIZED", "Sesión inválida.");
@@ -101,25 +102,36 @@ export async function updateUserProfile(
     throw new AccountError("NOT_FOUND", "Usuario no encontrado.");
   }
 
-  const updated = await prisma.users.update({
-    where: { id: userId },
-    data: {
-      name: trimmedName,
-      last_name: trimmedLastName,
-      phone: trimmedPhone,
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      last_name: true,
-      phone: true,
-      picture_url: true,
-      role: true,
-      email_verified: true,
-      created_at: true,
-    },
-  });
+  const [updated] = await prisma.$transaction([
+    prisma.users.update({
+      where: { id: userId },
+      data: {
+        name: trimmedName,
+        last_name: trimmedLastName,
+        phone: trimmedPhone,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        last_name: true,
+        phone: true,
+        picture_url: true,
+        role: true,
+        email_verified: true,
+        created_at: true,
+      },
+    }),
+    prisma.accountActivityLog.create({
+      data: {
+        user_id: userId,
+        event_type: "PROFILE_UPDATED",
+        title: "Datos de perfil actualizados",
+        metadata: "Portal Web",
+        ip_address: context?.ipAddress ?? null,
+      },
+    }),
+  ]);
 
   const userProfile: UserProfile = {
     id: updated.id,
@@ -135,6 +147,7 @@ export async function updateUserProfile(
 
   const updatedPayload: JwtPayload = {
     sub: updated.id,
+    ...(context?.jti ? { jti: context.jti } : {}),
     email: updated.email,
     name: updated.name,
     picture: updated.picture_url ?? undefined,
@@ -207,6 +220,21 @@ export async function closeUserAccount(userId: string, data: DeleteAccountBody):
       where: {
         user_id: userId,
         orders: { none: {} },
+      },
+    }),
+    prisma.userSession.updateMany({
+      where: {
+        user_id: userId,
+        revoked_at: null,
+      },
+      data: { revoked_at: new Date() },
+    }),
+    prisma.accountActivityLog.create({
+      data: {
+        user_id: userId,
+        event_type: "ACCOUNT_CLOSED",
+        title: "Cuenta cerrada y anonimizada",
+        metadata: data.reason ?? null,
       },
     }),
     prisma.users.update({
