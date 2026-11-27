@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface CheckoutSummaryProps {
   shippingReady: boolean;
+  onOrderSuccess: () => void;
 }
 
 /**
@@ -22,7 +23,7 @@ interface CheckoutSummaryProps {
  * lee el carrito vivo (sincronizado con la siembra inicial y sus cambios)
  * y cotiza subtotal + envío + impuestos con POST /api/checkout/quote.
  */
-export function CheckoutSummary({ shippingReady }: CheckoutSummaryProps) {
+export function CheckoutSummary({ shippingReady, onOrderSuccess }: CheckoutSummaryProps) {
   const { items } = useCart();
 
   const quoteInput = useMemo(
@@ -65,7 +66,7 @@ export function CheckoutSummary({ shippingReady }: CheckoutSummaryProps) {
     return (
       <OrderSummary
         summary={quoteQuery.data}
-        action={<PlaceOrderButton shippingReady={shippingReady} />}
+        action={<PlaceOrderButton shippingReady={shippingReady} onSuccess={onOrderSuccess} />}
       />
     );
   }

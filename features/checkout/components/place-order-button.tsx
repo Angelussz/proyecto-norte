@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/features/cart/hooks";
 import {
@@ -13,18 +13,18 @@ import {
 } from "@/features/checkout/services/checkout.service";
 import { useCardElementState } from "@/features/checkout/components/card-element-context";
 
-type PayStatus = "idle" | "confirming" | "processing" | "succeeded" | "error";
+type PayStatus = "idle" | "confirming" | "processing" | "error";
 
 const POLL_ATTEMPTS = 20;
 const POLL_DELAY_MS = 1500;
 
 interface PlaceOrderButtonProps {
   shippingReady: boolean;
+  onSuccess: () => void;
 }
 
 /**
  * Espera a que el webhook marque la orden PAID en la DB.
- * Solo se vacía el carrito cuando la orden figura como PAID.
  */
 async function waitForOrderPaid(
   orderId: string,
@@ -59,12 +59,12 @@ async function waitForOrderPaid(
 
 /**
  * Crea el PaymentIntent y confirma la tarjeta con Stripe.
- * El carrito solo se vacía cuando la orden queda PAID en la base de datos.
+ * Informa al componente padre cuando la orden queda PAID.
  */
-export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
+export function PlaceOrderButton({ shippingReady, onSuccess }: PlaceOrderButtonProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const { items, clearCart } = useCart();
+  const { items } = useCart();
   const { cardComplete } = useCardElementState();
   const [status, setStatus] = useState<PayStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -126,8 +126,7 @@ export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
             const result = await waitForOrderPaid(orderId);
 
             if (result === "PAID") {
-              setStatus("succeeded");
-              clearCart();
+              onSuccess();
             } else if (result === "CANCELLED") {
               setStatus("error");
               setErrorMessage("El pago no pudo completarse. Revisa el estado de tu pedido.");
@@ -169,39 +168,6 @@ export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
       },
     );
   };
-
-  if (status === "succeeded") {
-    return (
-      <section
-        role="status"
-        aria-live="polite"
-        className="w-full border border-border bg-card px-6 py-10 text-center shadow-sm"
-      >
-        <div className="mx-auto mb-6 flex size-16 items-center justify-center border border-primary/20 bg-primary/5 text-primary">
-          <CheckCircle2 className="size-9" aria-hidden="true" />
-        </div>
-
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-          Compra confirmada
-        </p>
-
-        <h2 className="mb-4 text-2xl font-semibold uppercase tracking-wide text-foreground">
-          ¡Gracias por tu compra!
-        </h2>
-
-        <p className="mx-auto max-w-md text-sm leading-7 text-muted-foreground">
-          Tu pago fue aprobado y recibimos correctamente tu pedido. Estamos preparando todo para que
-          puedas disfrutar tu compra.
-        </p>
-
-        <div className="mx-auto mt-8 max-w-sm border-t border-border pt-5">
-          <p className="text-xs font-medium uppercase tracking-widest text-foreground">
-            Gracias por elegir NORTE
-          </p>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <div>
