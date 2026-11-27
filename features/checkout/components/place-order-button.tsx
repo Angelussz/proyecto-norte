@@ -13,18 +13,18 @@ import {
 } from "@/features/checkout/services/checkout.service";
 import { useCardElementState } from "@/features/checkout/components/card-element-context";
 
-type PayStatus = "idle" | "confirming" | "processing" | "succeeded" | "error";
+type PayStatus = "idle" | "confirming" | "processing" | "error";
 
 const POLL_ATTEMPTS = 20;
 const POLL_DELAY_MS = 1500;
 
 interface PlaceOrderButtonProps {
   shippingReady: boolean;
+  onSuccess: () => void;
 }
 
 /**
  * Espera a que el webhook marque la orden PAID en la DB.
- * Solo se vacía el carrito cuando la orden figura como PAID.
  */
 async function waitForOrderPaid(
   orderId: string,
@@ -59,12 +59,12 @@ async function waitForOrderPaid(
 
 /**
  * Crea el PaymentIntent y confirma la tarjeta con Stripe.
- * El carrito solo se vacía cuando la orden queda PAID en la base de datos.
+ * Informa al componente padre cuando la orden queda PAID.
  */
-export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
+export function PlaceOrderButton({ shippingReady, onSuccess }: PlaceOrderButtonProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const { items, clearCart } = useCart();
+  const { items } = useCart();
   const { cardComplete } = useCardElementState();
   const [status, setStatus] = useState<PayStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -126,8 +126,7 @@ export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
             const result = await waitForOrderPaid(orderId);
 
             if (result === "PAID") {
-              setStatus("succeeded");
-              clearCart();
+              onSuccess();
             } else if (result === "CANCELLED") {
               setStatus("error");
               setErrorMessage("El pago no pudo completarse. Revisa el estado de tu pedido.");
@@ -169,17 +168,6 @@ export function PlaceOrderButton({ shippingReady }: PlaceOrderButtonProps) {
       },
     );
   };
-
-  if (status === "succeeded") {
-    return (
-      <p
-        role="status"
-        className="py-4 text-center text-sm font-semibold uppercase tracking-widest text-foreground"
-      >
-        ¡Pago exitoso! Gracias por tu compra.
-      </p>
-    );
-  }
 
   return (
     <div>
