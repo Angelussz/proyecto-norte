@@ -1,7 +1,28 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import Link from "next/link";
 import Image from "next/image";
+import {
+  updateProfileApi,
+  deleteAccountApi,
+  uploadAvatarApi,
+  deleteAvatarApi,
+  revokeSessionApi,
+  revokeOtherSessionsApi,
+  changePasswordApi,
+  changeEmailApi,
+  updateNotificationPreferencesApi,
+} from "@/features/auth/services/account-client.service";
+import {
+  useAccountSecurity,
+  ACCOUNT_SECURITY_QUERY_KEY,
+} from "@/features/auth/hooks/useAccountSecurity";
+import {
+  useNotificationPreferences,
+  NOTIFICATION_PREFS_QUERY_KEY,
+} from "@/features/auth/hooks/useNotificationPreferences";
+import { PASSWORD_RULES, validateNewPasswordStrength } from "@/features/auth/lib/password-rules";
 import {
   User,
   Lock,
@@ -32,6 +53,11 @@ import {
   Circle,
   Laptop,
   HelpCircle,
+  Package,
+  Tag,
+  Newspaper,
+  ShoppingBag,
+  ShieldAlert,
 } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useRouter } from "next/navigation";
@@ -55,6 +81,37 @@ function getInitials(name: string | null | undefined): string {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+}
+
+function formatRelativeSessionTime(isoDate: string, isCurrent: boolean): string {
+  if (isCurrent) return "Activo ahora mismo";
+  const diffMs = Date.now() - new Date(isoDate).getTime();
+  if (!Number.isFinite(diffMs) || diffMs < 60_000) return "Hace instantes";
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return `Hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} ${days === 1 ? "día" : "días"}`;
+}
+
+function formatActivityTimestamp(isoDate: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  const isSameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  if (isSameDay) {
+    return `Hoy, ${date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+  }
+  return date.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function Toast({ msg, visible }: { msg: string; visible: boolean }) {
@@ -124,26 +181,64 @@ function SidebarItem({
 function SectionPerfil({
   user,
 }: {
-  user: { name: string; email: string; picture?: string; phone?: string };
+  user: { name: string; last_name?: string; email: string; picture?: string; phone?: string };
 }) {
-  const [firstName, setFirstName] = useState(user.name.split(" ")[0] ?? "");
-  const [lastName, setLastName] = useState(user.name.split(" ").slice(1).join(" ") ?? "");
+  const [firstName, setFirstName] = useState(user.name ?? "");
+  const [lastName, setLastName] = useState(user.last_name ?? "");
   const [phone, setPhone] = useState(user.phone ?? "");
   const [isPending, startTransition] = useTransition();
   const [toastVisible, setToastVisible] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-  const initials = getInitials(user.name);
+  const queryClient = useQueryClient();
+
+  const hasChanges =
+    firstName.trim() !== (user.name ?? "").trim() ||
+    lastName.trim() !== (user.last_name ?? "").trim() ||
+    phone.trim() !== (user.phone ?? "").trim();
+
+  function handleCancel() {
+    setFirstName(user.name ?? "");
+    setLastName(user.last_name ?? "");
+    setPhone(user.phone ?? "");
+    setFeedback(null);
+  }
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!firstName.trim()) return;
+    if (!hasChanges) return;
+    const trimmedName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const trimmedPhone = phone.trim();
+    if (trimmedName.length < 2) {
+      setFeedback({ type: "error", msg: "El nombre debe tener al menos 2 caracteres." });
+      return;
+    }
+    if (trimmedLastName.length < 2) {
+      setFeedback({ type: "error", msg: "El apellido debe tener al menos 2 caracteres." });
+      return;
+    }
+    setFeedback(null);
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 700));
-      setFeedback({ type: "success", msg: "Perfil actualizado correctamente." });
-      setToastVisible(true);
-      setTimeout(() => {
-        setToastVisible(false);
-        setFeedback(null);
-      }, 3200);
+      try {
+        await updateProfileApi({
+          name: trimmedName,
+          lastName: trimmedLastName,
+          phone: trimmedPhone,
+        });
+        setFirstName(trimmedName);
+        setLastName(trimmedLastName);
+        setPhone(trimmedPhone);
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+        setFeedback({ type: "success", msg: "Perfil actualizado correctamente." });
+        setToastVisible(true);
+        setTimeout(() => {
+          setToastVisible(false);
+          setFeedback(null);
+        }, 3200);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al actualizar el perfil.";
+        setFeedback({ type: "error", msg });
+      }
     });
   }
   return (
@@ -151,44 +246,22 @@ function SectionPerfil({
       <Toast msg="Cambios de perfil guardados con éxito" visible={toastVisible} />
       <div className="flex flex-col w-full">
         <div className="relative w-full pb-8 mb-8 border-b border-[var(--color-outline-variant)]/30">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 mb-2">
-                <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
-                <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)]">
-                  Configuración de Cuenta
-                </span>
-              </div>
-              <h2
-                className="text-5xl md:text-6xl tracking-wide uppercase text-[var(--color-on-surface)] leading-none"
-                style={{ fontFamily: "var(--font-bebas), sans-serif" }}
-              >
-                PERFIL PÚBLICO
-              </h2>
-              <p className="mt-2 text-sm text-[var(--color-on-surface-variant)] max-w-xl">
-                Añade y gestiona tu información personal en el ecosistema NORTE.
-              </p>
+          <div>
+            <div className="inline-flex items-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
+              <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)]">
+                Configuración de Cuenta
+              </span>
             </div>
-            <div className="flex items-center gap-4 p-3 bg-[var(--color-surface-container-low)] shadow-sm">
-              <div
-                className="relative w-14 h-14 rounded-full bg-[var(--color-secondary)] text-[var(--color-on-secondary)] flex items-center justify-center text-2xl shadow-inner ring-2 ring-[var(--color-primary)]/20"
-                style={{ fontFamily: "var(--font-bebas), sans-serif" }}
-              >
-                {initials}
-                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[var(--color-primary)] rounded-full ring-2 ring-[var(--color-surface)]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-semibold text-sm text-[var(--color-on-surface)]">
-                  {user.name}
-                </span>
-                <span className="text-xs text-[var(--color-on-surface-variant)]">
-                  Miembro NORTE · Activo
-                </span>
-                <span className="text-[10px] uppercase font-label tracking-wider text-[var(--color-primary)] mt-0.5">
-                  Perfil activo
-                </span>
-              </div>
-            </div>
+            <h2
+              className="text-5xl md:text-6xl tracking-wide uppercase text-[var(--color-on-surface)] leading-none"
+              style={{ fontFamily: "var(--font-bebas), sans-serif" }}
+            >
+              PERFIL PÚBLICO
+            </h2>
+            <p className="mt-2 text-sm text-[var(--color-on-surface-variant)] max-w-xl">
+              Gestiona tus datos personales para tus compras y envíos en NORTE.
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -269,15 +342,17 @@ function SectionPerfil({
                 <div className="pt-8 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)]/30 mt-8">
                   <button
                     type="button"
-                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors"
+                    onClick={handleCancel}
+                    disabled={isPending || (!hasChanges && !feedback)}
+                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     CANCELAR
                   </button>
                   <button
                     id="btn-save-profile"
                     type="submit"
-                    disabled={isPending}
-                    className="w-full sm:w-auto px-10 py-3.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)] font-label font-semibold uppercase tracking-[0.18em] text-xs shadow-md transition-all flex items-center justify-center gap-2 group active:scale-[0.98] disabled:opacity-50"
+                    disabled={isPending || !hasChanges}
+                    className="w-full sm:w-auto px-10 py-3.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)] font-label font-semibold uppercase tracking-[0.18em] text-xs shadow-md transition-all flex items-center justify-center gap-2 group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isPending ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -293,16 +368,16 @@ function SectionPerfil({
           <div className="lg:col-span-4 flex flex-col space-y-6">
             <div className="bg-[var(--color-surface-container-low)] p-5 shadow-sm space-y-3">
               <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)] block">
-                Nota editorial
+                Datos de tu cuenta
               </span>
               <p className="text-xs text-[var(--color-on-surface-variant)] leading-relaxed">
-                Tu nombre y título son visibles en publicaciones, créditos y correspondencia con la
-                firma NORTE.
+                Tu nombre, apellido y teléfono se utilizan exclusivamente para gestionar tus
+                compras, coordinación de envíos y atención al cliente en la tienda NORTE.
               </p>
               <div className="flex items-center gap-2 pt-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]" />
                 <span className="text-[11px] font-label uppercase tracking-widest text-[var(--color-secondary)]">
-                  Visible en tu perfil público
+                  Uso exclusivo para pedidos y envíos
                 </span>
               </div>
             </div>
@@ -314,12 +389,20 @@ function SectionPerfil({
 }
 
 function SectionFotografia({ user }: { user: { name: string; picture?: string } }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(user.picture ?? null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("Examinar en tu equipo");
   const [fileStatus, setFileStatus] = useState("Ningún archivo seleccionado");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+
+  const previewUrl = selectedFile ? localPreview : (user.picture ?? null);
+
   function showToast(msg: string) {
     setToastMsg(msg);
     setToastVisible(true);
@@ -328,30 +411,88 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFeedback(null);
+    setConfirmDelete(false);
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setFeedback({ type: "error", msg: "Formato no soportado. Usa JPG, PNG o WebP." });
+      e.target.value = "";
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo supera el límite de 5 MB.");
+      setFeedback({ type: "error", msg: "El archivo supera el límite de 5 MB." });
       e.target.value = "";
       return;
     }
     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    setSelectedFile(file);
     setFileName(file.name);
     setFileStatus(`${sizeMB} MB • Listo para guardar`);
     const reader = new FileReader();
     reader.onload = (evt) => {
-      if (evt.target?.result) setPreviewUrl(evt.target.result as string);
+      if (evt.target?.result) setLocalPreview(evt.target.result as string);
     };
     reader.readAsDataURL(file);
   }
   function handleSave() {
-    showToast("Fotografía guardada con éxito en tu ficha editorial.");
+    if (!selectedFile) {
+      setFeedback({ type: "error", msg: "Selecciona primero una nueva imagen para guardar." });
+      return;
+    }
+    setFeedback(null);
+    setConfirmDelete(false);
+    startTransition(async () => {
+      try {
+        await uploadAvatarApi(selectedFile);
+        setSelectedFile(null);
+        setLocalPreview(null);
+        setFileName("Examinar en tu equipo");
+        setFileStatus("Ningún archivo seleccionado");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+        setFeedback({ type: "success", msg: "Fotografía actualizada correctamente." });
+        showToast("Fotografía guardada con éxito en tu cuenta.");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al guardar la fotografía.";
+        setFeedback({ type: "error", msg });
+      }
+    });
   }
   function handleDelete() {
-    if (!confirm("¿Deseas retirar tu fotografía de perfil actual?")) return;
-    setPreviewUrl(null);
-    setFileName("Examinar en tu equipo");
-    setFileStatus("Ningún archivo seleccionado");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    showToast("Fotografía retirada. Se restauró la imagen de archivo.");
+    if (!user.picture && !selectedFile) return;
+    if (!user.picture && selectedFile) {
+      setSelectedFile(null);
+      setLocalPreview(null);
+      setFileName("Examinar en tu equipo");
+      setFileStatus("Ningún archivo seleccionado");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setFeedback(null);
+      return;
+    }
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setFeedback(null);
+      return;
+    }
+    setConfirmDelete(false);
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        await deleteAvatarApi();
+        setSelectedFile(null);
+        setLocalPreview(null);
+        setFileName("Examinar en tu equipo");
+        setFileStatus("Ningún archivo seleccionado");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+        setFeedback({ type: "success", msg: "Fotografía eliminada correctamente." });
+        showToast("Fotografía retirada. Se restauró tu avatar con iniciales.");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al eliminar la fotografía.";
+        setFeedback({ type: "error", msg });
+      }
+    });
   }
   const initials = getInitials(user.name);
   return (
@@ -366,7 +507,7 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
           </div>
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-[var(--color-surface-container-high)] text-[11px] font-label tracking-widest uppercase text-[var(--color-secondary)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]" />
-            <span>Perfil Público Verificado</span>
+            <span>Cuenta Verificada</span>
           </div>
         </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-10">
@@ -381,20 +522,8 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
               FOTOGRAFÍA
             </h2>
             <p className="text-sm text-[var(--color-on-surface-variant)] mt-3 max-w-xl">
-              Añade o actualiza la fotografía de tu perfil personal. Tu retrato será visible en
-              publicaciones y créditos editoriales de la firma.
+              Añade o actualiza la foto de perfil asociada a tu cuenta en la tienda NORTE.
             </p>
-          </div>
-          <div className="hidden lg:block text-right">
-            <span className="text-[11px] font-label tracking-[0.2em] uppercase text-[var(--color-outline)] block">
-              Referencia de Archivo
-            </span>
-            <span
-              className="text-2xl tracking-wider text-[var(--color-on-surface)]"
-              style={{ fontFamily: "var(--font-bebas), sans-serif" }}
-            >
-              NRT-PORTRAIT-2025
-            </span>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -414,6 +543,9 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                         src={previewUrl}
                         alt={user.name}
                         fill
+                        unoptimized={
+                          previewUrl.startsWith("data:") || previewUrl.startsWith("/uploads/")
+                        }
                         className="object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -426,7 +558,7 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                           {initials}
                         </span>
                         <span className="text-[11px] font-label uppercase tracking-widest text-[var(--color-on-surface-variant)] mt-2">
-                          Retrato Actual
+                          Sin fotografía
                         </span>
                       </div>
                     )}
@@ -454,13 +586,12 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   AÑADIR O CAMBIAR IMAGEN
                 </h3>
                 <p className="text-xs text-[var(--color-on-surface-variant)] mt-2 leading-relaxed">
-                  Selecciona un archivo fotográfico reciente desde tu estación de trabajo o
-                  dispositivo móvil.
+                  Selecciona una imagen desde tu computadora o dispositivo móvil para tu perfil.
                 </p>
               </div>
               <div
                 className="bg-[var(--color-surface-container)] p-6 text-center cursor-pointer hover:bg-[var(--color-surface-container-high)] transition-colors group"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => !isPending && fileInputRef.current?.click()}
               >
                 <input
                   ref={fileInputRef}
@@ -468,13 +599,14 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   accept="image/png, image/jpeg, image/webp"
                   className="hidden"
                   onChange={handleFileChange}
+                  disabled={isPending}
                 />
                 <div className="flex flex-col items-center justify-center py-4">
                   <div className="w-12 h-12 bg-[var(--color-surface-container-highest)] text-[var(--color-primary)] flex items-center justify-center rounded-full mb-3 group-hover:scale-110 transition-transform">
                     <Upload className="size-6" strokeWidth={1.8} />
                   </div>
                   <p
-                    className="text-xl uppercase tracking-wider text-[var(--color-on-surface)]"
+                    className="text-xl uppercase tracking-wider text-[var(--color-on-surface)] truncate max-w-full"
                     style={{ fontFamily: "var(--font-bebas), sans-serif" }}
                   >
                     {fileName}
@@ -491,13 +623,13 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   {
                     icon: Shield,
                     label: "Formatos:",
-                    desc: "JPG, PNG o WebP de alta fidelidad tonal.",
+                    desc: "JPG, PNG o WebP optimizados para web.",
                   },
                   { icon: BadgeCheck, label: "Tamaño máximo:", desc: "5 MB por archivo." },
                   {
                     icon: Camera,
-                    label: "Recorte:",
-                    desc: "Se guarda un respaldo sin comprimir para publicaciones físicas.",
+                    label: "Almacenamiento:",
+                    desc: "Alojada de forma segura en la nube para carga rápida en tu cuenta.",
                   },
                 ].map(({ icon: Ic, label, desc }) => (
                   <div key={label} className="flex items-start gap-3">
@@ -514,23 +646,52 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
                   </div>
                 ))}
               </div>
+              {feedback && (
+                <div className="mt-4">
+                  <FeedbackMsg type={feedback.type} msg={feedback.msg} />
+                </div>
+              )}
               <div className="mt-8 pt-6 flex flex-col gap-3">
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="w-full py-4 px-6 bg-[var(--color-primary)] text-[var(--color-on-primary)] font-label text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[var(--color-primary-container)] transition-colors shadow-sm flex items-center justify-center gap-2"
+                  disabled={isPending || !selectedFile}
+                  className="w-full py-4 px-6 bg-[var(--color-primary)] text-[var(--color-on-primary)] font-label text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[var(--color-primary-container)] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  <CheckCircle2 className="size-4" strokeWidth={2} />
+                  {isPending && selectedFile ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="size-4" strokeWidth={2} />
+                  )}
                   <span>GUARDAR FOTOGRAFÍA</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="w-full py-3 px-6 text-[var(--color-on-surface-variant)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-container)]/40 text-xs font-label uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="size-4" strokeWidth={1.8} />
-                  <span>ELIMINAR FOTO ACTUAL</span>
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isPending || (!user.picture && !selectedFile)}
+                    className="w-full py-3 px-6 text-[var(--color-on-surface-variant)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-container)]/40 text-xs font-label uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isPending && !selectedFile ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="size-4" strokeWidth={1.8} />
+                    )}
+                    <span>
+                      {confirmDelete ? "CONFIRMAR ELIMINACIÓN DE FOTO" : "ELIMINAR FOTO ACTUAL"}
+                    </span>
+                  </button>
+                  {confirmDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      disabled={isPending}
+                      className="w-full py-2 text-[11px] font-label uppercase tracking-widest text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] transition-colors cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -542,15 +703,22 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
 
 function EmailChangeModal({
   currentEmail,
+  hasPassword,
   onClose,
+  onUpdated,
 }: {
   currentEmail: string;
+  hasPassword?: boolean;
   onClose: () => void;
+  onUpdated: (msg: string) => void;
 }) {
   const [newEmail, setNewEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -563,13 +731,46 @@ function EmailChangeModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!newEmail.trim() || newEmail === currentEmail) return;
-    startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 800));
+    setFeedback(null);
+
+    const trimmedEmail = newEmail.trim().toLowerCase();
+    if (!trimmedEmail) {
+      setFeedback({ type: "error", msg: "Introduce el nuevo correo electrónico." });
+      return;
+    }
+    if (trimmedEmail === currentEmail.toLowerCase()) {
       setFeedback({
-        type: "success",
-        msg: "Se envió un código de verificación a la nueva dirección.",
+        type: "error",
+        msg: "El nuevo correo electrónico debe ser diferente al actual.",
       });
+      return;
+    }
+    if (!password) {
+      setFeedback({ type: "error", msg: "Debes confirmar tu contraseña actual." });
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const res = await changeEmailApi({ newEmail: trimmedEmail, password });
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+
+        const toastMessage =
+          res.revokedOtherSessions > 0
+            ? `Correo actualizado y ${res.revokedOtherSessions} ${
+                res.revokedOtherSessions === 1
+                  ? "sesión remota cerrada"
+                  : "sesiones remotas cerradas"
+              }.`
+            : "Correo electrónico actualizado correctamente.";
+        onUpdated(toastMessage);
+        onClose();
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Error al actualizar el correo electrónico.";
+        setFeedback({ type: "error", msg });
+      }
     });
   }
 
@@ -608,91 +809,149 @@ function EmailChangeModal({
           CAMBIA TU CORREO ELECTRÓNICO
         </h3>
 
-        {/* Modal Body */}
-        <p className="text-sm font-body text-on-surface-variant leading-relaxed mb-6">
-          Introduce la nueva dirección de correo electrónico que quieres usar. Te enviaremos un
-          código de confirmación.
-        </p>
-
-        {/* Form Inputs */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Correo actual */}
-          <div className="flex flex-col space-y-2">
-            <label className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface-variant">
-              Correo actual
-            </label>
-            <div className="relative flex items-center bg-surface-container-low px-4 py-3 text-sm font-mono text-on-surface border border-outline-variant/30">
-              <Mail className="size-4 text-on-surface-variant mr-3 shrink-0" strokeWidth={1.8} />
-              <span className="truncate">{currentEmail}</span>
+        {hasPassword === false ? (
+          <div className="space-y-6 pt-2">
+            <div className="bg-surface-container-high p-4 flex items-start gap-3">
+              <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+              <p className="text-xs font-body text-on-surface-variant leading-relaxed">
+                Tu cuenta inicia sesión únicamente con Google (
+                <span className="font-mono">{currentEmail}</span>). Para proteger tu acceso, el
+                correo electrónico se gestiona directamente desde tu cuenta de Google.
+              </p>
             </div>
-          </div>
-
-          {/* Nuevo correo electrónico */}
-          <div className="flex flex-col space-y-2">
-            <label
-              htmlFor="new-email-input"
-              className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface"
-            >
-              Nuevo correo electrónico
-            </label>
-            <div className="relative flex items-center bg-white border border-outline-variant/60 focus-within:border-primary transition-colors">
-              <MailPlus
-                className="size-5 text-on-surface-variant ml-3.5 mr-2 shrink-0"
-                strokeWidth={1.8}
-              />
-              <input
-                id="new-email-input"
-                ref={inputRef}
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                disabled={isPending || feedback?.type === "success"}
-                required
-                placeholder="nombre@ejemplo.com"
-                className="w-full bg-transparent pr-4 py-3.5 text-sm font-body text-on-surface placeholder:text-outline/70 focus:outline-none disabled:opacity-50"
-              />
-            </div>
-          </div>
-
-          {/* Warning Note */}
-          <div className="bg-surface-container-high p-4 flex items-start gap-3">
-            <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
-            <p className="text-xs font-body text-on-surface-variant leading-normal">
-              Por seguridad, al cambiar tu correo electrónico se solicitará verificar tu identidad
-              en ambos buzones de correo.
-            </p>
-          </div>
-
-          {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={isPending || !newEmail.trim() || feedback?.type === "success"}
-              className="w-full py-4 px-6 bg-primary text-on-primary hover:bg-primary-container transition-colors text-xs font-label uppercase tracking-[0.2em] font-bold text-center cursor-pointer shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
-            >
-              {isPending && <Loader2 className="size-4 animate-spin" />}
-              <span>VERIFICAR NUEVO CORREO</span>
-            </button>
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto py-4 px-6 bg-transparent text-on-surface hover:bg-surface-container transition-colors text-xs font-label uppercase tracking-[0.15em] font-semibold text-center cursor-pointer"
+              className="w-full py-4 px-6 bg-surface-container-high hover:bg-surface-container-highest text-on-surface transition-colors text-xs font-label uppercase tracking-[0.15em] font-semibold text-center cursor-pointer"
             >
-              Cancelar
+              Entendido
             </button>
           </div>
-        </form>
+        ) : (
+          <>
+            {/* Modal Body */}
+            <p className="text-sm font-body text-on-surface-variant leading-relaxed mb-6">
+              Introduce la nueva dirección de correo electrónico que quieres usar y confirma tu
+              contraseña actual para aplicar el cambio.
+            </p>
+
+            {/* Form Inputs */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Correo actual */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface-variant">
+                  Correo actual
+                </label>
+                <div className="relative flex items-center bg-surface-container-low px-4 py-3 text-sm font-mono text-on-surface border border-outline-variant/30">
+                  <Mail
+                    className="size-4 text-on-surface-variant mr-3 shrink-0"
+                    strokeWidth={1.8}
+                  />
+                  <span className="truncate">{currentEmail}</span>
+                </div>
+              </div>
+
+              {/* Nuevo correo electrónico */}
+              <div className="flex flex-col space-y-2">
+                <label
+                  htmlFor="new-email-input"
+                  className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface"
+                >
+                  Nuevo correo electrónico
+                </label>
+                <div className="relative flex items-center bg-white border border-outline-variant/60 focus-within:border-primary transition-colors">
+                  <MailPlus
+                    className="size-5 text-on-surface-variant ml-3.5 mr-2 shrink-0"
+                    strokeWidth={1.8}
+                  />
+                  <input
+                    id="new-email-input"
+                    ref={inputRef}
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    disabled={isPending}
+                    required
+                    placeholder="nombre@ejemplo.com"
+                    className="w-full bg-transparent pr-4 py-3.5 text-sm font-body text-on-surface placeholder:text-outline/70 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Confirmar contraseña actual */}
+              <div className="flex flex-col space-y-2">
+                <label
+                  htmlFor="email-confirm-password"
+                  className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface"
+                >
+                  Contraseña actual
+                </label>
+                <div className="relative flex items-center bg-white border border-outline-variant/60 focus-within:border-primary transition-colors">
+                  <input
+                    id="email-confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isPending}
+                    required
+                    placeholder="Introduce tu contraseña actual"
+                    className="w-full bg-transparent px-4 py-3.5 text-sm font-body text-on-surface placeholder:text-outline/70 focus:outline-none disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Warning Note */}
+              <div className="bg-surface-container-high p-4 flex items-start gap-3">
+                <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+                <p className="text-xs font-body text-on-surface-variant leading-normal">
+                  Al actualizar tu correo electrónico, cerraremos tus sesiones activas en otros
+                  dispositivos para proteger tu cuenta.
+                </p>
+              </div>
+
+              {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isPending || !newEmail.trim() || !password}
+                  className="w-full py-4 px-6 bg-primary text-on-primary hover:bg-primary-container transition-colors text-xs font-label uppercase tracking-[0.2em] font-bold text-center cursor-pointer shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
+                  <span>ACTUALIZAR CORREO</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full sm:w-auto py-4 px-6 bg-transparent text-on-surface hover:bg-surface-container transition-colors text-xs font-label uppercase tracking-[0.15em] font-semibold text-center cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function SectionSeguridad({ user }: { user: { email: string } }) {
+function SectionSeguridad({ user }: { user: { email: string; has_password?: boolean } }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -700,34 +959,117 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const [isRevokingAll, setIsRevokingAll] = useState(false);
+  const [securityActionError, setSecurityActionError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const {
+    data: securityData,
+    isLoading: securityLoading,
+    isError: securityError,
+    refetch: refetchSecurity,
+  } = useAccountSecurity();
+
   function showToast(msg: string) {
     setToastMsg(msg);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 3500);
   }
+  async function handleRevokeSession(sessionId: string) {
+    setSecurityActionError(null);
+    setRevokingSessionId(sessionId);
+    try {
+      await revokeSessionApi(sessionId);
+      await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+      showToast("Sesión remota cerrada correctamente.");
+    } catch (err) {
+      setSecurityActionError(err instanceof Error ? err.message : "No se pudo cerrar la sesión.");
+    } finally {
+      setRevokingSessionId(null);
+    }
+  }
+  async function handleRevokeOtherSessions() {
+    setSecurityActionError(null);
+    setIsRevokingAll(true);
+    try {
+      const { revokedCount } = await revokeOtherSessionsApi();
+      await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+      showToast(
+        revokedCount === 1
+          ? "Se cerró 1 sesión remota."
+          : `Se cerraron ${revokedCount} sesiones remotas.`,
+      );
+    } catch (err) {
+      setSecurityActionError(
+        err instanceof Error ? err.message : "No se pudieron cerrar las demás sesiones.",
+      );
+    } finally {
+      setIsRevokingAll(false);
+    }
+  }
   function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
-    if (newPassword.length < 8) {
-      setFeedback({ type: "error", msg: "La contraseña debe tener al menos 8 caracteres." });
+    setFeedback(null);
+
+    if (!currentPassword) {
+      setFeedback({ type: "error", msg: "Debes introducir tu contraseña actual." });
+      return;
+    }
+    const strengthError = validateNewPasswordStrength(newPassword);
+    if (strengthError) {
+      setFeedback({ type: "error", msg: strengthError });
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setFeedback({
+        type: "error",
+        msg: "La nueva contraseña debe ser diferente a la actual.",
+      });
       return;
     }
     if (newPassword !== confirmPassword) {
       setFeedback({ type: "error", msg: "Las contraseñas no coinciden." });
       return;
     }
+
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 800));
-      setFeedback({ type: "success", msg: "Contraseña actualizada correctamente." });
-      setNewPassword("");
-      setConfirmPassword("");
-      showToast("Tu contraseña ha sido actualizada con éxito.");
-      setTimeout(() => setFeedback(null), 3500);
+      try {
+        const res = await changePasswordApi({ currentPassword, newPassword });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+
+        const successMsg =
+          res.revokedOtherSessions > 0
+            ? `Contraseña actualizada y ${res.revokedOtherSessions} ${
+                res.revokedOtherSessions === 1
+                  ? "sesión remota cerrada"
+                  : "sesiones remotas cerradas"
+              }.`
+            : "Contraseña actualizada correctamente.";
+
+        setFeedback({ type: "success", msg: successMsg });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowCurrent(false);
+        setShowNew(false);
+        setShowConfirm(false);
+        showToast("Tu contraseña ha sido actualizada con éxito.");
+        setTimeout(() => setFeedback(null), 4000);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al cambiar la contraseña.";
+        setFeedback({ type: "error", msg });
+      }
     });
   }
   return (
     <>
       {showEmailModal && (
-        <EmailChangeModal currentEmail={user.email} onClose={() => setShowEmailModal(false)} />
+        <EmailChangeModal
+          currentEmail={user.email}
+          hasPassword={user.has_password}
+          onClose={() => setShowEmailModal(false)}
+          onUpdated={(msg) => showToast(msg)}
+        />
       )}
       <Toast msg={toastMsg} visible={toastVisible} />
       <div className="flex flex-col w-full max-w-[1080px]">
@@ -807,115 +1149,135 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                   Cambiar Contraseña
                 </h2>
                 <p className="text-xs font-body text-on-surface-variant">
-                  Se recomienda utilizar una clave única de al menos 8 caracteres con combinación de
-                  números y signos.
+                  Utiliza una clave única de al menos 8 caracteres que combine mayúsculas, números y
+                  signos especiales.
                 </p>
               </div>
-              <form id="passwordForm" onSubmit={handleChangePassword} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label
-                    className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
-                    htmlFor="newPassword"
-                  >
-                    Nueva Contraseña
-                  </label>
-                  <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
-                    <input
-                      className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
-                      id="newPassword"
-                      name="newPassword"
-                      placeholder="Introducir nueva contraseña"
-                      type={showNew ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      disabled={isPending}
-                      required
-                    />
-                    <button
-                      aria-label="Mostrar u ocultar contraseña"
-                      className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
-                      onClick={() => setShowNew((v) => !v)}
-                      type="button"
+              {user.has_password === false ? (
+                <div className="bg-surface-container p-4 border border-outline-variant/30 flex items-start gap-3">
+                  <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+                  <p className="text-xs font-body text-on-surface-variant leading-relaxed">
+                    Esta cuenta utiliza inicio de sesión con Google y no tiene una contraseña local
+                    configurada. Tu autenticación está protegida directamente por Google.
+                  </p>
+                </div>
+              ) : (
+                <form id="passwordForm" onSubmit={handleChangePassword} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <label
+                      className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
+                      htmlFor="currentPassword"
                     >
-                      {showNew ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      Contraseña Actual
+                    </label>
+                    <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
+                      <input
+                        className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
+                        id="currentPassword"
+                        name="currentPassword"
+                        autoComplete="current-password"
+                        placeholder="Introducir contraseña actual"
+                        type={showCurrent ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        disabled={isPending}
+                        required
+                      />
+                      <button
+                        aria-label="Mostrar u ocultar contraseña actual"
+                        className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                        onClick={() => setShowCurrent((v) => !v)}
+                        type="button"
+                      >
+                        {showCurrent ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
+                      htmlFor="newPassword"
+                    >
+                      Nueva Contraseña
+                    </label>
+                    <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
+                      <input
+                        className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
+                        id="newPassword"
+                        name="newPassword"
+                        autoComplete="new-password"
+                        placeholder="Introducir nueva contraseña"
+                        type={showNew ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        disabled={isPending}
+                        required
+                      />
+                      <button
+                        aria-label="Mostrar u ocultar contraseña"
+                        className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                        onClick={() => setShowNew((v) => !v)}
+                        type="button"
+                      >
+                        {showNew ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
+                      htmlFor="confirmPassword"
+                    >
+                      Confirmar Nueva Contraseña
+                    </label>
+                    <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
+                      <input
+                        className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        autoComplete="new-password"
+                        placeholder="Introducir nueva contraseña de nuevo"
+                        type={showConfirm ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        disabled={isPending}
+                        required
+                      />
+                      <button
+                        aria-label="Mostrar u ocultar confirmación de contraseña"
+                        className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                        onClick={() => setShowConfirm((v) => !v)}
+                        type="button"
+                      >
+                        {showConfirm ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-3 px-4 bg-surface-container border border-outline-variant/30 text-xs text-on-surface-variant font-mono">
+                    {PASSWORD_RULES.map((rule) => (
+                      <div key={rule.id} className="flex items-center gap-2">
+                        {rule.test(newPassword) ? (
+                          <CheckCircle2 className="size-4 text-secondary shrink-0" />
+                        ) : (
+                          <Circle className="size-4 text-outline shrink-0" />
+                        )}
+                        <span>{rule.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
+                  <div className="pt-2">
+                    <button
+                      className="px-8 py-3.5 bg-primary hover:bg-primary-container text-on-primary font-headline tracking-[0.12em] text-lg uppercase transition-all shadow-sm active:translate-y-px disabled:opacity-50 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                      type="submit"
+                      disabled={isPending || !currentPassword || !newPassword || !confirmPassword}
+                    >
+                      {isPending && <Loader2 className="size-5 animate-spin" />}
+                      Cambiar la Contraseña
                     </button>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label
-                    className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
-                    htmlFor="confirmPassword"
-                  >
-                    Confirmar Nueva Contraseña
-                  </label>
-                  <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
-                    <input
-                      className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      placeholder="Introducir nueva contraseña de nuevo"
-                      type={showConfirm ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={isPending}
-                      required
-                    />
-                    <button
-                      aria-label="Mostrar u ocultar confirmación de contraseña"
-                      className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
-                      onClick={() => setShowConfirm((v) => !v)}
-                      type="button"
-                    >
-                      {showConfirm ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-3 px-4 bg-surface-container border border-outline-variant/30 text-xs text-on-surface-variant font-mono">
-                  <div className="flex items-center gap-2">
-                    {newPassword.length >= 8 ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Mínimo 8 caracteres</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/[A-Z]/.test(newPassword) ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Al menos una letra mayúscula</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/[0-9]/.test(newPassword) ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Al menos un número decimal</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/[^A-Za-z0-9]/.test(newPassword) ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Un símbolo o signo especial (@, #, $)</span>
-                  </div>
-                </div>
-                {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
-                <div className="pt-2">
-                  <button
-                    className="px-8 py-3.5 bg-primary hover:bg-primary-container text-on-primary font-headline tracking-[0.12em] text-lg uppercase transition-all shadow-sm active:translate-y-px disabled:opacity-50 flex items-center gap-2"
-                    type="submit"
-                    disabled={isPending || !newPassword || !confirmPassword}
-                  >
-                    {isPending && <Loader2 className="size-5 animate-spin" />}
-                    Cambiar la Contraseña
-                  </button>
-                </div>
-              </form>
+                </form>
+              )}
             </section>
 
             {/* Section 3: Multifactor Authentication (2FA) */}
@@ -983,44 +1345,81 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                 </span>
                 <Laptop className="size-4.5 text-on-surface-variant" />
               </div>
-              {/* Session 1: Current */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-on-surface font-body">
-                    MacBook Pro · Chrome
-                  </span>
-                  <span className="text-[10px] font-mono uppercase bg-secondary/15 text-secondary px-2 py-0.5 font-bold">
-                    Esta sesión
-                  </span>
+
+              {securityLoading ? (
+                <div className="flex items-center gap-2 py-4 text-xs font-body text-on-surface-variant">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span>Cargando sesiones...</span>
                 </div>
-                <p className="text-[11px] text-on-surface-variant font-mono">
-                  Santiago, CL · IP: 186.105.***.***
-                </p>
-                <p className="text-[10px] text-outline font-mono">Activo ahora mismo</p>
-              </div>
-              {/* Session 2 */}
-              <div className="pt-3 border-t border-outline-variant/20 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-on-surface font-body">
-                    iPhone 14 · Safari Mobile
-                  </span>
+              ) : securityError ? (
+                <div className="space-y-3 py-2">
+                  <FeedbackMsg type="error" msg="No se pudieron cargar las sesiones activas." />
                   <button
                     type="button"
-                    className="text-[11px] text-error hover:underline uppercase tracking-wide font-mono font-medium"
+                    onClick={() => refetchSecurity()}
+                    className="text-xs font-label uppercase tracking-wider text-primary hover:underline font-semibold"
                   >
-                    Cerrar
+                    Reintentar
                   </button>
                 </div>
-                <p className="text-[11px] text-on-surface-variant font-mono">
-                  Valparaíso, CL · Hace 2 días
+              ) : !securityData || securityData.sessions.length === 0 ? (
+                <p className="text-xs font-body text-on-surface-variant">
+                  No hay sesiones registradas para esta cuenta.
                 </p>
-              </div>
-              <button
-                type="button"
-                className="w-full text-center py-2.5 text-xs font-label uppercase tracking-[0.15em] text-on-surface hover:bg-surface-container-high transition-colors font-medium border border-outline-variant/40"
-              >
-                Cerrar Todas las Demás Sesiones
-              </button>
+              ) : (
+                <>
+                  {securityData.sessions.map((session, idx) => (
+                    <div
+                      key={session.id}
+                      className={
+                        idx === 0
+                          ? "space-y-1"
+                          : "pt-3 border-t border-outline-variant/20 space-y-1"
+                      }
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-on-surface font-body">
+                          {session.deviceLabel}
+                        </span>
+                        {session.isCurrent ? (
+                          <span className="text-[10px] font-mono uppercase bg-secondary/15 text-secondary px-2 py-0.5 font-bold shrink-0">
+                            Esta sesión
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={revokingSessionId === session.id || isRevokingAll}
+                            onClick={() => handleRevokeSession(session.id)}
+                            className="text-[11px] text-error hover:underline uppercase tracking-wide font-mono font-medium disabled:opacity-50 cursor-pointer shrink-0"
+                          >
+                            {revokingSessionId === session.id ? "Cerrando..." : "Cerrar"}
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant font-mono">
+                        IP: {session.ipMasked}
+                      </p>
+                      <p className="text-[10px] text-outline font-mono">
+                        {formatRelativeSessionTime(session.lastActiveAt, session.isCurrent)}
+                      </p>
+                    </div>
+                  ))}
+                  {securityActionError && <FeedbackMsg type="error" msg={securityActionError} />}
+                  <button
+                    type="button"
+                    disabled={
+                      isRevokingAll ||
+                      revokingSessionId !== null ||
+                      securityData.sessions.filter((s) => !s.isCurrent).length === 0
+                    }
+                    onClick={handleRevokeOtherSessions}
+                    className="w-full text-center py-2.5 text-xs font-label uppercase tracking-[0.15em] text-on-surface hover:bg-surface-container-high transition-colors font-medium border border-outline-variant/40 disabled:opacity-45 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isRevokingAll && <Loader2 className="size-3.5 animate-spin" />}
+                    <span>Cerrar Todas las Demás Sesiones</span>
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Security Activity Log Micro-card */}
@@ -1031,41 +1430,38 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                 </span>
                 <span className="text-[10px] font-mono text-outline">HISTÓRICO</span>
               </div>
-              <div className="space-y-3 text-xs font-body">
-                <div className="flex gap-3 items-start">
-                  <span className="w-2 h-2 rounded-full bg-primary mt-1 shrink-0"></span>
-                  <div>
-                    <p className="text-on-surface font-medium">Inicio de sesión exitoso</p>
-                    <p className="text-[11px] font-mono text-on-surface-variant">
-                      Hoy, 10:42 AM · Chrome / macOS
-                    </p>
-                  </div>
+
+              {securityLoading ? (
+                <div className="flex items-center gap-2 py-3 text-xs font-body text-on-surface-variant">
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <span>Cargando actividad...</span>
                 </div>
-                <div className="flex gap-3 items-start">
-                  <span className="w-2 h-2 rounded-full bg-outline-variant mt-1 shrink-0"></span>
-                  <div>
-                    <p className="text-on-surface font-medium">Contraseña modificada</p>
-                    <p className="text-[11px] font-mono text-on-surface-variant">
-                      14 Enero 2025 · Portal Web
-                    </p>
-                  </div>
+              ) : securityError ? (
+                <FeedbackMsg type="error" msg="No se pudo cargar el registro de actividad." />
+              ) : !securityData || securityData.activities.length === 0 ? (
+                <p className="text-xs font-body text-on-surface-variant">
+                  Aún no hay actividad reciente registrada.
+                </p>
+              ) : (
+                <div className="space-y-3 text-xs font-body">
+                  {securityData.activities.map((item, idx) => (
+                    <div key={item.id} className="flex gap-3 items-start">
+                      <span
+                        className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                          idx === 0 ? "bg-primary" : "bg-outline-variant"
+                        }`}
+                      ></span>
+                      <div>
+                        <p className="text-on-surface font-medium">{item.title}</p>
+                        <p className="text-[11px] font-mono text-on-surface-variant">
+                          {formatActivityTimestamp(item.createdAt)}
+                          {item.metadata ? ` · ${item.metadata}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex gap-3 items-start">
-                  <span className="w-2 h-2 rounded-full bg-outline-variant mt-1 shrink-0"></span>
-                  <div>
-                    <p className="text-on-surface font-medium">Nueva vinculación de correo</p>
-                    <p className="text-[11px] font-mono text-on-surface-variant">
-                      02 Noviembre 2024 · Verificado
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <a
-                className="block text-right text-[11px] font-label uppercase tracking-wider text-primary hover:underline font-semibold"
-                href="#"
-              >
-                Descargar informe de auditoría →
-              </a>
+              )}
             </div>
 
             {/* Support Advisory Notice */}
@@ -1077,11 +1473,15 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                     ¿Detectas actividad no autorizada?
                   </p>
                   <p className="text-[11px] text-on-secondary-fixed-variant leading-relaxed">
-                    Contacta de inmediato a nuestro equipo de seguridad editorial en{" "}
-                    <a className="underline font-semibold" href="mailto:seguridad@norte-studio.cl">
-                      seguridad@norte-studio.cl
+                    Cierra las sesiones remotas de inmediato y contacta a nuestro equipo en{" "}
+                    <a className="underline font-semibold" href="mailto:info@norte-studio.com">
+                      info@norte-studio.com
                     </a>{" "}
-                    o bloquea temporalmente tus accesos.
+                    o desde{" "}
+                    <Link className="underline font-semibold" href="/contacto">
+                      Contacto
+                    </Link>
+                    .
                   </p>
                 </div>
               </div>
@@ -1093,7 +1493,15 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
   );
 }
 
-function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) => void }) {
+function SectionCerrarCuenta({
+  onNavigate,
+  user,
+}: {
+  onNavigate: (section: Section) => void;
+  user: { has_password?: boolean; role?: "ADMIN" | "CUSTOMER" };
+}) {
+  const isAdmin = user.role === "ADMIN";
+  const isGoogleOnly = user.has_password === false;
   const [reason, setReason] = useState("not_using");
   const [extraFeedback, setExtraFeedback] = useState("");
   const [password, setPassword] = useState("");
@@ -1102,30 +1510,54 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
   const [pwdError, setPwdError] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (!showModal) return;
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape" && !isPending) {
+        setShowModal(false);
+        setDeleteError(null);
+      }
+    }
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [showModal, isPending]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!password.trim()) {
-      setPwdError(true);
-      setTimeout(() => setPwdError(false), 1200);
-      return;
-    }
-    if (!consentChecked) {
-      setConsentError(true);
-      setTimeout(() => setConsentError(false), 1200);
-      return;
-    }
+    if (isAdmin) return;
+    // Usuarios con contraseña deben introducirla; Google-only no tienen contraseña
+    const missingPwd = !isGoogleOnly && !password;
+    const missingConsent = !consentChecked;
+    setPwdError(missingPwd);
+    setConsentError(missingConsent);
+    if (missingPwd || missingConsent) return;
+    setDeleteError(null);
     setShowModal(true);
   }
 
   function handleFinalDelete() {
+    setDeleteError(null);
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 1400));
-      queryClient.invalidateQueries({ queryKey: ["session"] });
-      router.push("/");
+      try {
+        await deleteAccountApi({
+          password,
+          reason,
+          feedback: extraFeedback.trim() || undefined,
+        });
+        // Actualizar caché de sesión a null y limpiar queries privadas antes de salir
+        queryClient.setQueryData(["session"], null);
+        queryClient.removeQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+        queryClient.removeQueries({ queryKey: NOTIFICATION_PREFS_QUERY_KEY });
+        router.replace("/");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al cerrar la cuenta.";
+        setDeleteError(msg);
+      }
     });
   }
 
@@ -1135,19 +1567,30 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
       {showModal && (
         <div
           id="confirmation-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-dialog-title"
           className="fixed inset-0 z-50 bg-on-background/70 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <div className="max-w-md w-full bg-surface p-8 shadow-2xl relative">
             <div className="w-12 h-12 bg-error-container text-error flex items-center justify-center mb-6">
               <HeartCrack className="size-8" strokeWidth={1.8} />
             </div>
-            <h3 className="text-3xl font-display uppercase tracking-wider text-on-surface mb-2">
+            <h3
+              id="confirm-dialog-title"
+              className="text-3xl font-display uppercase tracking-wider text-on-surface mb-2"
+            >
               ÚLTIMA CONFIRMACIÓN
             </h3>
             <p className="text-xs font-body text-on-surface-variant leading-relaxed mb-6">
               Estás a punto de borrar definitivamente tu identidad en NORTE. No habrá vuelta atrás
               ni posibilidad de restaurar tus colecciones guardadas. ¿Deseas proceder?
             </p>
+            {deleteError && (
+              <div className="mb-4">
+                <FeedbackMsg type="error" msg={deleteError} />
+              </div>
+            )}
             <div className="flex flex-col gap-3">
               <button
                 id="final-delete-btn"
@@ -1164,7 +1607,10 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
               <button
                 id="cancel-dialog-btn"
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setDeleteError(null);
+                }}
                 disabled={isPending}
                 className="w-full py-3 bg-surface-container hover:bg-surface-container-high text-on-surface font-label uppercase text-xs tracking-widest font-semibold transition-colors cursor-pointer"
               >
@@ -1240,45 +1686,19 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
               </div>
             </div>
 
-            {/* Account Impact Data Summary Strip */}
-            <div className="bg-surface-container p-6 md:p-7 shadow-sm">
-              <div className="flex items-center justify-between pb-4">
-                <span className="text-xs font-label uppercase tracking-[0.18em] text-on-surface-variant font-medium">
-                  Patrimonio en riesgo en esta cuenta
-                </span>
-                <span className="text-[11px] font-mono text-tertiary">ID: #NRT-89240</span>
+            {isAdmin && (
+              <div className="p-6 bg-surface-container border-l-4 border-primary">
+                <p className="text-sm font-body text-on-surface-variant">
+                  Las cuentas de administrador no pueden eliminarse desde este panel. Contacta al
+                  equipo técnico si necesitas gestionar esta cuenta.
+                </p>
               </div>
-              <div className="grid grid-cols-3 gap-4 pt-2 text-center">
-                <div className="bg-surface-container-low p-4">
-                  <div className="text-2xl md:text-3xl font-headline text-on-surface tracking-wider">
-                    04
-                  </div>
-                  <div className="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mt-1">
-                    Pedidos Históricos
-                  </div>
-                </div>
-                <div className="bg-surface-container-low p-4">
-                  <div className="text-2xl md:text-3xl font-headline text-primary tracking-wider">
-                    02
-                  </div>
-                  <div className="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mt-1">
-                    Piezas Reservadas
-                  </div>
-                </div>
-                <div className="bg-surface-container-low p-4">
-                  <div className="text-2xl md:text-3xl font-headline text-on-surface tracking-wider">
-                    850
-                  </div>
-                  <div className="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mt-1">
-                    Puntos de Archivo
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Interactive Form Container */}
             <form
               id="closure-form"
+              noValidate
               onSubmit={handleSubmit}
               className="space-y-8 bg-surface-container-low p-7 md:p-9 shadow-sm"
             >
@@ -1384,6 +1804,7 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                   <textarea
                     id="optional-feedback"
                     rows={2}
+                    maxLength={1000}
                     value={extraFeedback}
                     onChange={(e) => setExtraFeedback(e.target.value)}
                     placeholder="Escribe aquí cualquier observación sobre el servicio..."
@@ -1405,40 +1826,75 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                     Verificación de identidad
                   </label>
                   <span className="text-[11px] font-label text-error uppercase tracking-wider font-medium">
-                    Obligatorio
+                    {isGoogleOnly ? "Automática" : "Obligatorio"}
                   </span>
                 </div>
-                <div className="space-y-2">
-                  <span className="text-xs font-body text-on-surface-variant block">
-                    Para confirmar la orden de borrado, introduce tu contraseña actual.
-                  </span>
-                  <div className="relative">
-                    <input
-                      id="current-password"
-                      type={showPwd ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      placeholder="Introduce tu contraseña"
-                      className={`w-full bg-surface text-on-surface px-4 py-3.5 pr-11 text-sm font-body tracking-wider focus:outline-none focus:bg-surface-container-lowest transition-all ${
-                        pwdError ? "bg-error-container/30 ring-1 ring-error" : ""
-                      }`}
-                    />
-                    <button
-                      id="toggle-pwd-btn"
-                      type="button"
-                      aria-label="Mostrar contraseña"
-                      onClick={() => setShowPwd(!showPwd)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-on-surface transition-colors p-1"
+                {isGoogleOnly ? (
+                  <div className="flex items-start gap-3 p-4 bg-surface-container border-l-2 border-primary">
+                    <svg
+                      className="size-5 shrink-0 mt-0.5 text-primary"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
                     >
-                      {showPwd ? (
-                        <EyeOff className="size-5" id="pwd-icon" strokeWidth={1.8} />
-                      ) : (
-                        <Eye className="size-5" id="pwd-icon" strokeWidth={1.8} />
-                      )}
-                    </button>
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    <div className="space-y-1">
+                      <p className="text-sm font-body font-medium text-on-surface">
+                        Cuenta vinculada con Google
+                      </p>
+                      <p className="text-xs font-body text-on-surface-variant leading-relaxed">
+                        Tu identidad se verifica automáticamente a través de tu sesión de Google
+                        activa. No se requiere contraseña adicional.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <span className="text-xs font-body text-on-surface-variant block">
+                      Para confirmar la orden de borrado, introduce tu contraseña actual.
+                    </span>
+                    <div className="relative">
+                      <input
+                        id="current-password"
+                        type={showPwd ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (pwdError) setPwdError(false);
+                        }}
+                        required
+                        placeholder="Introduce tu contraseña"
+                        className={`w-full bg-surface text-on-surface px-4 py-3.5 pr-11 text-sm font-body tracking-wider focus:outline-none focus:bg-surface-container-lowest transition-all ${
+                          pwdError ? "bg-error-container/30 ring-1 ring-error" : ""
+                        }`}
+                      />
+                      <button
+                        id="toggle-pwd-btn"
+                        type="button"
+                        aria-label="Mostrar contraseña"
+                        onClick={() => setShowPwd(!showPwd)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-on-surface transition-colors p-1"
+                      >
+                        {showPwd ? (
+                          <EyeOff className="size-5" id="pwd-icon" strokeWidth={1.8} />
+                        ) : (
+                          <Eye className="size-5" id="pwd-icon" strokeWidth={1.8} />
+                        )}
+                      </button>
+                    </div>
+                    {pwdError && (
+                      <div className="mt-2">
+                        <FeedbackMsg
+                          type="error"
+                          msg="La contraseña es obligatoria para confirmar el cierre."
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Step 3: Explicit Final Checkbox */}
@@ -1452,7 +1908,10 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                     id="consent-check"
                     type="checkbox"
                     checked={consentChecked}
-                    onChange={(e) => setConsentChecked(e.target.checked)}
+                    onChange={(e) => {
+                      setConsentChecked(e.target.checked);
+                      if (consentError) setConsentError(false);
+                    }}
                     className="mt-0.5 w-4 h-4 accent-error text-error"
                   />
                   <span className="text-xs font-body text-on-surface-variant leading-relaxed">
@@ -1461,6 +1920,14 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                     no despachadas.
                   </span>
                 </label>
+                {consentError && (
+                  <div className="mt-2">
+                    <FeedbackMsg
+                      type="error"
+                      msg="Debes aceptar la confirmación de cierre para continuar."
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Step 4: Action Buttons Area */}
@@ -1468,7 +1935,7 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                 <button
                   id="delete-account-btn"
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || isAdmin}
                   className="flex-1 py-4 px-6 bg-error hover:bg-[#8f1212] text-on-error font-label uppercase text-xs tracking-[0.2em] font-semibold text-center transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="size-[18px]" strokeWidth={2} />
@@ -1591,6 +2058,287 @@ function SectionPlaceholder({
   );
 }
 
+type NotifKey = "notif_orders" | "notif_promotions" | "notif_newsletter" | "notif_restock";
+
+const NOTIF_OPTIONS: {
+  key: NotifKey;
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+}[] = [
+  {
+    key: "notif_orders",
+    icon: Package,
+    title: "Estado de pedidos",
+    desc: "Seguimiento de tu compra: confirmación, preparación, despacho y entrega.",
+  },
+  {
+    key: "notif_promotions",
+    icon: Tag,
+    title: "Ofertas y descuentos",
+    desc: "Promociones exclusivas, códigos de descuento y liquidaciones de temporada.",
+  },
+  {
+    key: "notif_newsletter",
+    icon: Newspaper,
+    title: "Novedades y colecciones",
+    desc: "Nuevas prendas, lanzamientos de colección y tendencias de la tienda NORTE.",
+  },
+  {
+    key: "notif_restock",
+    icon: ShoppingBag,
+    title: "Reposición de stock",
+    desc: "Aviso cuando un artículo agotado que te interesa vuelve a estar disponible.",
+  },
+];
+
+function SectionPreferenciasNotificaciones() {
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useNotificationPreferences();
+  const [draftPrefs, setDraftPrefs] = useState<Record<NotifKey, boolean> | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [toastVisible, setToastVisible] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const currentPrefs: Record<NotifKey, boolean> | null = draftPrefs
+    ? draftPrefs
+    : data
+      ? {
+          notif_orders: data.notif_orders,
+          notif_promotions: data.notif_promotions,
+          notif_newsletter: data.notif_newsletter,
+          notif_restock: data.notif_restock,
+        }
+      : null;
+
+  function handleToggle(key: NotifKey) {
+    if (!currentPrefs) return;
+    setDraftPrefs({ ...currentPrefs, [key]: !currentPrefs[key] });
+    setFeedback(null);
+  }
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentPrefs) return;
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        await updateNotificationPreferencesApi(currentPrefs);
+        setDraftPrefs(null);
+        await queryClient.invalidateQueries({ queryKey: NOTIFICATION_PREFS_QUERY_KEY });
+        setFeedback({ type: "success", msg: "Preferencias guardadas correctamente." });
+        setToastVisible(true);
+        setTimeout(() => {
+          setToastVisible(false);
+          setFeedback(null);
+        }, 3200);
+      } catch (err) {
+        setFeedback({
+          type: "error",
+          msg: err instanceof Error ? err.message : "Error al guardar las preferencias.",
+        });
+      }
+    });
+  }
+
+  function handleReset() {
+    setDraftPrefs(null);
+    setFeedback(null);
+  }
+
+  return (
+    <>
+      <Toast msg="Preferencias de notificación actualizadas" visible={toastVisible} />
+      <div className="flex flex-col w-full">
+        <div className="relative w-full pb-8 mb-8 border-b border-[var(--color-outline-variant)]/30">
+          <div>
+            <div className="inline-flex items-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
+              <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)]">
+                Área de Cuenta
+              </span>
+            </div>
+            <h2
+              className="text-5xl md:text-6xl tracking-wide uppercase text-[var(--color-on-surface)] leading-none"
+              style={{ fontFamily: "var(--font-bebas), sans-serif" }}
+            >
+              Notificaciones
+            </h2>
+            <p className="mt-2 text-sm text-[var(--color-on-surface-variant)] max-w-xl">
+              Elegí qué comunicaciones recibir de NORTE. Podés activar o desactivar cada categoría
+              en cualquier momento.
+            </p>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center gap-3 py-16 text-[var(--color-on-surface-variant)]">
+            <Loader2 className="size-5 animate-spin text-[var(--color-primary)]" />
+            <span className="text-sm font-label uppercase tracking-widest">
+              Cargando preferencias...
+            </span>
+          </div>
+        ) : isError ? (
+          <div className="space-y-4 py-8">
+            <FeedbackMsg
+              type="error"
+              msg="No se pudieron cargar las preferencias de notificación."
+            />
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="text-xs font-label uppercase tracking-wider text-[var(--color-primary)] hover:underline font-semibold"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : !currentPrefs ? null : (
+          <form onSubmit={handleSave}>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+              <div className="lg:col-span-8 flex flex-col space-y-4">
+                <section className="bg-[var(--color-surface-container-low)] p-6 md:p-8 shadow-sm">
+                  <div className="flex items-center gap-2 pb-4 mb-6 border-b border-[var(--color-outline-variant)]/30">
+                    <Bell className="size-5 text-[var(--color-primary)]" strokeWidth={1.8} />
+                    <h3
+                      className="text-2xl tracking-wider uppercase text-[var(--color-on-surface)]"
+                      style={{ fontFamily: "var(--font-bebas), sans-serif" }}
+                    >
+                      Mis Preferencias
+                    </h3>
+                  </div>
+                  <div className="flex flex-col divide-y divide-[var(--color-outline-variant)]/20">
+                    {NOTIF_OPTIONS.map(({ key, icon: Icon, title, desc }) => {
+                      const isActive = currentPrefs[key];
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-start justify-between gap-6 py-5 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div
+                              className={`w-10 h-10 shrink-0 flex items-center justify-center transition-colors ${
+                                isActive
+                                  ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                                  : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
+                              }`}
+                            >
+                              <Icon className="size-5" strokeWidth={1.8} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-[var(--color-on-surface)] leading-snug">
+                                {title}
+                              </p>
+                              <p className="text-xs text-[var(--color-on-surface-variant)] mt-0.5 max-w-sm leading-relaxed">
+                                {desc}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isActive}
+                            aria-label={`${isActive ? "Desactivar" : "Activar"} ${title}`}
+                            onClick={() => handleToggle(key)}
+                            disabled={isPending}
+                            className={`relative shrink-0 w-11 h-6 transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                              isActive
+                                ? "bg-[var(--color-primary)]"
+                                : "bg-[var(--color-outline-variant)]"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 w-4 h-4 bg-white shadow-sm transition-transform duration-200 ${
+                                isActive ? "translate-x-5" : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="bg-[var(--color-surface-container-low)] p-6 md:p-8 shadow-sm">
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 shrink-0 flex items-center justify-center bg-[var(--color-secondary)]/10 text-[var(--color-secondary)]">
+                        <ShieldAlert className="size-5" strokeWidth={1.8} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-on-surface)] leading-snug">
+                          Alertas de seguridad
+                        </p>
+                        <p className="text-xs text-[var(--color-on-surface-variant)] mt-0.5 max-w-sm leading-relaxed">
+                          Inicios de sesión, cambios de contraseña y actividad inusual en tu cuenta.
+                          Este canal no se puede desactivar.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-[11px] font-label uppercase tracking-widest text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-3 py-1.5 mt-1">
+                      Siempre activo
+                    </span>
+                  </div>
+                </section>
+
+                {feedback && (
+                  <div>
+                    <FeedbackMsg type={feedback.type} msg={feedback.msg} />
+                  </div>
+                )}
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    disabled={isPending || !draftPrefs}
+                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors disabled:opacity-50"
+                  >
+                    Descartar cambios
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full sm:w-auto px-10 py-3.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)] font-label font-semibold uppercase tracking-[0.18em] text-xs shadow-md transition-all flex items-center justify-center gap-2 group active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="size-4 group-hover:rotate-12 transition-transform" />
+                    )}
+                    <span>Guardar preferencias</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-4 flex flex-col space-y-6">
+                <div className="bg-[var(--color-surface-container-low)] p-5 shadow-sm space-y-4">
+                  <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)] block">
+                    ¿Cómo funciona?
+                  </span>
+                  <div className="space-y-3 text-xs text-[var(--color-on-surface-variant)] leading-relaxed">
+                    <p>
+                      Todas las notificaciones se envían al correo electrónico asociado a tu cuenta.
+                    </p>
+                    <p>
+                      Las alertas de seguridad (accesos y cambios de contraseña) se envían siempre,
+                      independientemente de tus preferencias.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]" />
+                    <span className="text-[11px] font-label uppercase tracking-widest text-[var(--color-secondary)]">
+                      Podés cambiarlas en cualquier momento
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        )}
+      </div>
+    </>
+  );
+}
+
 export function AccountView() {
   const { user, isLoading } = useSession();
   const [currentSection, setCurrentSection] = useState<Section>("perfil");
@@ -1667,14 +2415,10 @@ export function AccountView() {
             />
           )}
           {currentSection === "preferencias-de-notificaciones" && (
-            <SectionPlaceholder
-              icon={Bell}
-              title="Preferencias de Notificaciones"
-              description="Configura qué comunicaciones y alertas deseas recibir del equipo curatorial de NORTE."
-            />
+            <SectionPreferenciasNotificaciones />
           )}
           {currentSection === "cerrar-cuenta" && (
-            <SectionCerrarCuenta onNavigate={setCurrentSection} />
+            <SectionCerrarCuenta onNavigate={setCurrentSection} user={user} />
           )}
         </div>
       </div>

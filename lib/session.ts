@@ -20,6 +20,7 @@ import type { JwtPayload } from "@/features/auth/types/auth.interface";
 const SESSION_COOKIE = "norte_session";
 const ONE_DAY_S = 60 * 60 * 24; // 24 h en segundos (para max-age de la cookie)
 const EXPIRY = "7d"; // el token expira en 7 días
+export const SESSION_MAX_AGE_MS = ONE_DAY_S * 7 * 1000;
 
 // ─── Clave secreta ────────────────────────────────────────────────────────────
 // TextEncoder convierte el string del .env en un Uint8Array

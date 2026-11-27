@@ -54,6 +54,7 @@ function Avatar({ name, picture }: { name?: string | null; picture?: string }) {
         alt={name ?? ""}
         width={36}
         height={36}
+        unoptimized={picture.startsWith("/uploads/")}
         className="size-9 rounded-full object-cover ring-2 ring-primary/30 transition-all group-hover:ring-primary"
         referrerPolicy="no-referrer"
       />
@@ -160,6 +161,7 @@ export function UserMenu() {
       const res = await fetch("/api/auth/logout", { method: "POST" });
       if (!res.ok) throw new Error("Logout fallido");
       // Invalidamos la caché de sesión → el header vuelve al estado "sin sesión"
+      queryClient.removeQueries({ queryKey: ["account-security"] });
       queryClient.invalidateQueries({ queryKey: ["session"] });
       router.push("/login");
       router.refresh();

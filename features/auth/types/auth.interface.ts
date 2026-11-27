@@ -7,6 +7,7 @@
 // Lo que firmamos al crear el token; también lo que leemos al verificarlo.
 export interface JwtPayload {
   sub: string; // ID del usuario (subject → estándar JWT)
+  jti?: string; // ID único de la sesión en UserSession (opcional para compatibilidad)
   email: string;
   name: string; // nombre para mostrarlo en el header sin ir a la DB
   picture?: string; // URL del avatar (viene de Google; puede no existir)
@@ -31,8 +32,117 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
+  last_name?: string;
+  phone?: string;
   picture?: string;
   role: "ADMIN" | "CUSTOMER";
+  email_verified?: boolean;
+  has_password?: boolean;
+  created_at?: string;
+}
+
+// ─── Body esperado para actualizar perfil ─────────────────────────────────────
+export interface UpdateProfileBody {
+  name: string;
+  lastName: string;
+  phone?: string;
+}
+
+// ─── Perfil completo del usuario (GET / PATCH /api/account/profile) ───────────
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  last_name: string;
+  phone: string;
+  picture?: string;
+  role: "ADMIN" | "CUSTOMER";
+  email_verified: boolean;
+  has_password: boolean;
+  created_at: string;
+}
+
+export interface ProfileResponse {
+  user: UserProfile;
+}
+
+// ─── Body esperado en DELETE /api/account ─────────────────────────────────────
+export interface DeleteAccountBody {
+  password: string;
+  reason?: string;
+  feedback?: string;
+}
+
+export interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  ok: true;
+  revokedOtherSessions: number;
+}
+
+export interface ChangeEmailBody {
+  newEmail: string;
+  password: string;
+}
+
+export interface ChangeEmailResponse {
+  user: UserProfile;
+  revokedOtherSessions: number;
+}
+
+// ─── Seguridad de cuenta: Sesiones Activas y Registro de Actividad ────────────
+export type AccountActivityEventType =
+  | "LOGIN_SUCCESS"
+  | "LOGIN_GOOGLE"
+  | "REGISTER"
+  | "PROFILE_UPDATED"
+  | "AVATAR_UPDATED"
+  | "AVATAR_REMOVED"
+  | "EMAIL_CHANGED"
+  | "PASSWORD_CHANGED"
+  | "SESSION_REVOKED"
+  | "SESSIONS_REVOKED_ALL"
+  | "ACCOUNT_CLOSED";
+
+export interface AvatarUpdateResponse {
+  user: UserProfile;
+  storage: "cloudinary" | "local";
+}
+
+export interface ActiveSessionItem {
+  id: string;
+  deviceLabel: string;
+  ipMasked: string;
+  lastActiveAt: string;
+  createdAt: string;
+  isCurrent: boolean;
+}
+
+export interface ActivityLogItem {
+  id: string;
+  eventType: AccountActivityEventType;
+  title: string;
+  metadata: string | null;
+  ipMasked: string | null;
+  createdAt: string;
+}
+
+export interface AccountSecurityResponse {
+  sessions: ActiveSessionItem[];
+  activities: ActivityLogItem[];
+}
+
+export interface RevokeSessionResponse {
+  ok: true;
+  revokedId: string;
+}
+
+export interface RevokeOtherSessionsResponse {
+  ok: true;
+  revokedCount: number;
 }
 
 // ─── Body esperado en el endpoint ────────────────────────────────────────────
@@ -57,4 +167,19 @@ export interface RegisterResponse {
     name: string;
     role: "ADMIN" | "CUSTOMER";
   };
+}
+
+// ─── Preferencias de Notificaciones ──────────────────────────────────────────
+export interface NotificationPreferences {
+  notif_orders: boolean; // Actualizaciones de pedidos
+  notif_promotions: boolean; // Descuentos y ofertas
+  notif_newsletter: boolean; // Boletín de novedades
+  notif_restock: boolean; // Alertas de reposición
+  notif_security: boolean; // Accesos y seguridad (siempre true, solo lectura)
+}
+
+export type UpdateNotificationsBody = Omit<NotificationPreferences, "notif_security">;
+
+export interface UpdateNotificationsResponse {
+  data: NotificationPreferences;
 }

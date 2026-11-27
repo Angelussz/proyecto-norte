@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyCredentials, AuthError } from "@/features/auth/services/auth.service";
-import { signToken, getSessionCookieOptions } from "@/lib/session";
+import { startAuthenticatedSession } from "@/features/auth/services/security.service";
+import { signToken } from "@/lib/session";
+import { setSessionCookie } from "@/lib/account-api";
+import { extractRequestContext } from "@/lib/request-context";
 import type { LoginBody, LoginResponse } from "@/features/auth/types/auth.interface";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -65,11 +68,14 @@ export async function POST(req: NextRequest) {
   // ── 3 + 4. Verificar credenciales y firmar token ────────────────────────────
   try {
     const jwtPayload = await verifyCredentials(email, password);
-    const token = await signToken(jwtPayload);
+    const reqCtx = extractRequestContext(req);
+    const sessionId = await startAuthenticatedSession(jwtPayload.sub, reqCtx, {
+      eventType: "LOGIN_SUCCESS",
+      title: "Inicio de sesión exitoso",
+    });
+    const token = await signToken({ ...jwtPayload, jti: sessionId });
 
     // ── 6. Construir respuesta pública (todos los datos vienen del payload) ────
-    // verifyCredentials ya selecciona name/email/role → no necesitamos una
-    // segunda query a la DB.
     const responseBody: LoginResponse = {
       user: {
         id: jwtPayload.sub,
@@ -82,17 +88,7 @@ export async function POST(req: NextRequest) {
 
     // ── 4. Crear la respuesta con la cookie de sesión ──────────────────────────
     const res = NextResponse.json(responseBody, { status: 200 });
-    const cookieOpts = getSessionCookieOptions();
-
-    res.cookies.set({
-      name: cookieOpts.name,
-      value: token,
-      maxAge: cookieOpts.maxAge,
-      httpOnly: cookieOpts.httpOnly,
-      secure: cookieOpts.secure,
-      sameSite: cookieOpts.sameSite,
-      path: cookieOpts.path,
-    });
+    setSessionCookie(res, token);
 
     return res;
   } catch (error) {

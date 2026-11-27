@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
-import { SESSION_COOKIE_NAME, verifyToken } from "@/lib/session";
+import { requireAccountSession } from "@/lib/account-api";
 import { getStoreSettings } from "@/lib/store-settings";
 import {
   calculateQuoteTotals,
@@ -43,31 +43,14 @@ function isSameCart(
  * Body: { items: [{ variantId: string, quantity: number }] }
  */
 export async function POST(req: NextRequest) {
-  // 1) Validar la sesión del usuario.
-  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  // 1) Validar la sesión del usuario (incluye verificación en DB de sesiones revocadas).
+  const auth = await requireAccountSession(req);
+  if ("errorResponse" in auth) return auth.errorResponse;
 
-  if (!token) {
-    return NextResponse.json({ error: "Iniciá sesión para realizar la compra." }, { status: 401 });
-  }
-
-  let userId: string;
-
-  try {
-    const payload = await verifyToken(token);
-
-    if (typeof payload.sub !== "string" || !payload.sub) {
-      return NextResponse.json(
-        { error: "La sesión no contiene un usuario válido." },
-        { status: 401 },
-      );
-    }
-
-    userId = payload.sub;
-  } catch {
+  const userId = auth.payload.sub;
+  if (typeof userId !== "string" || !userId) {
     return NextResponse.json(
-      {
-        error: "La sesión es inválida o expiró. Iniciá sesión nuevamente.",
-      },
+      { error: "La sesión no contiene un usuario válido." },
       { status: 401 },
     );
   }

@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { verifyToken, SESSION_COOKIE_NAME } from "@/lib/session";
+import { isSessionActiveAndTouch } from "@/features/auth/services/security.service";
 import type { JwtPayload } from "@/features/auth/types/auth.interface";
 
 export class AdminAuthError extends Error {
@@ -56,6 +57,12 @@ export async function requireAdminUser(
     try {
       const payload = await verifyToken(sessionToken);
       if (payload.role === "ADMIN") {
+        if (payload.jti) {
+          const active = await isSessionActiveAndTouch(payload.sub, payload.jti);
+          if (!active) {
+            throw new AdminAuthError("Sesión de administrador revocada o expirada");
+          }
+        }
         return payload;
       }
     } catch {

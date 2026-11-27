@@ -2,5 +2,6 @@ allowBuilds:
   "@prisma/engines": true
   prisma: true
   esbuild: true
+  unrs-resolver: true
 fetchRetries: 5
 fetchTimeout: 600000

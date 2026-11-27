@@ -13,11 +13,20 @@ export class MediaError extends Error {
   }
 }
 
+export type AllowedImageMime = "image/jpeg" | "image/png" | "image/webp";
+
 const UPLOAD_FOLDER = "proyecto-norte/products";
 const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_MIME = new Set<AllowedImageMime>(["image/jpeg", "image/png", "image/webp"]);
 
 let configured = false;
+
+/**
+ * Indica si las credenciales de Cloudinary están configuradas en el entorno.
+ */
+export function isCloudinaryConfigured(): boolean {
+  return Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET);
+}
 
 function client(): typeof cloudinary {
   const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = env;
@@ -38,7 +47,7 @@ function client(): typeof cloudinary {
 
 // Verifica los magic bytes reales del archivo; el `file.type` del navegador
 // se puede falsificar, el contenido no.
-function detectMime(buf: Buffer): string | null {
+function detectMime(buf: Buffer): AllowedImageMime | null {
   if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
   if (
     buf.length > 8 &&
@@ -54,19 +63,28 @@ function detectMime(buf: Buffer): string | null {
   return null;
 }
 
-async function validate(file: File): Promise<Buffer> {
+/**
+ * Valida tamaño (máx 5 MB) y magic bytes reales (JPG, PNG, WEBP) de un File.
+ */
+export async function validateImageBuffer(
+  file: File,
+): Promise<{ buffer: Buffer; mime: AllowedImageMime }> {
   if (file.size === 0) throw new MediaError("MISSING_FILE", "El archivo está vacío");
   if (file.size > MAX_BYTES)
     throw new MediaError("FILE_TOO_LARGE", "La imagen supera el máximo de 5 MB");
-  const buf = Buffer.from(await file.arrayBuffer());
-  const detected = detectMime(buf);
-  if (!detected || !ALLOWED_MIME.has(detected)) {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const mime = detectMime(buffer);
+  if (!mime || !ALLOWED_MIME.has(mime)) {
     throw new MediaError("INVALID_FORMAT", "Formato no soportado: solo JPG, PNG o WEBP");
   }
-  return buf;
+  return { buffer, mime };
 }
 
-function uploadBuffer(buf: Buffer, publicId?: string): Promise<StoredImage> {
+function uploadBuffer(
+  buf: Buffer,
+  optionsConfig?: { publicId?: string; folder?: string },
+): Promise<StoredImage> {
+  const publicId = optionsConfig?.publicId;
   const replacing = publicId !== undefined;
   if (replacing && !publicId.trim()) {
     throw new MediaError("UPLOAD_FAILED", "El public_id de reemplazo es obligatorio");
@@ -83,7 +101,7 @@ function uploadBuffer(buf: Buffer, publicId?: string): Promise<StoredImage> {
     options.overwrite = true;
     options.invalidate = true;
   } else {
-    options.folder = UPLOAD_FOLDER;
+    options.folder = optionsConfig?.folder ?? UPLOAD_FOLDER;
   }
 
   return new Promise<StoredImage>((resolve, reject) => {
@@ -106,14 +124,16 @@ function uploadBuffer(buf: Buffer, publicId?: string): Promise<StoredImage> {
   });
 }
 
-/** Sube una imagen nueva (public_id autogenerado bajo UPLOAD_FOLDER). */
-export async function uploadImage(file: File): Promise<StoredImage> {
-  return uploadBuffer(await validate(file));
+/** Sube una imagen nueva (public_id autogenerado bajo `folder`). */
+export async function uploadImage(file: File, folder = UPLOAD_FOLDER): Promise<StoredImage> {
+  const { buffer } = await validateImageBuffer(file);
+  return uploadBuffer(buffer, { folder });
 }
 
 /** Reemplaza la imagen sobreescribiendo el mismo public_id. */
 export async function replaceImage(file: File, publicId: string): Promise<StoredImage> {
-  return uploadBuffer(await validate(file), publicId);
+  const { buffer } = await validateImageBuffer(file);
+  return uploadBuffer(buffer, { publicId });
 }
 
 /** Elimina un recurso por public_id. */

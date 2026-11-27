@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { exchangeCodeForToken, getGoogleUserInfo } from "@/lib/google-oauth";
-import { signToken, getSessionCookieOptions } from "@/lib/session";
+import { signToken } from "@/lib/session";
+import { setSessionCookie } from "@/lib/account-api";
+import { extractRequestContext } from "@/lib/request-context";
+import { startAuthenticatedSession } from "@/features/auth/services/security.service";
 import { prisma } from "@/lib/prisma";
 
 const STATE_COOKIE = "google_oauth_state";
@@ -99,9 +102,16 @@ export async function GET(req: NextRequest) {
       select: { id: true, email: true, name: true, role: true, picture_url: true },
     });
 
-    // ── 5. Crear JWT de sesión ────────────────────────────────────────────────
+    // ── 5. Registrar sesión y crear JWT ───────────────────────────────────────
+    const reqCtx = extractRequestContext(req);
+    const sessionId = await startAuthenticatedSession(user.id, reqCtx, {
+      eventType: "LOGIN_GOOGLE",
+      title: "Inicio de sesión con Google",
+    });
+
     const token = await signToken({
       sub: user.id,
+      jti: sessionId,
       email: user.email,
       name: user.name,
       picture: user.picture_url ?? googleUser.picture, // foto guardada en DB
@@ -110,21 +120,12 @@ export async function GET(req: NextRequest) {
 
     // ── 6. Redirigir a la tienda con la cookie de sesión ─────────────────────
     const res = NextResponse.redirect(appUrl);
-    const cookieOpts = getSessionCookieOptions();
 
     // Borrar la cookie de state (ya no la necesitamos)
     res.cookies.set({ name: STATE_COOKIE, value: "", maxAge: 0, path: "/" });
 
     // Guardar el JWT de sesión
-    res.cookies.set({
-      name: cookieOpts.name,
-      value: token,
-      maxAge: cookieOpts.maxAge,
-      httpOnly: cookieOpts.httpOnly,
-      secure: cookieOpts.secure,
-      sameSite: cookieOpts.sameSite,
-      path: cookieOpts.path,
-    });
+    setSessionCookie(res, token);
 
     return res;
   } catch (error) {

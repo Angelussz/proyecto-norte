@@ -1,39 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { serializeOrder } from "@/lib/orders";
-import { SESSION_COOKIE_NAME, verifyToken } from "@/lib/session";
+import { NO_STORE_HEADERS, requireAccountSession } from "@/lib/account-api";
 
 /**
  * GET /api/orders/[id]
  * Permite consultar una orden únicamente a su propietario autenticado.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const auth = await requireAccountSession(req);
+  if ("errorResponse" in auth) return auth.errorResponse;
 
-  if (!token) {
+  const userId = auth.payload.sub;
+  if (typeof userId !== "string" || !userId) {
     return NextResponse.json(
-      { error: "Iniciá sesión para consultar tu orden." },
-      { status: 401, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  let userId: string;
-
-  try {
-    const payload = await verifyToken(token);
-
-    if (typeof payload.sub !== "string" || !payload.sub) {
-      return NextResponse.json(
-        { error: "La sesión no contiene un usuario válido." },
-        { status: 401, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    userId = payload.sub;
-  } catch {
-    return NextResponse.json(
-      { error: "La sesión es inválida o expiró. Iniciá sesión nuevamente." },
-      { status: 401, headers: { "Cache-Control": "no-store" } },
+      { error: "La sesión no contiene un usuario válido." },
+      { status: 401, headers: NO_STORE_HEADERS },
     );
   }
 
