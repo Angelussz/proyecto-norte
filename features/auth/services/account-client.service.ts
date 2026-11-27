@@ -6,12 +6,16 @@
 import type {
   AccountSecurityResponse,
   AvatarUpdateResponse,
+  ChangeEmailBody,
+  ChangeEmailResponse,
   ChangePasswordBody,
   ChangePasswordResponse,
   DeleteAccountBody,
+  NotificationPreferences,
   ProfileResponse,
   RevokeOtherSessionsResponse,
   RevokeSessionResponse,
+  UpdateNotificationsBody,
   UpdateProfileBody,
   UserProfile,
 } from "@/features/auth/types/auth.interface";
@@ -146,4 +150,41 @@ export async function changePasswordApi(dto: ChangePasswordBody): Promise<Change
     { method: "PATCH", body: JSON.stringify(dto) },
     "Error al cambiar la contraseña.",
   );
+}
+
+/**
+ * Cliente HTTP para actualizar el correo electrónico de la cuenta verificando la contraseña actual.
+ */
+export async function changeEmailApi(dto: ChangeEmailBody): Promise<ChangeEmailResponse> {
+  return accountRequest<ChangeEmailResponse>(
+    "/api/account/email",
+    { method: "PATCH", body: JSON.stringify(dto) },
+    "Error al actualizar el correo electrónico.",
+  );
+}
+
+/**
+ * Cliente HTTP para obtener las preferencias de notificación del usuario.
+ */
+export async function fetchNotificationPreferencesApi(): Promise<NotificationPreferences> {
+  const json = await accountRequest<{ data: NotificationPreferences }>(
+    "/api/account/notifications",
+    { method: "GET", cache: "no-store" },
+    "No se pudieron cargar las preferencias de notificación.",
+  );
+  return json.data;
+}
+
+/**
+ * Cliente HTTP para actualizar las preferencias de notificación del usuario.
+ */
+export async function updateNotificationPreferencesApi(
+  dto: UpdateNotificationsBody,
+): Promise<NotificationPreferences> {
+  const json = await accountRequest<{ data: NotificationPreferences }>(
+    "/api/account/notifications",
+    { method: "PATCH", body: JSON.stringify(dto) },
+    "No se pudieron guardar las preferencias de notificación.",
+  );
+  return json.data;
 }

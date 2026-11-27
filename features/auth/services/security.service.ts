@@ -8,6 +8,8 @@ import type {
   ActiveSessionItem,
   ActivityLogItem,
 } from "@/features/auth/types/auth.interface";
+import { sendEmail } from "@/lib/email.service";
+import { newSessionEmail } from "@/lib/email-templates/new-session";
 
 const TOUCH_INTERVAL_MS = 60_000;
 const ACTIVITY_LIMIT = 15;
@@ -47,6 +49,26 @@ export async function startAuthenticatedSession(
       },
     }),
   ]);
+
+  // Enviar alerta de nuevo inicio de sesión para LOGIN_SUCCESS y LOGIN_GOOGLE (best-effort)
+  // No se envía en REGISTER para no duplicar con el email de bienvenida.
+  if (event.eventType === "LOGIN_SUCCESS" || event.eventType === "LOGIN_GOOGLE") {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true, notif_security: true },
+    });
+    if (user?.notif_security) {
+      const now = new Date().toLocaleString("es-AR", {
+        timeZone: "America/Argentina/Buenos_Aires",
+      });
+      const { html, subject } = newSessionEmail(user.name, {
+        device: ctx.deviceLabel,
+        ip: maskIpAddress(ctx.ipAddress),
+        date: now,
+      });
+      await sendEmail({ to: user.email, subject, html }).catch(() => undefined);
+    }
+  }
 
   return session.id;
 }

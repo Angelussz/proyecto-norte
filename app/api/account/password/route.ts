@@ -10,15 +10,18 @@ import {
 import { changeUserPassword } from "@/features/auth/services/account.service";
 import { signToken } from "@/lib/session";
 import { extractRequestContext } from "@/lib/request-context";
+import { validateNewPasswordStrength } from "@/features/auth/lib/password-rules";
 import type { ChangePasswordBody } from "@/features/auth/types/auth.interface";
 
 const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "La contraseña actual es requerida."),
-    newPassword: z
-      .string()
-      .min(8, "La nueva contraseña debe tener al menos 8 caracteres.")
-      .max(128, "La nueva contraseña no puede superar los 128 caracteres."),
+    newPassword: z.string().superRefine((val, ctx) => {
+      const error = validateNewPasswordStrength(val);
+      if (error) {
+        ctx.addIssue({ code: "custom", message: error });
+      }
+    }),
   })
   .strict();
 

@@ -3,74 +3,28 @@ import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import {
-  deleteImage,
   isCloudinaryConfigured,
   MediaError,
   uploadImage,
   validateImageBuffer,
   type AllowedImageMime,
 } from "@/services/media.service";
-import { AccountError } from "@/features/auth/services/account.service";
+import {
+  cleanupStoredAvatar,
+  LOCAL_AVATAR_DIR,
+  LOCAL_AVATAR_URL_PREFIX,
+} from "@/features/auth/lib/avatar-storage";
+import { isDeletedEmail } from "@/features/auth/lib/deleted-account";
+import { AccountError, mapUserRecordToProfile } from "@/features/auth/services/account.service";
 import type { JwtPayload, UserProfile } from "@/features/auth/types/auth.interface";
 
 const AVATAR_CLOUDINARY_FOLDER = "proyecto-norte/avatars";
-const LOCAL_AVATAR_URL_PREFIX = "/uploads/avatars/";
-const LOCAL_AVATAR_DIR = path.join(process.cwd(), "public", "uploads", "avatars");
-const DELETED_EMAIL_SUFFIX = "@norte.invalid";
 
 const EXT_BY_MIME: Record<AllowedImageMime, string> = {
   "image/jpeg": ".jpg",
   "image/png": ".png",
   "image/webp": ".webp",
 };
-
-function toUserProfile(user: {
-  id: string;
-  email: string;
-  name: string;
-  last_name: string;
-  phone: string;
-  picture_url: string | null;
-  role: "ADMIN" | "CUSTOMER";
-  email_verified: boolean;
-  created_at: Date;
-}): UserProfile {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    last_name: user.last_name,
-    phone: user.phone,
-    picture: user.picture_url ?? undefined,
-    role: user.role,
-    email_verified: user.email_verified,
-    created_at: user.created_at.toISOString(),
-  };
-}
-
-/**
- * Elimina de disco una imagen local de avatar o de Cloudinary un recurso anterior.
- * Se ejecuta como limpieza best-effort para no dejar archivos huérfanos.
- */
-async function cleanupPreviousAvatar(
-  pictureUrl: string | null,
-  pictureId: string | null,
-): Promise<void> {
-  if (pictureId && isCloudinaryConfigured()) {
-    await deleteImage(pictureId).catch((err) => {
-      console.warn("[avatar:cleanup] No se pudo eliminar avatar anterior en Cloudinary:", err);
-    });
-  }
-
-  if (pictureUrl && pictureUrl.startsWith(LOCAL_AVATAR_URL_PREFIX)) {
-    const filename = path.basename(pictureUrl);
-    if (filename && filename !== ".gitkeep") {
-      await fs.unlink(path.join(LOCAL_AVATAR_DIR, filename)).catch(() => {
-        // El archivo ya no existía en disco
-      });
-    }
-  }
-}
 
 /**
  * Sube una nueva fotografía de perfil para el usuario autenticado.
@@ -101,7 +55,7 @@ export async function uploadUserAvatar(
     },
   });
 
-  if (!existing || existing.email.endsWith(DELETED_EMAIL_SUFFIX)) {
+  if (!existing || isDeletedEmail(existing.email)) {
     throw new AccountError("NOT_FOUND", "Usuario no encontrado.");
   }
 
@@ -155,6 +109,7 @@ export async function uploadUserAvatar(
         picture_url: true,
         role: true,
         email_verified: true,
+        password_hash: true,
         created_at: true,
       },
     }),
@@ -169,9 +124,9 @@ export async function uploadUserAvatar(
     }),
   ]);
 
-  await cleanupPreviousAvatar(existing.picture_url, existing.picture_id);
+  await cleanupStoredAvatar(existing.picture_url, existing.picture_id);
 
-  const userProfile = toUserProfile(updated);
+  const userProfile = mapUserRecordToProfile(updated);
   const updatedPayload: JwtPayload = {
     sub: updated.id,
     ...(context?.jti ? { jti: context.jti } : {}),
@@ -209,7 +164,7 @@ export async function deleteUserAvatar(
     },
   });
 
-  if (!existing || existing.email.endsWith(DELETED_EMAIL_SUFFIX)) {
+  if (!existing || isDeletedEmail(existing.email)) {
     throw new AccountError("NOT_FOUND", "Usuario no encontrado.");
   }
 
@@ -231,6 +186,7 @@ export async function deleteUserAvatar(
         picture_url: true,
         role: true,
         email_verified: true,
+        password_hash: true,
         created_at: true,
       },
     }),
@@ -249,9 +205,9 @@ export async function deleteUserAvatar(
       : []),
   ]);
 
-  await cleanupPreviousAvatar(existing.picture_url, existing.picture_id);
+  await cleanupStoredAvatar(existing.picture_url, existing.picture_id);
 
-  const userProfile = toUserProfile(updated);
+  const userProfile = mapUserRecordToProfile(updated);
   const updatedPayload: JwtPayload = {
     sub: updated.id,
     ...(context?.jti ? { jti: context.jti } : {}),

@@ -37,6 +37,7 @@ export interface SessionUser {
   picture?: string;
   role: "ADMIN" | "CUSTOMER";
   email_verified?: boolean;
+  has_password?: boolean;
   created_at?: string;
 }
 
@@ -57,6 +58,7 @@ export interface UserProfile {
   picture?: string;
   role: "ADMIN" | "CUSTOMER";
   email_verified: boolean;
+  has_password: boolean;
   created_at: string;
 }
 
@@ -81,6 +83,16 @@ export interface ChangePasswordResponse {
   revokedOtherSessions: number;
 }
 
+export interface ChangeEmailBody {
+  newEmail: string;
+  password: string;
+}
+
+export interface ChangeEmailResponse {
+  user: UserProfile;
+  revokedOtherSessions: number;
+}
+
 // ─── Seguridad de cuenta: Sesiones Activas y Registro de Actividad ────────────
 export type AccountActivityEventType =
   | "LOGIN_SUCCESS"
@@ -89,6 +101,7 @@ export type AccountActivityEventType =
   | "PROFILE_UPDATED"
   | "AVATAR_UPDATED"
   | "AVATAR_REMOVED"
+  | "EMAIL_CHANGED"
   | "PASSWORD_CHANGED"
   | "SESSION_REVOKED"
   | "SESSIONS_REVOKED_ALL"
@@ -154,4 +167,19 @@ export interface RegisterResponse {
     name: string;
     role: "ADMIN" | "CUSTOMER";
   };
+}
+
+// ─── Preferencias de Notificaciones ──────────────────────────────────────────
+export interface NotificationPreferences {
+  notif_orders: boolean; // Actualizaciones de pedidos
+  notif_promotions: boolean; // Descuentos y ofertas
+  notif_newsletter: boolean; // Boletín de novedades
+  notif_restock: boolean; // Alertas de reposición
+  notif_security: boolean; // Accesos y seguridad (siempre true, solo lectura)
+}
+
+export type UpdateNotificationsBody = Omit<NotificationPreferences, "notif_security">;
+
+export interface UpdateNotificationsResponse {
+  data: NotificationPreferences;
 }

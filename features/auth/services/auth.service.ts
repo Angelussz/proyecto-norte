@@ -8,7 +8,10 @@
 
 import { compare, hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { isDeletedEmail } from "@/features/auth/lib/deleted-account";
 import type { JwtPayload } from "@/features/auth/types/auth.interface";
+import { sendEmail } from "@/lib/email.service";
+import { welcomeEmail } from "@/lib/email-templates/welcome";
 
 // Error tipado para diferenciar "credenciales inválidas" de errores 500
 export class AuthError extends Error {
@@ -48,9 +51,9 @@ export async function verifyCredentials(email: string, password: string): Promis
     },
   });
 
-  // 2. Si no existe → mismo mensaje genérico que "contraseña incorrecta"
+  // 2. Si no existe o la cuenta fue cerrada → mismo mensaje genérico
   //    (no revelamos si el email está o no registrado)
-  if (!user) {
+  if (!user || isDeletedEmail(user.email)) {
     throw new AuthError("INVALID_CREDENTIALS", "Credenciales inválidas");
   }
 
@@ -135,11 +138,17 @@ export async function createUser(
   });
 
   // 4. Devolver el payload del token
-  return {
+  const payload: JwtPayload = {
     sub: user.id,
     email: user.email,
     name: user.name,
     picture: user.picture_url ?? undefined,
     role: user.role,
   };
+
+  // Enviar email de bienvenida (best-effort: si falla no interrumpe el registro)
+  const { html, subject } = welcomeEmail(user.name);
+  await sendEmail({ to: user.email, subject, html }).catch(() => undefined);
+
+  return payload;
 }

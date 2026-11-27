@@ -7,13 +7,20 @@ import {
   handleAccountRouteError,
   clearSessionCookie,
 } from "@/lib/account-api";
+import { getClientIp } from "@/lib/rate-limit";
 import { closeUserAccount } from "@/features/auth/services/account.service";
 
 const deleteAccountSchema = z
   .object({
-    password: z.string().min(1, "La contraseña es obligatoria."),
-    reason: z.string().trim().max(100).optional(),
-    feedback: z.string().trim().max(1000).optional(),
+    // Para cuentas Google-only la contraseña será string vacío; la validación real
+    // la realiza closeUserAccount() que conoce el tipo de cuenta.
+    password: z.string(),
+    reason: z.string().trim().max(100, "El motivo no puede superar los 100 caracteres.").optional(),
+    feedback: z
+      .string()
+      .trim()
+      .max(1000, "Los comentarios adicionales no pueden superar los 1000 caracteres.")
+      .optional(),
   })
   .strict();
 
@@ -38,7 +45,9 @@ export async function DELETE(req: NextRequest) {
   if ("errorResponse" in parsed) return parsed.errorResponse;
 
   try {
-    await closeUserAccount(auth.payload.sub, parsed.data);
+    await closeUserAccount(auth.payload.sub, parsed.data, {
+      ipAddress: getClientIp(req),
+    });
 
     const response = NextResponse.json({ ok: true }, { status: 200, headers: NO_STORE_HEADERS });
     clearSessionCookie(response);

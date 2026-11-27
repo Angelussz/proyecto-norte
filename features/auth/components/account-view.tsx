@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import {
   updateProfileApi,
   deleteAccountApi,
@@ -9,12 +11,18 @@ import {
   revokeSessionApi,
   revokeOtherSessionsApi,
   changePasswordApi,
+  changeEmailApi,
+  updateNotificationPreferencesApi,
 } from "@/features/auth/services/account-client.service";
 import {
   useAccountSecurity,
   ACCOUNT_SECURITY_QUERY_KEY,
 } from "@/features/auth/hooks/useAccountSecurity";
-import Image from "next/image";
+import {
+  useNotificationPreferences,
+  NOTIFICATION_PREFS_QUERY_KEY,
+} from "@/features/auth/hooks/useNotificationPreferences";
+import { PASSWORD_RULES, validateNewPasswordStrength } from "@/features/auth/lib/password-rules";
 import {
   User,
   Lock,
@@ -45,6 +53,11 @@ import {
   Circle,
   Laptop,
   HelpCircle,
+  Package,
+  Tag,
+  Newspaper,
+  ShoppingBag,
+  ShieldAlert,
 } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useRouter } from "next/navigation";
@@ -177,6 +190,12 @@ function SectionPerfil({
   const [toastVisible, setToastVisible] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const queryClient = useQueryClient();
+
+  const hasChanges =
+    firstName.trim() !== (user.name ?? "").trim() ||
+    lastName.trim() !== (user.last_name ?? "").trim() ||
+    phone.trim() !== (user.phone ?? "").trim();
+
   function handleCancel() {
     setFirstName(user.name ?? "");
     setLastName(user.last_name ?? "");
@@ -185,8 +204,10 @@ function SectionPerfil({
   }
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!hasChanges) return;
     const trimmedName = firstName.trim();
     const trimmedLastName = lastName.trim();
+    const trimmedPhone = phone.trim();
     if (trimmedName.length < 2) {
       setFeedback({ type: "error", msg: "El nombre debe tener al menos 2 caracteres." });
       return;
@@ -201,8 +222,11 @@ function SectionPerfil({
         await updateProfileApi({
           name: trimmedName,
           lastName: trimmedLastName,
-          phone: phone.trim(),
+          phone: trimmedPhone,
         });
+        setFirstName(trimmedName);
+        setLastName(trimmedLastName);
+        setPhone(trimmedPhone);
         await queryClient.invalidateQueries({ queryKey: ["session"] });
         await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
         setFeedback({ type: "success", msg: "Perfil actualizado correctamente." });
@@ -319,16 +343,16 @@ function SectionPerfil({
                   <button
                     type="button"
                     onClick={handleCancel}
-                    disabled={isPending}
-                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors disabled:opacity-50"
+                    disabled={isPending || (!hasChanges && !feedback)}
+                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     CANCELAR
                   </button>
                   <button
                     id="btn-save-profile"
                     type="submit"
-                    disabled={isPending}
-                    className="w-full sm:w-auto px-10 py-3.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)] font-label font-semibold uppercase tracking-[0.18em] text-xs shadow-md transition-all flex items-center justify-center gap-2 group active:scale-[0.98] disabled:opacity-50"
+                    disabled={isPending || !hasChanges}
+                    className="w-full sm:w-auto px-10 py-3.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)] font-label font-semibold uppercase tracking-[0.18em] text-xs shadow-md transition-all flex items-center justify-center gap-2 group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isPending ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -679,15 +703,22 @@ function SectionFotografia({ user }: { user: { name: string; picture?: string } 
 
 function EmailChangeModal({
   currentEmail,
+  hasPassword,
   onClose,
+  onUpdated,
 }: {
   currentEmail: string;
+  hasPassword?: boolean;
   onClose: () => void;
+  onUpdated: (msg: string) => void;
 }) {
   const [newEmail, setNewEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -700,13 +731,46 @@ function EmailChangeModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!newEmail.trim() || newEmail === currentEmail) return;
-    startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 800));
+    setFeedback(null);
+
+    const trimmedEmail = newEmail.trim().toLowerCase();
+    if (!trimmedEmail) {
+      setFeedback({ type: "error", msg: "Introduce el nuevo correo electrónico." });
+      return;
+    }
+    if (trimmedEmail === currentEmail.toLowerCase()) {
       setFeedback({
-        type: "success",
-        msg: "Se envió un código de verificación a la nueva dirección.",
+        type: "error",
+        msg: "El nuevo correo electrónico debe ser diferente al actual.",
       });
+      return;
+    }
+    if (!password) {
+      setFeedback({ type: "error", msg: "Debes confirmar tu contraseña actual." });
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const res = await changeEmailApi({ newEmail: trimmedEmail, password });
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.invalidateQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
+
+        const toastMessage =
+          res.revokedOtherSessions > 0
+            ? `Correo actualizado y ${res.revokedOtherSessions} ${
+                res.revokedOtherSessions === 1
+                  ? "sesión remota cerrada"
+                  : "sesiones remotas cerradas"
+              }.`
+            : "Correo electrónico actualizado correctamente.";
+        onUpdated(toastMessage);
+        onClose();
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Error al actualizar el correo electrónico.";
+        setFeedback({ type: "error", msg });
+      }
     });
   }
 
@@ -745,88 +809,144 @@ function EmailChangeModal({
           CAMBIA TU CORREO ELECTRÓNICO
         </h3>
 
-        {/* Modal Body */}
-        <p className="text-sm font-body text-on-surface-variant leading-relaxed mb-6">
-          Introduce la nueva dirección de correo electrónico que quieres usar. Te enviaremos un
-          código de confirmación.
-        </p>
-
-        {/* Form Inputs */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Correo actual */}
-          <div className="flex flex-col space-y-2">
-            <label className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface-variant">
-              Correo actual
-            </label>
-            <div className="relative flex items-center bg-surface-container-low px-4 py-3 text-sm font-mono text-on-surface border border-outline-variant/30">
-              <Mail className="size-4 text-on-surface-variant mr-3 shrink-0" strokeWidth={1.8} />
-              <span className="truncate">{currentEmail}</span>
+        {hasPassword === false ? (
+          <div className="space-y-6 pt-2">
+            <div className="bg-surface-container-high p-4 flex items-start gap-3">
+              <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+              <p className="text-xs font-body text-on-surface-variant leading-relaxed">
+                Tu cuenta inicia sesión únicamente con Google (
+                <span className="font-mono">{currentEmail}</span>). Para proteger tu acceso, el
+                correo electrónico se gestiona directamente desde tu cuenta de Google.
+              </p>
             </div>
-          </div>
-
-          {/* Nuevo correo electrónico */}
-          <div className="flex flex-col space-y-2">
-            <label
-              htmlFor="new-email-input"
-              className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface"
-            >
-              Nuevo correo electrónico
-            </label>
-            <div className="relative flex items-center bg-white border border-outline-variant/60 focus-within:border-primary transition-colors">
-              <MailPlus
-                className="size-5 text-on-surface-variant ml-3.5 mr-2 shrink-0"
-                strokeWidth={1.8}
-              />
-              <input
-                id="new-email-input"
-                ref={inputRef}
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                disabled={isPending || feedback?.type === "success"}
-                required
-                placeholder="nombre@ejemplo.com"
-                className="w-full bg-transparent pr-4 py-3.5 text-sm font-body text-on-surface placeholder:text-outline/70 focus:outline-none disabled:opacity-50"
-              />
-            </div>
-          </div>
-
-          {/* Warning Note */}
-          <div className="bg-surface-container-high p-4 flex items-start gap-3">
-            <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
-            <p className="text-xs font-body text-on-surface-variant leading-normal">
-              Por seguridad, al cambiar tu correo electrónico se solicitará verificar tu identidad
-              en ambos buzones de correo.
-            </p>
-          </div>
-
-          {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={isPending || !newEmail.trim() || feedback?.type === "success"}
-              className="w-full py-4 px-6 bg-primary text-on-primary hover:bg-primary-container transition-colors text-xs font-label uppercase tracking-[0.2em] font-bold text-center cursor-pointer shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
-            >
-              {isPending && <Loader2 className="size-4 animate-spin" />}
-              <span>VERIFICAR NUEVO CORREO</span>
-            </button>
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto py-4 px-6 bg-transparent text-on-surface hover:bg-surface-container transition-colors text-xs font-label uppercase tracking-[0.15em] font-semibold text-center cursor-pointer"
+              className="w-full py-4 px-6 bg-surface-container-high hover:bg-surface-container-highest text-on-surface transition-colors text-xs font-label uppercase tracking-[0.15em] font-semibold text-center cursor-pointer"
             >
-              Cancelar
+              Entendido
             </button>
           </div>
-        </form>
+        ) : (
+          <>
+            {/* Modal Body */}
+            <p className="text-sm font-body text-on-surface-variant leading-relaxed mb-6">
+              Introduce la nueva dirección de correo electrónico que quieres usar y confirma tu
+              contraseña actual para aplicar el cambio.
+            </p>
+
+            {/* Form Inputs */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Correo actual */}
+              <div className="flex flex-col space-y-2">
+                <label className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface-variant">
+                  Correo actual
+                </label>
+                <div className="relative flex items-center bg-surface-container-low px-4 py-3 text-sm font-mono text-on-surface border border-outline-variant/30">
+                  <Mail
+                    className="size-4 text-on-surface-variant mr-3 shrink-0"
+                    strokeWidth={1.8}
+                  />
+                  <span className="truncate">{currentEmail}</span>
+                </div>
+              </div>
+
+              {/* Nuevo correo electrónico */}
+              <div className="flex flex-col space-y-2">
+                <label
+                  htmlFor="new-email-input"
+                  className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface"
+                >
+                  Nuevo correo electrónico
+                </label>
+                <div className="relative flex items-center bg-white border border-outline-variant/60 focus-within:border-primary transition-colors">
+                  <MailPlus
+                    className="size-5 text-on-surface-variant ml-3.5 mr-2 shrink-0"
+                    strokeWidth={1.8}
+                  />
+                  <input
+                    id="new-email-input"
+                    ref={inputRef}
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    disabled={isPending}
+                    required
+                    placeholder="nombre@ejemplo.com"
+                    className="w-full bg-transparent pr-4 py-3.5 text-sm font-body text-on-surface placeholder:text-outline/70 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Confirmar contraseña actual */}
+              <div className="flex flex-col space-y-2">
+                <label
+                  htmlFor="email-confirm-password"
+                  className="text-xs font-label uppercase tracking-[0.15em] font-semibold text-on-surface"
+                >
+                  Contraseña actual
+                </label>
+                <div className="relative flex items-center bg-white border border-outline-variant/60 focus-within:border-primary transition-colors">
+                  <input
+                    id="email-confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isPending}
+                    required
+                    placeholder="Introduce tu contraseña actual"
+                    className="w-full bg-transparent px-4 py-3.5 text-sm font-body text-on-surface placeholder:text-outline/70 focus:outline-none disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Warning Note */}
+              <div className="bg-surface-container-high p-4 flex items-start gap-3">
+                <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+                <p className="text-xs font-body text-on-surface-variant leading-normal">
+                  Al actualizar tu correo electrónico, cerraremos tus sesiones activas en otros
+                  dispositivos para proteger tu cuenta.
+                </p>
+              </div>
+
+              {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isPending || !newEmail.trim() || !password}
+                  className="w-full py-4 px-6 bg-primary text-on-primary hover:bg-primary-container transition-colors text-xs font-label uppercase tracking-[0.2em] font-bold text-center cursor-pointer shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {isPending && <Loader2 className="size-4 animate-spin" />}
+                  <span>ACTUALIZAR CORREO</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full sm:w-auto py-4 px-6 bg-transparent text-on-surface hover:bg-surface-container transition-colors text-xs font-label uppercase tracking-[0.15em] font-semibold text-center cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function SectionSeguridad({ user }: { user: { email: string } }) {
+function SectionSeguridad({ user }: { user: { email: string; has_password?: boolean } }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -895,8 +1015,9 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
       setFeedback({ type: "error", msg: "Debes introducir tu contraseña actual." });
       return;
     }
-    if (newPassword.length < 8) {
-      setFeedback({ type: "error", msg: "La nueva contraseña debe tener al menos 8 caracteres." });
+    const strengthError = validateNewPasswordStrength(newPassword);
+    if (strengthError) {
+      setFeedback({ type: "error", msg: strengthError });
       return;
     }
     if (newPassword === currentPassword) {
@@ -943,7 +1064,12 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
   return (
     <>
       {showEmailModal && (
-        <EmailChangeModal currentEmail={user.email} onClose={() => setShowEmailModal(false)} />
+        <EmailChangeModal
+          currentEmail={user.email}
+          hasPassword={user.has_password}
+          onClose={() => setShowEmailModal(false)}
+          onUpdated={(msg) => showToast(msg)}
+        />
       )}
       <Toast msg={toastMsg} visible={toastVisible} />
       <div className="flex flex-col w-full max-w-[1080px]">
@@ -1023,147 +1149,135 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                   Cambiar Contraseña
                 </h2>
                 <p className="text-xs font-body text-on-surface-variant">
-                  Se recomienda utilizar una clave única de al menos 8 caracteres con combinación de
-                  números y signos.
+                  Utiliza una clave única de al menos 8 caracteres que combine mayúsculas, números y
+                  signos especiales.
                 </p>
               </div>
-              <form id="passwordForm" onSubmit={handleChangePassword} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label
-                    className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
-                    htmlFor="currentPassword"
-                  >
-                    Contraseña Actual
-                  </label>
-                  <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
-                    <input
-                      className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
-                      id="currentPassword"
-                      name="currentPassword"
-                      autoComplete="current-password"
-                      placeholder="Introducir contraseña actual"
-                      type={showCurrent ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      disabled={isPending}
-                      required
-                    />
-                    <button
-                      aria-label="Mostrar u ocultar contraseña actual"
-                      className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
-                      onClick={() => setShowCurrent((v) => !v)}
-                      type="button"
+              {user.has_password === false ? (
+                <div className="bg-surface-container p-4 border border-outline-variant/30 flex items-start gap-3">
+                  <Info className="size-5 text-primary shrink-0 mt-0.5" strokeWidth={1.8} />
+                  <p className="text-xs font-body text-on-surface-variant leading-relaxed">
+                    Esta cuenta utiliza inicio de sesión con Google y no tiene una contraseña local
+                    configurada. Tu autenticación está protegida directamente por Google.
+                  </p>
+                </div>
+              ) : (
+                <form id="passwordForm" onSubmit={handleChangePassword} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <label
+                      className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
+                      htmlFor="currentPassword"
                     >
-                      {showCurrent ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      Contraseña Actual
+                    </label>
+                    <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
+                      <input
+                        className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
+                        id="currentPassword"
+                        name="currentPassword"
+                        autoComplete="current-password"
+                        placeholder="Introducir contraseña actual"
+                        type={showCurrent ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        disabled={isPending}
+                        required
+                      />
+                      <button
+                        aria-label="Mostrar u ocultar contraseña actual"
+                        className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                        onClick={() => setShowCurrent((v) => !v)}
+                        type="button"
+                      >
+                        {showCurrent ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
+                      htmlFor="newPassword"
+                    >
+                      Nueva Contraseña
+                    </label>
+                    <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
+                      <input
+                        className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
+                        id="newPassword"
+                        name="newPassword"
+                        autoComplete="new-password"
+                        placeholder="Introducir nueva contraseña"
+                        type={showNew ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        disabled={isPending}
+                        required
+                      />
+                      <button
+                        aria-label="Mostrar u ocultar contraseña"
+                        className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                        onClick={() => setShowNew((v) => !v)}
+                        type="button"
+                      >
+                        {showNew ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
+                      htmlFor="confirmPassword"
+                    >
+                      Confirmar Nueva Contraseña
+                    </label>
+                    <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
+                      <input
+                        className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        autoComplete="new-password"
+                        placeholder="Introducir nueva contraseña de nuevo"
+                        type={showConfirm ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        disabled={isPending}
+                        required
+                      />
+                      <button
+                        aria-label="Mostrar u ocultar confirmación de contraseña"
+                        className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
+                        onClick={() => setShowConfirm((v) => !v)}
+                        type="button"
+                      >
+                        {showConfirm ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-3 px-4 bg-surface-container border border-outline-variant/30 text-xs text-on-surface-variant font-mono">
+                    {PASSWORD_RULES.map((rule) => (
+                      <div key={rule.id} className="flex items-center gap-2">
+                        {rule.test(newPassword) ? (
+                          <CheckCircle2 className="size-4 text-secondary shrink-0" />
+                        ) : (
+                          <Circle className="size-4 text-outline shrink-0" />
+                        )}
+                        <span>{rule.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
+                  <div className="pt-2">
+                    <button
+                      className="px-8 py-3.5 bg-primary hover:bg-primary-container text-on-primary font-headline tracking-[0.12em] text-lg uppercase transition-all shadow-sm active:translate-y-px disabled:opacity-50 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                      type="submit"
+                      disabled={isPending || !currentPassword || !newPassword || !confirmPassword}
+                    >
+                      {isPending && <Loader2 className="size-5 animate-spin" />}
+                      Cambiar la Contraseña
                     </button>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label
-                    className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
-                    htmlFor="newPassword"
-                  >
-                    Nueva Contraseña
-                  </label>
-                  <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
-                    <input
-                      className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
-                      id="newPassword"
-                      name="newPassword"
-                      autoComplete="new-password"
-                      placeholder="Introducir nueva contraseña"
-                      type={showNew ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      disabled={isPending}
-                      required
-                    />
-                    <button
-                      aria-label="Mostrar u ocultar contraseña"
-                      className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
-                      onClick={() => setShowNew((v) => !v)}
-                      type="button"
-                    >
-                      {showNew ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label
-                    className="block text-xs font-label uppercase tracking-[0.15em] font-medium text-on-surface"
-                    htmlFor="confirmPassword"
-                  >
-                    Confirmar Nueva Contraseña
-                  </label>
-                  <div className="relative flex items-center bg-surface-container-lowest border border-outline-variant/60 focus-within:border-primary transition-colors">
-                    <input
-                      className="w-full bg-transparent px-4 py-3 text-sm font-body text-on-surface placeholder:text-outline-variant focus:outline-none"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      autoComplete="new-password"
-                      placeholder="Introducir nueva contraseña de nuevo"
-                      type={showConfirm ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={isPending}
-                      required
-                    />
-                    <button
-                      aria-label="Mostrar u ocultar confirmación de contraseña"
-                      className="px-3 text-on-surface-variant hover:text-on-surface transition-colors"
-                      onClick={() => setShowConfirm((v) => !v)}
-                      type="button"
-                    >
-                      {showConfirm ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-3 px-4 bg-surface-container border border-outline-variant/30 text-xs text-on-surface-variant font-mono">
-                  <div className="flex items-center gap-2">
-                    {newPassword.length >= 8 ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Mínimo 8 caracteres</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/[A-Z]/.test(newPassword) ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Al menos una letra mayúscula</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/[0-9]/.test(newPassword) ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Al menos un número decimal</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/[^A-Za-z0-9]/.test(newPassword) ? (
-                      <CheckCircle2 className="size-4 text-secondary shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-outline shrink-0" />
-                    )}
-                    <span>Un símbolo o signo especial (@, #, $)</span>
-                  </div>
-                </div>
-                {feedback && <FeedbackMsg type={feedback.type} msg={feedback.msg} />}
-                <div className="pt-2">
-                  <button
-                    className="px-8 py-3.5 bg-primary hover:bg-primary-container text-on-primary font-headline tracking-[0.12em] text-lg uppercase transition-all shadow-sm active:translate-y-px disabled:opacity-50 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
-                    type="submit"
-                    disabled={isPending || !currentPassword || !newPassword || !confirmPassword}
-                  >
-                    {isPending && <Loader2 className="size-5 animate-spin" />}
-                    Cambiar la Contraseña
-                  </button>
-                </div>
-              </form>
+                </form>
+              )}
             </section>
 
             {/* Section 3: Multifactor Authentication (2FA) */}
@@ -1359,11 +1473,15 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
                     ¿Detectas actividad no autorizada?
                   </p>
                   <p className="text-[11px] text-on-secondary-fixed-variant leading-relaxed">
-                    Contacta de inmediato a nuestro equipo de seguridad editorial en{" "}
-                    <a className="underline font-semibold" href="mailto:seguridad@norte-studio.cl">
-                      seguridad@norte-studio.cl
+                    Cierra las sesiones remotas de inmediato y contacta a nuestro equipo en{" "}
+                    <a className="underline font-semibold" href="mailto:info@norte-studio.com">
+                      info@norte-studio.com
                     </a>{" "}
-                    o bloquea temporalmente tus accesos.
+                    o desde{" "}
+                    <Link className="underline font-semibold" href="/contacto">
+                      Contacto
+                    </Link>
+                    .
                   </p>
                 </div>
               </div>
@@ -1375,7 +1493,15 @@ function SectionSeguridad({ user }: { user: { email: string } }) {
   );
 }
 
-function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) => void }) {
+function SectionCerrarCuenta({
+  onNavigate,
+  user,
+}: {
+  onNavigate: (section: Section) => void;
+  user: { has_password?: boolean; role?: "ADMIN" | "CUSTOMER" };
+}) {
+  const isAdmin = user.role === "ADMIN";
+  const isGoogleOnly = user.has_password === false;
   const [reason, setReason] = useState("not_using");
   const [extraFeedback, setExtraFeedback] = useState("");
   const [password, setPassword] = useState("");
@@ -1389,18 +1515,27 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (!showModal) return;
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape" && !isPending) {
+        setShowModal(false);
+        setDeleteError(null);
+      }
+    }
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [showModal, isPending]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!password) {
-      setPwdError(true);
-      return;
-    }
-    if (!consentChecked) {
-      setConsentError(true);
-      return;
-    }
-    setPwdError(false);
-    setConsentError(false);
+    if (isAdmin) return;
+    // Usuarios con contraseña deben introducirla; Google-only no tienen contraseña
+    const missingPwd = !isGoogleOnly && !password;
+    const missingConsent = !consentChecked;
+    setPwdError(missingPwd);
+    setConsentError(missingConsent);
+    if (missingPwd || missingConsent) return;
     setDeleteError(null);
     setShowModal(true);
   }
@@ -1414,11 +1549,11 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
           reason,
           feedback: extraFeedback.trim() || undefined,
         });
+        // Actualizar caché de sesión a null y limpiar queries privadas antes de salir
         queryClient.setQueryData(["session"], null);
         queryClient.removeQueries({ queryKey: ACCOUNT_SECURITY_QUERY_KEY });
-        await queryClient.invalidateQueries({ queryKey: ["session"] });
-        router.refresh();
-        router.push("/");
+        queryClient.removeQueries({ queryKey: NOTIFICATION_PREFS_QUERY_KEY });
+        router.replace("/");
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Error al cerrar la cuenta.";
         setDeleteError(msg);
@@ -1432,13 +1567,19 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
       {showModal && (
         <div
           id="confirmation-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-dialog-title"
           className="fixed inset-0 z-50 bg-on-background/70 backdrop-blur-sm flex items-center justify-center p-4"
         >
           <div className="max-w-md w-full bg-surface p-8 shadow-2xl relative">
             <div className="w-12 h-12 bg-error-container text-error flex items-center justify-center mb-6">
               <HeartCrack className="size-8" strokeWidth={1.8} />
             </div>
-            <h3 className="text-3xl font-display uppercase tracking-wider text-on-surface mb-2">
+            <h3
+              id="confirm-dialog-title"
+              className="text-3xl font-display uppercase tracking-wider text-on-surface mb-2"
+            >
               ÚLTIMA CONFIRMACIÓN
             </h3>
             <p className="text-xs font-body text-on-surface-variant leading-relaxed mb-6">
@@ -1545,45 +1686,19 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
               </div>
             </div>
 
-            {/* Account Impact Data Summary Strip */}
-            <div className="bg-surface-container p-6 md:p-7 shadow-sm">
-              <div className="flex items-center justify-between pb-4">
-                <span className="text-xs font-label uppercase tracking-[0.18em] text-on-surface-variant font-medium">
-                  Patrimonio en riesgo en esta cuenta
-                </span>
-                <span className="text-[11px] font-mono text-tertiary">ID: #NRT-89240</span>
+            {isAdmin && (
+              <div className="p-6 bg-surface-container border-l-4 border-primary">
+                <p className="text-sm font-body text-on-surface-variant">
+                  Las cuentas de administrador no pueden eliminarse desde este panel. Contacta al
+                  equipo técnico si necesitas gestionar esta cuenta.
+                </p>
               </div>
-              <div className="grid grid-cols-3 gap-4 pt-2 text-center">
-                <div className="bg-surface-container-low p-4">
-                  <div className="text-2xl md:text-3xl font-headline text-on-surface tracking-wider">
-                    04
-                  </div>
-                  <div className="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mt-1">
-                    Pedidos Históricos
-                  </div>
-                </div>
-                <div className="bg-surface-container-low p-4">
-                  <div className="text-2xl md:text-3xl font-headline text-primary tracking-wider">
-                    02
-                  </div>
-                  <div className="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mt-1">
-                    Piezas Reservadas
-                  </div>
-                </div>
-                <div className="bg-surface-container-low p-4">
-                  <div className="text-2xl md:text-3xl font-headline text-on-surface tracking-wider">
-                    850
-                  </div>
-                  <div className="text-[11px] font-label uppercase tracking-widest text-on-surface-variant mt-1">
-                    Puntos de Archivo
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Interactive Form Container */}
             <form
               id="closure-form"
+              noValidate
               onSubmit={handleSubmit}
               className="space-y-8 bg-surface-container-low p-7 md:p-9 shadow-sm"
             >
@@ -1689,6 +1804,7 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                   <textarea
                     id="optional-feedback"
                     rows={2}
+                    maxLength={1000}
                     value={extraFeedback}
                     onChange={(e) => setExtraFeedback(e.target.value)}
                     placeholder="Escribe aquí cualquier observación sobre el servicio..."
@@ -1710,43 +1826,75 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                     Verificación de identidad
                   </label>
                   <span className="text-[11px] font-label text-error uppercase tracking-wider font-medium">
-                    Obligatorio
+                    {isGoogleOnly ? "Automática" : "Obligatorio"}
                   </span>
                 </div>
-                <div className="space-y-2">
-                  <span className="text-xs font-body text-on-surface-variant block">
-                    Para confirmar la orden de borrado, introduce tu contraseña actual.
-                  </span>
-                  <div className="relative">
-                    <input
-                      id="current-password"
-                      type={showPwd ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (pwdError) setPwdError(false);
-                      }}
-                      required
-                      placeholder="Introduce tu contraseña"
-                      className={`w-full bg-surface text-on-surface px-4 py-3.5 pr-11 text-sm font-body tracking-wider focus:outline-none focus:bg-surface-container-lowest transition-all ${
-                        pwdError ? "bg-error-container/30 ring-1 ring-error" : ""
-                      }`}
-                    />
-                    <button
-                      id="toggle-pwd-btn"
-                      type="button"
-                      aria-label="Mostrar contraseña"
-                      onClick={() => setShowPwd(!showPwd)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-on-surface transition-colors p-1"
+                {isGoogleOnly ? (
+                  <div className="flex items-start gap-3 p-4 bg-surface-container border-l-2 border-primary">
+                    <svg
+                      className="size-5 shrink-0 mt-0.5 text-primary"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
                     >
-                      {showPwd ? (
-                        <EyeOff className="size-5" id="pwd-icon" strokeWidth={1.8} />
-                      ) : (
-                        <Eye className="size-5" id="pwd-icon" strokeWidth={1.8} />
-                      )}
-                    </button>
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    <div className="space-y-1">
+                      <p className="text-sm font-body font-medium text-on-surface">
+                        Cuenta vinculada con Google
+                      </p>
+                      <p className="text-xs font-body text-on-surface-variant leading-relaxed">
+                        Tu identidad se verifica automáticamente a través de tu sesión de Google
+                        activa. No se requiere contraseña adicional.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <span className="text-xs font-body text-on-surface-variant block">
+                      Para confirmar la orden de borrado, introduce tu contraseña actual.
+                    </span>
+                    <div className="relative">
+                      <input
+                        id="current-password"
+                        type={showPwd ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (pwdError) setPwdError(false);
+                        }}
+                        required
+                        placeholder="Introduce tu contraseña"
+                        className={`w-full bg-surface text-on-surface px-4 py-3.5 pr-11 text-sm font-body tracking-wider focus:outline-none focus:bg-surface-container-lowest transition-all ${
+                          pwdError ? "bg-error-container/30 ring-1 ring-error" : ""
+                        }`}
+                      />
+                      <button
+                        id="toggle-pwd-btn"
+                        type="button"
+                        aria-label="Mostrar contraseña"
+                        onClick={() => setShowPwd(!showPwd)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-on-surface transition-colors p-1"
+                      >
+                        {showPwd ? (
+                          <EyeOff className="size-5" id="pwd-icon" strokeWidth={1.8} />
+                        ) : (
+                          <Eye className="size-5" id="pwd-icon" strokeWidth={1.8} />
+                        )}
+                      </button>
+                    </div>
+                    {pwdError && (
+                      <div className="mt-2">
+                        <FeedbackMsg
+                          type="error"
+                          msg="La contraseña es obligatoria para confirmar el cierre."
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Step 3: Explicit Final Checkbox */}
@@ -1787,7 +1935,7 @@ function SectionCerrarCuenta({ onNavigate }: { onNavigate: (section: Section) =>
                 <button
                   id="delete-account-btn"
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || isAdmin}
                   className="flex-1 py-4 px-6 bg-error hover:bg-[#8f1212] text-on-error font-label uppercase text-xs tracking-[0.2em] font-semibold text-center transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="size-[18px]" strokeWidth={2} />
@@ -1910,6 +2058,287 @@ function SectionPlaceholder({
   );
 }
 
+type NotifKey = "notif_orders" | "notif_promotions" | "notif_newsletter" | "notif_restock";
+
+const NOTIF_OPTIONS: {
+  key: NotifKey;
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+}[] = [
+  {
+    key: "notif_orders",
+    icon: Package,
+    title: "Estado de pedidos",
+    desc: "Seguimiento de tu compra: confirmación, preparación, despacho y entrega.",
+  },
+  {
+    key: "notif_promotions",
+    icon: Tag,
+    title: "Ofertas y descuentos",
+    desc: "Promociones exclusivas, códigos de descuento y liquidaciones de temporada.",
+  },
+  {
+    key: "notif_newsletter",
+    icon: Newspaper,
+    title: "Novedades y colecciones",
+    desc: "Nuevas prendas, lanzamientos de colección y tendencias de la tienda NORTE.",
+  },
+  {
+    key: "notif_restock",
+    icon: ShoppingBag,
+    title: "Reposición de stock",
+    desc: "Aviso cuando un artículo agotado que te interesa vuelve a estar disponible.",
+  },
+];
+
+function SectionPreferenciasNotificaciones() {
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useNotificationPreferences();
+  const [draftPrefs, setDraftPrefs] = useState<Record<NotifKey, boolean> | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [toastVisible, setToastVisible] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const currentPrefs: Record<NotifKey, boolean> | null = draftPrefs
+    ? draftPrefs
+    : data
+      ? {
+          notif_orders: data.notif_orders,
+          notif_promotions: data.notif_promotions,
+          notif_newsletter: data.notif_newsletter,
+          notif_restock: data.notif_restock,
+        }
+      : null;
+
+  function handleToggle(key: NotifKey) {
+    if (!currentPrefs) return;
+    setDraftPrefs({ ...currentPrefs, [key]: !currentPrefs[key] });
+    setFeedback(null);
+  }
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!currentPrefs) return;
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        await updateNotificationPreferencesApi(currentPrefs);
+        setDraftPrefs(null);
+        await queryClient.invalidateQueries({ queryKey: NOTIFICATION_PREFS_QUERY_KEY });
+        setFeedback({ type: "success", msg: "Preferencias guardadas correctamente." });
+        setToastVisible(true);
+        setTimeout(() => {
+          setToastVisible(false);
+          setFeedback(null);
+        }, 3200);
+      } catch (err) {
+        setFeedback({
+          type: "error",
+          msg: err instanceof Error ? err.message : "Error al guardar las preferencias.",
+        });
+      }
+    });
+  }
+
+  function handleReset() {
+    setDraftPrefs(null);
+    setFeedback(null);
+  }
+
+  return (
+    <>
+      <Toast msg="Preferencias de notificación actualizadas" visible={toastVisible} />
+      <div className="flex flex-col w-full">
+        <div className="relative w-full pb-8 mb-8 border-b border-[var(--color-outline-variant)]/30">
+          <div>
+            <div className="inline-flex items-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-primary)]" />
+              <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)]">
+                Área de Cuenta
+              </span>
+            </div>
+            <h2
+              className="text-5xl md:text-6xl tracking-wide uppercase text-[var(--color-on-surface)] leading-none"
+              style={{ fontFamily: "var(--font-bebas), sans-serif" }}
+            >
+              Notificaciones
+            </h2>
+            <p className="mt-2 text-sm text-[var(--color-on-surface-variant)] max-w-xl">
+              Elegí qué comunicaciones recibir de NORTE. Podés activar o desactivar cada categoría
+              en cualquier momento.
+            </p>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center gap-3 py-16 text-[var(--color-on-surface-variant)]">
+            <Loader2 className="size-5 animate-spin text-[var(--color-primary)]" />
+            <span className="text-sm font-label uppercase tracking-widest">
+              Cargando preferencias...
+            </span>
+          </div>
+        ) : isError ? (
+          <div className="space-y-4 py-8">
+            <FeedbackMsg
+              type="error"
+              msg="No se pudieron cargar las preferencias de notificación."
+            />
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="text-xs font-label uppercase tracking-wider text-[var(--color-primary)] hover:underline font-semibold"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : !currentPrefs ? null : (
+          <form onSubmit={handleSave}>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+              <div className="lg:col-span-8 flex flex-col space-y-4">
+                <section className="bg-[var(--color-surface-container-low)] p-6 md:p-8 shadow-sm">
+                  <div className="flex items-center gap-2 pb-4 mb-6 border-b border-[var(--color-outline-variant)]/30">
+                    <Bell className="size-5 text-[var(--color-primary)]" strokeWidth={1.8} />
+                    <h3
+                      className="text-2xl tracking-wider uppercase text-[var(--color-on-surface)]"
+                      style={{ fontFamily: "var(--font-bebas), sans-serif" }}
+                    >
+                      Mis Preferencias
+                    </h3>
+                  </div>
+                  <div className="flex flex-col divide-y divide-[var(--color-outline-variant)]/20">
+                    {NOTIF_OPTIONS.map(({ key, icon: Icon, title, desc }) => {
+                      const isActive = currentPrefs[key];
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-start justify-between gap-6 py-5 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div
+                              className={`w-10 h-10 shrink-0 flex items-center justify-center transition-colors ${
+                                isActive
+                                  ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                                  : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
+                              }`}
+                            >
+                              <Icon className="size-5" strokeWidth={1.8} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-[var(--color-on-surface)] leading-snug">
+                                {title}
+                              </p>
+                              <p className="text-xs text-[var(--color-on-surface-variant)] mt-0.5 max-w-sm leading-relaxed">
+                                {desc}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isActive}
+                            aria-label={`${isActive ? "Desactivar" : "Activar"} ${title}`}
+                            onClick={() => handleToggle(key)}
+                            disabled={isPending}
+                            className={`relative shrink-0 w-11 h-6 transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                              isActive
+                                ? "bg-[var(--color-primary)]"
+                                : "bg-[var(--color-outline-variant)]"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 w-4 h-4 bg-white shadow-sm transition-transform duration-200 ${
+                                isActive ? "translate-x-5" : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="bg-[var(--color-surface-container-low)] p-6 md:p-8 shadow-sm">
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 shrink-0 flex items-center justify-center bg-[var(--color-secondary)]/10 text-[var(--color-secondary)]">
+                        <ShieldAlert className="size-5" strokeWidth={1.8} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-on-surface)] leading-snug">
+                          Alertas de seguridad
+                        </p>
+                        <p className="text-xs text-[var(--color-on-surface-variant)] mt-0.5 max-w-sm leading-relaxed">
+                          Inicios de sesión, cambios de contraseña y actividad inusual en tu cuenta.
+                          Este canal no se puede desactivar.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-[11px] font-label uppercase tracking-widest text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 px-3 py-1.5 mt-1">
+                      Siempre activo
+                    </span>
+                  </div>
+                </section>
+
+                {feedback && (
+                  <div>
+                    <FeedbackMsg type={feedback.type} msg={feedback.msg} />
+                  </div>
+                )}
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    disabled={isPending || !draftPrefs}
+                    className="w-full sm:w-auto px-8 py-3.5 bg-transparent hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-label font-semibold uppercase tracking-[0.15em] text-xs transition-colors disabled:opacity-50"
+                  >
+                    Descartar cambios
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="w-full sm:w-auto px-10 py-3.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-container)] text-[var(--color-on-primary)] font-label font-semibold uppercase tracking-[0.18em] text-xs shadow-md transition-all flex items-center justify-center gap-2 group active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="size-4 group-hover:rotate-12 transition-transform" />
+                    )}
+                    <span>Guardar preferencias</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-4 flex flex-col space-y-6">
+                <div className="bg-[var(--color-surface-container-low)] p-5 shadow-sm space-y-4">
+                  <span className="text-[11px] font-label font-semibold uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)] block">
+                    ¿Cómo funciona?
+                  </span>
+                  <div className="space-y-3 text-xs text-[var(--color-on-surface-variant)] leading-relaxed">
+                    <p>
+                      Todas las notificaciones se envían al correo electrónico asociado a tu cuenta.
+                    </p>
+                    <p>
+                      Las alertas de seguridad (accesos y cambios de contraseña) se envían siempre,
+                      independientemente de tus preferencias.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]" />
+                    <span className="text-[11px] font-label uppercase tracking-widest text-[var(--color-secondary)]">
+                      Podés cambiarlas en cualquier momento
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        )}
+      </div>
+    </>
+  );
+}
+
 export function AccountView() {
   const { user, isLoading } = useSession();
   const [currentSection, setCurrentSection] = useState<Section>("perfil");
@@ -1986,14 +2415,10 @@ export function AccountView() {
             />
           )}
           {currentSection === "preferencias-de-notificaciones" && (
-            <SectionPlaceholder
-              icon={Bell}
-              title="Preferencias de Notificaciones"
-              description="Configura qué comunicaciones y alertas deseas recibir del equipo curatorial de NORTE."
-            />
+            <SectionPreferenciasNotificaciones />
           )}
           {currentSection === "cerrar-cuenta" && (
-            <SectionCerrarCuenta onNavigate={setCurrentSection} />
+            <SectionCerrarCuenta onNavigate={setCurrentSection} user={user} />
           )}
         </div>
       </div>

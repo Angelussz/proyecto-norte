@@ -26,4 +26,7 @@ export const env = {
   GOOGLE_CLIENT_ID: required("GOOGLE_CLIENT_ID"),
   GOOGLE_CLIENT_SECRET: required("GOOGLE_CLIENT_SECRET"),
   GOOGLE_REDIRECT_URI: required("GOOGLE_REDIRECT_URI"),
+  // Email transaccional (Resend) — opcional: sin API key opera en modo stub (consola).
+  RESEND_API_KEY: optional("RESEND_API_KEY"),
+  EMAIL_FROM: optional("EMAIL_FROM"),
 } as const;
